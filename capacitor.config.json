@@ -1,0 +1,27 @@
+{
+  "appId": "com.fgdrivo.customer",
+  "appName": "FG DRIVO",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2400,
+      "launchAutoHide": true,
+      "backgroundColor": "#FFFFFF",
+      "androidScaleType": "CENTER_CROP",
+      "splashFullScreen": false,
+      "splashImmersive": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#FFFFFF"
+    }
+  }
+}

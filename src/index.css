@@ -1,0 +1,440 @@
+:root {
+  /* ============================================================ */
+  /* FG DRIVO OFFICIAL COLOR SHADE SYSTEM                         */
+  /* Purple 25% | Yellow 25% | Violet 20% | White 30%            */
+  /* ============================================================ */
+
+  /* 1. Purple (25%) — Brand Anchors, Headers, Primary Bars */
+  --fg-purple: #5427A8;
+  --fg-purple-dark: #431F8A;
+  --fg-purple-light: #6A38C2;
+  --fg-purple-glow: rgba(84, 39, 168, 0.25);
+
+  /* 2. Yellow (25%) — High-Energy CTAs, Highlights, Badges */
+  --fg-yellow: #F5C400;
+  --fg-yellow-gold: #FFD21A;
+  --fg-yellow-light: #FFF3B8;
+  --fg-yellow-glow: rgba(245, 196, 0, 0.35);
+
+  /* 3. Violet (20%) — Luminous Accents, Deep Text, Soft Tints */
+  --fg-violet: #6A2FC4;
+  --fg-violet-deep: #24153F;
+  --fg-violet-text: #382354;
+  --fg-violet-muted: #6B5B7D;
+  --fg-violet-surface: #F6F1FF;
+  --fg-violet-border: #E5DFF0;
+
+  /* 4. White (30%) — Clean Luminous Canvas, Crisp Cards */
+  --fg-white: #FFFFFF;
+  --fg-white-soft: #F8F6FD;
+  --fg-white-card: #FFFFFF;
+  --fg-white-glass: rgba(255, 255, 255, 0.92);
+
+  /* Semantic Theme Mappings */
+  --color-primary: var(--fg-yellow);
+  --color-primary-hover: var(--fg-yellow-gold);
+  --color-primary-active: #E0B300;
+  --color-secondary-yellow: var(--fg-yellow);
+  --color-primary-glow: var(--fg-yellow-glow);
+  --color-primary-glow-strong: rgba(245, 196, 0, 0.55);
+
+  --color-brand-purple: var(--fg-purple);
+  --color-brand-violet: var(--fg-violet);
+
+  /* Background Colors */
+  --bg-primary: #070B12;
+  --bg-secondary: #0D131D;
+  --bg-surface: #121A26;
+  --bg-elevated: #182231;
+  --bg-elevated-hover: #1E2B3E;
+  --bg-glass: rgba(18, 26, 38, 0.85);
+  --bg-glass-heavy: rgba(7, 11, 18, 0.92);
+
+  /* Text Colors */
+  --text-primary: #FFFFFF;
+  --text-secondary: #A8B2C2;
+  --text-muted: #697586;
+  --text-inverse: #070B12;
+
+  /* Status Colors */
+  --status-success: #22C55E;
+  --status-success-bg: rgba(34, 197, 94, 0.12);
+  --status-warning: #F59E0B;
+  --status-warning-bg: rgba(245, 158, 11, 0.12);
+  --status-error: #EF4444;
+  --status-error-bg: rgba(239, 68, 68, 0.12);
+  --status-info: #3B82F6;
+  --status-info-bg: rgba(59, 130, 246, 0.12);
+
+  /* Borders & Dividers */
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.25);
+  --border-accent: var(--fg-yellow);
+  --border-accent-glow: var(--fg-yellow-glow);
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-card: 18px;
+  --radius-bottomsheet: 26px;
+  --radius-pill: 9999px;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-heading: 'Poppins', 'Inter', sans-serif;
+
+  /* Elevation Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.7);
+  --shadow-accent: 0 4px 20px rgba(255, 214, 0, 0.25);
+  --shadow-bottomsheet: 0 -8px 32px rgba(0, 0, 0, 0.6);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 350ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+/* FG DRIVO Sliding Bargaining System Range Slider */
+.bargain-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bargain-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #F5C400;
+  border: 3px solid #5427A8;
+  cursor: grab;
+  box-shadow: 0 2px 10px rgba(84, 39, 168, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bargain-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.18);
+  box-shadow: 0 4px 16px rgba(245, 196, 0, 0.6);
+}
+
+.bargain-slider::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #F5C400;
+  border: 3px solid #5427A8;
+  cursor: grab;
+  box-shadow: 0 2px 10px rgba(84, 39, 168, 0.4);
+}
+
+/* Base utility classes */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Animations */
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 15px var(--color-primary-glow);
+    transform: scale(1);
+  }
+
+  50% {
+    box-shadow: 0 0 25px var(--color-primary-glow-strong);
+    transform: scale(1.02);
+  }
+}
+
+@keyframes carRadar {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@keyframes slideUpSheet {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes floatBob {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--transition-normal) ease forwards;
+}
+
+.animate-slide-up {
+  animation: slideUpSheet var(--transition-spring) forwards;
+}
+
+/* ============================================================ */
+/* FG DRIVO INTRO ANIMATION (Splash Screen)                      */
+/* ============================================================ */
+
+@keyframes fgi-slide {
+  from {
+    transform: translateX(-950px);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@keyframes fgi-fadeout {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fgi-fadein {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fgi-shadow {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: .32;
+  }
+}
+
+@keyframes fgi-drop {
+  0% {
+    transform: translateY(-90px);
+    opacity: 0;
+  }
+
+  60% {
+    transform: translateY(5px);
+    opacity: 1;
+  }
+
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.fg-intro-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 0% 0%, #ffffff 0, rgba(255, 255, 255, 0) 28%),
+    radial-gradient(ellipse at 50% 45%, #f3f3f4 0, #d6d6d9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.fg-intro-wrapper svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.fg-intro-wrapper .fgi-slide {
+  animation: fgi-slide .91s cubic-bezier(.3, .5, .35, 1) both;
+}
+
+.fg-intro-wrapper .fgi-streak {
+  animation: fgi-fadeout .44s .79s forwards;
+}
+
+.fg-intro-wrapper .fgi-car {
+  animation: fgi-fadeout .28s .95s forwards;
+}
+
+.fg-intro-wrapper .fgi-arc {
+  opacity: 0;
+  animation: fgi-fadein .32s .88s forwards;
+}
+
+.fg-intro-wrapper .fgi-shadow {
+  opacity: 0;
+  animation: fgi-shadow .63s .25s forwards;
+}
+
+.fg-intro-wrapper .fgi-pin {
+  opacity: 0;
+  animation: fgi-drop .44s 1.39s cubic-bezier(.3, 1.4, .5, 1) forwards;
+}
+
+.fg-intro-wrapper .fgi-t1 {
+  opacity: 0;
+  animation: fgi-fadein .38s 1.7s forwards;
+}
+
+.fg-intro-wrapper .fgi-t2 {
+  opacity: 0;
+  animation: fgi-fadein .38s 1.95s forwards;
+}
+
+.fg-intro-wrapper .fgi-t3 {
+  opacity: 0;
+  animation: fgi-fadein .38s 2.2s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fg-intro-wrapper * {
+    animation-duration: .01s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* ============================================================ */
+/* ANDROID NATIVE & MOBILE SYSTEM OPTIMIZATIONS                 */
+/* ============================================================ */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* Android safe-area insets */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: fg-drivo-platform
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: HOST
+        value: 0.0.0.0
+      - key: VITE_GOOGLE_MAPS_API_KEY
+        sync: false
