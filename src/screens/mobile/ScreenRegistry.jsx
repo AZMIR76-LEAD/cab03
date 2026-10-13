@@ -32,6 +32,7 @@ export let GLOBAL_PICKUP_COORDS = [10.3644, 77.9702];
 export let GLOBAL_USER_GPS_COORDS = null;
 export let GLOBAL_DESTINATION_LOCATION = 'Palani Road, Dindigul';
 export let GLOBAL_PAYMENT_RETURN_SCREEN = 's13_fare_estimate';
+export let GLOBAL_USER_PHONE = '+91 98765 43210';
 
 // Shared Bottom Nav for Mobile (White Background + Indigo Pill Indicator)
 export function MobileBottomNav({ activeTab, onTabChange, onNavigate }) {
@@ -196,6 +197,23 @@ export function Screen03Login({ onNavigate }) {
   const [dob, setDob] = useState('15-08-1998');
   const [useEmail, setUseEmail] = useState(false);
   const [email, setEmail] = useState('john.kumar@example.com');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleProceed = async () => {
+    const rawNumber = phone.replace(/[^0-9]/g, '');
+    const cleanPhone = `${countryCode} ${rawNumber || '9876543210'}`;
+    GLOBAL_USER_PHONE = cleanPhone;
+
+    setIsSubmitting(true);
+    try {
+      await RideXAPI.sendOtp(cleanPhone);
+    } catch (err) {
+      console.warn('[FG DRIVO] sendOtp notice:', err.message);
+    } finally {
+      setIsSubmitting(false);
+      onNavigate('s04_otp');
+    }
+  };
 
   return (
     <div
@@ -652,7 +670,8 @@ export function Screen03Login({ onNavigate }) {
 
         {/* Primary Action Button */}
         <button
-          onClick={() => onNavigate('s04_otp')}
+          onClick={handleProceed}
+          disabled={isSubmitting}
           style={{
             width: '100%',
             height: '48px',
@@ -809,10 +828,13 @@ export function Screen03Login({ onNavigate }) {
 
 // Screen 04 — OTP
 export function Screen04OTP({ onNavigate }) {
+  const currentPhone = GLOBAL_USER_PHONE || '+91 98765 43210';
+  const maskedPhone = currentPhone.replace(/(\d{2})\d{4}(\d{4})/, '$1••••$2');
   const [otp, setOtp] = useState(['5', '2', '9', '4', '8', '1']);
   const [countdown, setCountdown] = useState(28);
   const [isVerifying, setIsVerifying] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (countdown > 0) {
@@ -823,8 +845,9 @@ export function Screen04OTP({ onNavigate }) {
 
   const handleVerify = () => {
     setIsVerifying(true);
+    setHasError(false);
     const code = otp.join('');
-    RideXAPI.verifyOtp('+91 98765 43210', code)
+    RideXAPI.verifyOtp(currentPhone, code)
       .then((res) => {
         setIsVerifying(false);
         if (res && res.token) {
@@ -837,10 +860,21 @@ export function Screen04OTP({ onNavigate }) {
         }
         onNavigate('s05_location_permission');
       })
-      .catch(() => {
+      .catch((err) => {
         setIsVerifying(false);
-        onNavigate('s05_location_permission');
+        setHasError(true);
+        setErrorMessage(err.message || 'Invalid or expired OTP code.');
       });
+  };
+
+  const handleResend = async () => {
+    setCountdown(30);
+    setHasError(false);
+    try {
+      await RideXAPI.sendOtp(currentPhone);
+    } catch (err) {
+      console.warn('[FG DRIVO] Resend OTP error:', err.message);
+    }
   };
 
   return (
@@ -867,7 +901,7 @@ export function Screen04OTP({ onNavigate }) {
           Verify your number
         </h1>
         <p style={{ fontSize: '14px', color: '#6B5B7D', marginBottom: '28px' }}>
-          We sent a 6-digit confirmation code to <span style={{ color: '#5427A8', fontWeight: 700 }}>+91 98••• ••210</span>
+          We sent a 6-digit confirmation code to <span style={{ color: '#5427A8', fontWeight: 700 }}>{maskedPhone}</span>
         </p>
 
         {/* 6-digit OTP Inputs */}
@@ -876,12 +910,19 @@ export function Screen04OTP({ onNavigate }) {
             <input
               key={i}
               type="text"
+              inputMode="numeric"
               maxLength={1}
               value={digit}
               onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9]/g, '');
                 const newOtp = [...otp];
-                newOtp[i] = e.target.value;
+                newOtp[i] = val.slice(-1);
                 setOtp(newOtp);
+                setHasError(false);
+                // Auto focus next input
+                if (val && e.target.nextElementSibling) {
+                  e.target.nextElementSibling.focus();
+                }
               }}
               style={{
                 width: '46px',
@@ -901,7 +942,7 @@ export function Screen04OTP({ onNavigate }) {
 
         {hasError && (
           <p style={{ fontSize: '12px', color: '#EF4444', marginBottom: '16px', fontWeight: 600 }}>
-            Incorrect verification code. Please check and try again.
+            {errorMessage || 'Incorrect verification code. Please check and try again.'}
           </p>
         )}
 
@@ -911,11 +952,14 @@ export function Screen04OTP({ onNavigate }) {
           </span>
           <button
             disabled={countdown > 0}
-            onClick={() => setCountdown(30)}
+            onClick={handleResend}
             style={{
               fontSize: '13px',
               fontWeight: 700,
               color: countdown > 0 ? '#8A7A9E' : '#5427A8',
+              background: 'none',
+              border: 'none',
+              cursor: countdown > 0 ? 'default' : 'pointer',
             }}
           >
             Resend Code
