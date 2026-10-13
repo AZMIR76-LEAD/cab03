@@ -32,7 +32,7 @@ export let GLOBAL_PICKUP_COORDS = [10.3644, 77.9702];
 export let GLOBAL_USER_GPS_COORDS = null;
 export let GLOBAL_DESTINATION_LOCATION = 'Palani Road, Dindigul';
 export let GLOBAL_PAYMENT_RETURN_SCREEN = 's13_fare_estimate';
-export let GLOBAL_USER_PHONE = '+91 98765 43210';
+export let GLOBAL_USER_PHONE = '';
 
 // Shared Bottom Nav for Mobile (White Background + Indigo Pill Indicator)
 export function MobileBottomNav({ activeTab, onTabChange, onNavigate }) {
@@ -191,17 +191,21 @@ export function Screen02Onboarding({ onNavigate }) {
 // Screen 03 — Login & Sign Up
 export function Screen03Login({ onNavigate }) {
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
-  const [phone, setPhone] = useState('9876543210');
+  const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+91');
-  const [name, setName] = useState('John Kumar');
-  const [dob, setDob] = useState('15-08-1998');
+  const [name, setName] = useState('');
+  const [dob, setDob] = useState('');
   const [useEmail, setUseEmail] = useState(false);
-  const [email, setEmail] = useState('john.kumar@example.com');
+  const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleProceed = async () => {
     const rawNumber = phone.replace(/[^0-9]/g, '');
-    const cleanPhone = `${countryCode} ${rawNumber || '9876543210'}`;
+    if (!useEmail && rawNumber.length < 10) {
+      alert('Please enter your 10-digit mobile number.');
+      return;
+    }
+    const cleanPhone = `${countryCode} ${rawNumber}`;
     GLOBAL_USER_PHONE = cleanPhone;
 
     setIsSubmitting(true);
@@ -828,9 +832,9 @@ export function Screen03Login({ onNavigate }) {
 
 // Screen 04 — OTP
 export function Screen04OTP({ onNavigate }) {
-  const currentPhone = GLOBAL_USER_PHONE || '+91 98765 43210';
-  const maskedPhone = currentPhone.replace(/(\d{2})\d{4}(\d{4})/, '$1••••$2');
-  const [otp, setOtp] = useState(['5', '2', '9', '4', '8', '1']);
+  const currentPhone = GLOBAL_USER_PHONE || '+91 ••••• •••••';
+  const maskedPhone = currentPhone.includes('•') ? currentPhone : currentPhone.replace(/(\d{2})\d{4}(\d{4})/, '$1••••$2');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [countdown, setCountdown] = useState(28);
   const [isVerifying, setIsVerifying] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -844,9 +848,14 @@ export function Screen04OTP({ onNavigate }) {
   }, [countdown]);
 
   const handleVerify = () => {
+    const code = otp.join('');
+    if (code.length < 4) {
+      setHasError(true);
+      setErrorMessage('Please enter the 6-digit OTP code.');
+      return;
+    }
     setIsVerifying(true);
     setHasError(false);
-    const code = otp.join('');
     RideXAPI.verifyOtp(currentPhone, code)
       .then((res) => {
         setIsVerifying(false);
