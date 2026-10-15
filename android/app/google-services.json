@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "864367197767",
+    "project_id": "fg-drivo",
+    "storage_bucket": "fg-drivo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:864367197767:android:37d1f1aca8b9a3dd5fbb62",
+        "android_client_info": {
+          "package_name": "com.fgdrivo.customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5n9jx5Hxqgob45snpJb15qoLnEhP0tmY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -23,6 +23,7 @@ import { RideXAPI } from '../../services/api';
 import { socketService } from '../../services/socket';
 import { sounds } from '../../utils/soundEffects';
 import { DeviceLocation, DEFAULT_FALLBACK_LOCATION } from '../../services/deviceLocation';
+import { FirebaseAuthService, isFirebaseConfigured } from '../../services/firebase';
 
 // Global Bargaining State & Location Coordinates
 export let GLOBAL_BARGAIN_FARE = 198;
@@ -33,6 +34,7 @@ export let GLOBAL_USER_GPS_COORDS = null;
 export let GLOBAL_DESTINATION_LOCATION = 'Palani Road, Dindigul';
 export let GLOBAL_PAYMENT_RETURN_SCREEN = 's13_fare_estimate';
 export let GLOBAL_USER_PHONE = '';
+export let GLOBAL_FIREBASE_CONFIRMATION = null;
 
 // Shared Bottom Nav for Mobile (White Background + Indigo Pill Indicator)
 export function MobileBottomNav({ activeTab, onTabChange, onNavigate }) {
@@ -206,11 +208,22 @@ export function Screen03Login({ onNavigate }) {
       return;
     }
     const cleanPhone = `${countryCode} ${rawNumber}`;
+    const e164Phone = `${countryCode}${rawNumber}`;
     GLOBAL_USER_PHONE = cleanPhone;
 
     setIsSubmitting(true);
     try {
-      await RideXAPI.sendOtp(cleanPhone);
+      if (isFirebaseConfigured()) {
+        try {
+          const confirmation = await FirebaseAuthService.sendOtp(e164Phone, 'recaptcha-container');
+          GLOBAL_FIREBASE_CONFIRMATION = confirmation;
+        } catch (fbErr) {
+          console.warn('[Firebase Auth] sendOtp fallback to backend API:', fbErr.message);
+          await RideXAPI.sendOtp(cleanPhone);
+        }
+      } else {
+        await RideXAPI.sendOtp(cleanPhone);
+      }
     } catch (err) {
       console.warn('[FG DRIVO] sendOtp notice:', err.message);
     } finally {
@@ -232,6 +245,9 @@ export function Screen03Login({ onNavigate }) {
         overflowX: 'hidden',
       }}
     >
+      {/* Invisible Firebase Recaptcha Container */}
+      <div id="recaptcha-container" style={{ display: 'none' }} />
+
       {/* ----------------- TOP GRAPHIC & CITY CAR ART ----------------- */}
       <div
         style={{
@@ -856,31 +872,54 @@ export function Screen04OTP({ onNavigate }) {
     }
     setIsVerifying(true);
     setHasError(false);
-    RideXAPI.verifyOtp(currentPhone, code)
-      .then((res) => {
-        setIsVerifying(false);
-        if (res && res.token) {
-          try {
-            localStorage.setItem('fg_auth_token', res.token);
-            if (res.user) {
-              localStorage.setItem('fg_user', JSON.stringify(res.user));
-            }
-          } catch (e) {}
-        }
-        onNavigate('s05_location_permission');
-      })
-      .catch((err) => {
-        setIsVerifying(false);
-        setHasError(true);
-        setErrorMessage(err.message || 'Invalid or expired OTP code.');
-      });
+
+    const proceedSuccess = (token, user) => {
+      setIsVerifying(false);
+      try {
+        if (token) localStorage.setItem('fg_auth_token', token);
+        if (user) localStorage.setItem('fg_user', JSON.stringify({ ...user, phone: currentPhone }));
+      } catch (e) {}
+      onNavigate('s05_location_permission');
+    };
+
+    if (GLOBAL_FIREBASE_CONFIRMATION) {
+      FirebaseAuthService.verifyCode(GLOBAL_FIREBASE_CONFIRMATION, code)
+        .then((res) => {
+          proceedSuccess(res.idToken, res.user);
+        })
+        .catch((fbErr) => {
+          console.warn('[Firebase Auth] verifyCode failed, checking backend fallback:', fbErr.message);
+          RideXAPI.verifyOtp(currentPhone, code)
+            .then((res) => proceedSuccess(res.token, res.user))
+            .catch((err) => {
+              setIsVerifying(false);
+              setHasError(true);
+              setErrorMessage(fbErr.message || err.message || 'Invalid verification code.');
+            });
+        });
+    } else {
+      RideXAPI.verifyOtp(currentPhone, code)
+        .then((res) => proceedSuccess(res.token, res.user))
+        .catch((err) => {
+          setIsVerifying(false);
+          setHasError(true);
+          setErrorMessage(err.message || 'Invalid or expired OTP code.');
+        });
+    }
   };
 
   const handleResend = async () => {
     setCountdown(30);
     setHasError(false);
     try {
-      await RideXAPI.sendOtp(currentPhone);
+      if (isFirebaseConfigured()) {
+        const rawNumber = currentPhone.replace(/[^0-9]/g, '').slice(-10);
+        const e164Phone = `+91${rawNumber}`;
+        const confirmation = await FirebaseAuthService.sendOtp(e164Phone, 'recaptcha-container');
+        GLOBAL_FIREBASE_CONFIRMATION = confirmation;
+      } else {
+        await RideXAPI.sendOtp(currentPhone);
+      }
     } catch (err) {
       console.warn('[FG DRIVO] Resend OTP error:', err.message);
     }
