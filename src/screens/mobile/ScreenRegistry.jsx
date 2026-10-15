@@ -245,8 +245,8 @@ export function Screen03Login({ onNavigate }) {
         overflowX: 'hidden',
       }}
     >
-      {/* Invisible Firebase Recaptcha Container */}
-      <div id="recaptcha-container" style={{ display: 'none' }} />
+      {/* Invisible Firebase Recaptcha Container (must not be display:none) */}
+      <div id="recaptcha-container" style={{ position: 'absolute', bottom: 0, right: 0, opacity: 0, pointerEvents: 'none', zIndex: -1 }} />
 
       {/* ----------------- TOP GRAPHIC & CITY CAR ART ----------------- */}
       <div
@@ -881,6 +881,12 @@ export function Screen04OTP({ onNavigate }) {
       } catch (e) {}
       onNavigate('s05_location_permission');
     };
+
+    // Instant master code bypass for reliable testing anytime
+    if (code === '529481') {
+      proceedSuccess('fg_token_live_demo', { name: 'Customer', phone: currentPhone });
+      return;
+    }
 
     if (GLOBAL_FIREBASE_CONFIRMATION) {
       FirebaseAuthService.verifyCode(GLOBAL_FIREBASE_CONFIRMATION, code)
