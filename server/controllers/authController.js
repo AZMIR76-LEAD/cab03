@@ -46,8 +46,8 @@ export class AuthController {
 
     const cached = otpStore.get(cleanPhone) || otpStore.get(phone);
 
-    const isMock = (process.env.SMS_GATEWAY_PROVIDER || 'mock').toLowerCase() === 'mock' || !process.env.SMS_API_KEY;
-    const isDemoMatch = isMock && cleanOtp === appConfig.auth.demoOtp;
+    // Master testing code (529481) always valid for app testing and Google Play review
+    const isDemoMatch = cleanOtp === appConfig.auth.demoOtp;
     const isStoreMatch = cached && cached.code === cleanOtp && cached.expiresAt > Date.now();
 
     const isValid = isDemoMatch || isStoreMatch;
