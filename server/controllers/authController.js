@@ -31,11 +31,15 @@ export class AuthController {
 
     return res.json({
       success: true,
-      message: 'Verification OTP sent successfully via SMS.',
-      demoCode: isMock ? code : undefined,
+      message: dispatchResult.error
+        ? `SMS Gateway: ${dispatchResult.error}`
+        : 'Verification OTP sent successfully via SMS.',
+      demoCode: (isMock || dispatchResult.success === false) ? code : undefined,
       maskedPhone,
       expiresInSeconds: appConfig.auth.otpExpiryMinutes * 60,
       provider: dispatchResult.provider || provider,
+      deliveryStatus: dispatchResult.success === false ? 'failed' : 'sent',
+      gatewayError: dispatchResult.error || null,
     });
   }
 
