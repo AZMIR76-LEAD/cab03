@@ -35,6 +35,7 @@ export let GLOBAL_DESTINATION_LOCATION = 'Palani Road, Dindigul';
 export let GLOBAL_PAYMENT_RETURN_SCREEN = 's13_fare_estimate';
 export let GLOBAL_USER_PHONE = '';
 export let GLOBAL_FIREBASE_CONFIRMATION = null;
+export let GLOBAL_LATEST_OTP = '';
 
 // Shared Bottom Nav for Mobile (White Background + Indigo Pill Indicator)
 export function MobileBottomNav({ activeTab, onTabChange, onNavigate }) {
@@ -208,21 +209,15 @@ export function Screen03Login({ onNavigate }) {
       return;
     }
     const cleanPhone = `${countryCode} ${rawNumber}`;
-    const e164Phone = `${countryCode}${rawNumber}`;
     GLOBAL_USER_PHONE = cleanPhone;
+    GLOBAL_LATEST_OTP = '';
 
     setIsSubmitting(true);
     try {
-      if (isFirebaseConfigured()) {
-        try {
-          const confirmation = await FirebaseAuthService.sendOtp(e164Phone, 'recaptcha-container');
-          GLOBAL_FIREBASE_CONFIRMATION = confirmation;
-        } catch (fbErr) {
-          console.warn('[Firebase Auth] sendOtp fallback to backend API:', fbErr.message);
-          await RideXAPI.sendOtp(cleanPhone);
-        }
-      } else {
-        await RideXAPI.sendOtp(cleanPhone);
+      // Directly dispatch random 6-digit OTP via backend SMS engine
+      const res = await RideXAPI.sendOtp(cleanPhone);
+      if (res && (res.code || res.demoCode)) {
+        GLOBAL_LATEST_OTP = res.code || res.demoCode;
       }
     } catch (err) {
       console.warn('[FG DRIVO] sendOtp notice:', err.message);
@@ -920,13 +915,9 @@ export function Screen04OTP({ onNavigate }) {
     setCountdown(30);
     setHasError(false);
     try {
-      if (isFirebaseConfigured()) {
-        const rawNumber = currentPhone.replace(/[^0-9]/g, '').slice(-10);
-        const e164Phone = `+91${rawNumber}`;
-        const confirmation = await FirebaseAuthService.sendOtp(e164Phone, 'recaptcha-container');
-        GLOBAL_FIREBASE_CONFIRMATION = confirmation;
-      } else {
-        await RideXAPI.sendOtp(currentPhone);
+      const res = await RideXAPI.sendOtp(currentPhone);
+      if (res && (res.code || res.demoCode)) {
+        GLOBAL_LATEST_OTP = res.code || res.demoCode;
       }
     } catch (err) {
       console.warn('[FG DRIVO] Resend OTP error:', err.message);
@@ -1002,12 +993,13 @@ export function Screen04OTP({ onNavigate }) {
           </p>
         )}
 
-        {/* Quick Demo Code Auto-Fill Helper */}
+        {/* Quick Dynamic OTP Auto-Fill Helper */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '18px' }}>
           <button
             type="button"
             onClick={() => {
-              setOtp(['5', '2', '9', '4', '8', '1']);
+              const codeToFill = GLOBAL_LATEST_OTP || '529481';
+              setOtp(codeToFill.split(''));
               setHasError(false);
             }}
             style={{
@@ -1025,7 +1017,7 @@ export function Screen04OTP({ onNavigate }) {
             }}
           >
             <ShieldCheck size={14} color="#4F46E5" />
-            <span>Tap to Auto-fill Test Code (529481)</span>
+            <span>Tap to Auto-fill Generated OTP ({GLOBAL_LATEST_OTP || '529481'})</span>
           </button>
         </div>
 

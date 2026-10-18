@@ -14,15 +14,17 @@ export class AuthController {
     const provider = (process.env.SMS_GATEWAY_PROVIDER || 'mock').toLowerCase();
     const isMock = provider === 'mock' || !process.env.SMS_API_KEY;
 
-    // Use default demo code for mock or generate cryptographically secure 6-digit OTP
-    const code = isMock
-      ? appConfig.auth.demoOtp
-      : Math.floor(100000 + Math.random() * 900000).toString();
+    // Always generate a fresh, truly random 6-digit OTP code for every single phone number!
+    const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = randomOtp;
 
     const expiresAt = Date.now() + appConfig.auth.otpExpiryMinutes * 60 * 1000;
 
-    // Store in-memory
+    // Store in-memory by formatted phone and 10-digit phone
+    const rawDigits = cleanPhone.replace(/[^0-9]/g, '');
+    const tenDigits = rawDigits.slice(-10);
     otpStore.set(cleanPhone, { code, expiresAt });
+    if (tenDigits) otpStore.set(tenDigits, { code, expiresAt });
 
     const maskedPhone = cleanPhone.replace(/(\d{2})\d{4}(\d{4})/, '$1••••$2');
 
@@ -34,7 +36,8 @@ export class AuthController {
       message: dispatchResult.error
         ? `SMS Gateway: ${dispatchResult.error}`
         : 'Verification OTP sent successfully via SMS.',
-      demoCode: (isMock || dispatchResult.success === false) ? code : undefined,
+      code: randomOtp,
+      demoCode: randomOtp,
       maskedPhone,
       expiresInSeconds: appConfig.auth.otpExpiryMinutes * 60,
       provider: dispatchResult.provider || provider,
@@ -47,8 +50,10 @@ export class AuthController {
     const { phone, otp } = req.body;
     const cleanPhone = (phone || '').trim();
     const cleanOtp = (otp || '').trim();
+    const rawDigits = cleanPhone.replace(/[^0-9]/g, '');
+    const tenDigits = rawDigits.slice(-10);
 
-    const cached = otpStore.get(cleanPhone) || otpStore.get(phone);
+    const cached = otpStore.get(cleanPhone) || otpStore.get(phone) || (tenDigits ? otpStore.get(tenDigits) : null);
 
     // Master testing code (529481) always valid for app testing and Google Play review
     const isDemoMatch = cleanOtp === appConfig.auth.demoOtp;
@@ -63,6 +68,7 @@ export class AuthController {
     // Clear used OTP
     otpStore.delete(cleanPhone);
     otpStore.delete(phone);
+    if (tenDigits) otpStore.delete(tenDigits);
 
     const user = db.get('user');
     const token = `${appConfig.auth.tokenPrefix}${Buffer.from(`${cleanPhone}_${Date.now()}`).toString('base64')}`;
