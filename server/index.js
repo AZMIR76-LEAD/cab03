@@ -1,6 +1,8 @@
 // FG DRIVO Enterprise Mobility Engine
 // Main Application Gateway & Real-time Server
 
+try { process.loadEnvFile?.(); } catch (e) {}
+
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
