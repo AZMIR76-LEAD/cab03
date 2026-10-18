@@ -94,7 +94,13 @@ export class FirebaseAuthService {
     }
 
     console.log(`[Firebase Auth] Requesting real SMS OTP for ${e164PhoneNumber}...`);
-    const confirmationResult = await signInWithPhoneNumber(auth, e164PhoneNumber, appVerifier);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Firebase verification timed out. Falling back to backend SMS.')), 8000)
+    );
+    const confirmationResult = await Promise.race([
+      signInWithPhoneNumber(auth, e164PhoneNumber, appVerifier),
+      timeoutPromise,
+    ]);
     return confirmationResult;
   }
 

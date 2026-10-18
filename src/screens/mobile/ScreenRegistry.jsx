@@ -695,8 +695,8 @@ export function Screen03Login({ onNavigate }) {
           style={{
             width: '100%',
             height: '48px',
-            backgroundColor: '#FFC820',
-            color: '#1E1B4B',
+            backgroundColor: isSubmitting ? '#E2E8F0' : '#FFC820',
+            color: isSubmitting ? '#64748B' : '#1E1B4B',
             fontWeight: 800,
             fontSize: '15px',
             borderRadius: '12px',
@@ -704,14 +704,16 @@ export function Screen03Login({ onNavigate }) {
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(245, 196, 0, 0.45)',
+            cursor: isSubmitting ? 'not-allowed' : 'pointer',
+            boxShadow: isSubmitting ? 'none' : '0 4px 14px rgba(245, 196, 0, 0.45)',
             border: 'none',
             marginBottom: '10px',
             transition: 'transform 0.15s ease',
           }}
         >
-          {authMode === 'login' ? (
+          {isSubmitting ? (
+            <span>Sending verification code...</span>
+          ) : authMode === 'login' ? (
             <>
               <LogIn size={18} strokeWidth={2.4} />
               <span>Log In</span>
@@ -722,7 +724,7 @@ export function Screen03Login({ onNavigate }) {
               <span>Sign Up & Continue</span>
             </>
           )}
-          <ArrowRight size={18} strokeWidth={2.4} />
+          {!isSubmitting && <ArrowRight size={18} strokeWidth={2.4} />}
         </button>
 
         {/* Individual Secondary Button: Switch or Direct Access */}
@@ -999,6 +1001,33 @@ export function Screen04OTP({ onNavigate }) {
             {errorMessage || 'Incorrect verification code. Please check and try again.'}
           </p>
         )}
+
+        {/* Quick Demo Code Auto-Fill Helper */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '18px' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setOtp(['5', '2', '9', '4', '8', '1']);
+              setHasError(false);
+            }}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '20px',
+              backgroundColor: '#EEF2FF',
+              border: '1.5px dashed #6366F1',
+              color: '#4338CA',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <ShieldCheck size={14} color="#4F46E5" />
+            <span>Tap to Auto-fill Test Code (529481)</span>
+          </button>
+        </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <span style={{ fontSize: '13px', color: '#6B5B7D' }}>
