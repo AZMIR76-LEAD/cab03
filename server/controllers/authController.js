@@ -9,10 +9,10 @@ const otpStore = new Map();
 
 export class AuthController {
   static async sendOtp(req, res) {
-    const { phone } = req.body;
+    const { phone, provider: requestedProvider, webhookUrl } = req.body;
     const cleanPhone = (phone || '').trim();
-    const provider = (process.env.SMS_GATEWAY_PROVIDER || 'mock').toLowerCase();
-    const isMock = provider === 'mock' || !process.env.SMS_API_KEY;
+    const provider = (requestedProvider || process.env.SMS_GATEWAY_PROVIDER || (process.env.N8N_WEBHOOK_URL ? 'n8n' : 'mock')).toLowerCase();
+    const isMock = provider === 'mock' || (!process.env.SMS_API_KEY && !process.env.N8N_WEBHOOK_URL && !webhookUrl);
 
     // Always generate a fresh, truly random 6-digit OTP code for every single phone number!
     const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -28,16 +28,23 @@ export class AuthController {
 
     const maskedPhone = cleanPhone.replace(/(\d{2})\d{4}(\d{4})/, '$1••••$2');
 
-    // Dispatch via SMS Gateway
-    const dispatchResult = await SMSService.sendOtp({ phone: cleanPhone, code });
+    // Dispatch via SMS Gateway / n8n Webhook
+    const dispatchResult = await SMSService.sendOtp({ phone: cleanPhone, code, provider, webhookUrl });
+
+    // If n8n or external gateway generated a specific OTP, sync it
+    const activeCode = dispatchResult.code || code;
+    if (activeCode !== code) {
+      otpStore.set(cleanPhone, { code: activeCode, expiresAt });
+      if (tenDigits) otpStore.set(tenDigits, { code: activeCode, expiresAt });
+    }
 
     return res.json({
       success: true,
       message: dispatchResult.error
-        ? `SMS Gateway: ${dispatchResult.error}`
-        : 'Verification OTP sent successfully via SMS.',
-      code: randomOtp,
-      demoCode: randomOtp,
+        ? `SMS/n8n Gateway: ${dispatchResult.error}`
+        : 'Verification OTP dispatched successfully.',
+      code: activeCode,
+      demoCode: activeCode,
       maskedPhone,
       expiresInSeconds: appConfig.auth.otpExpiryMinutes * 60,
       provider: dispatchResult.provider || provider,

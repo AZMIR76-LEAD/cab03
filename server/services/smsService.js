@@ -4,15 +4,57 @@
 export class SMSService {
   /**
    * Dispatch 6-digit OTP to mobile phone
-   * @param {{ phone: string, code: string }} params
+   * @param {{ phone: string, code: string, provider?: string, webhookUrl?: string }} params
    */
-  static async sendOtp({ phone, code }) {
-    const provider = (process.env.SMS_GATEWAY_PROVIDER || 'mock').toLowerCase();
+  static async sendOtp({ phone, code, provider: customProvider, webhookUrl: customWebhookUrl }) {
+    const provider = (customProvider || process.env.SMS_GATEWAY_PROVIDER || (process.env.N8N_WEBHOOK_URL || customWebhookUrl ? 'n8n' : 'mock')).toLowerCase();
     const apiKey = process.env.SMS_API_KEY || '';
 
     // Normalize phone number (strip whitespace and special chars)
     const rawDigits = phone.replace(/[^0-9]/g, '');
     const indian10Digits = rawDigits.slice(-10);
+
+    // 1. n8n WORKFLOW AUTOMATION WEBHOOK
+    if (provider === 'n8n' || process.env.N8N_WEBHOOK_URL || customWebhookUrl) {
+      const webhookUrl = customWebhookUrl || process.env.N8N_WEBHOOK_URL || apiKey;
+      if (!webhookUrl) {
+        console.warn(`\x1b[33m[n8n Gateway]\x1b[0m Missing N8N_WEBHOOK_URL in environment.`);
+        return { success: false, provider: 'n8n', error: 'N8N_WEBHOOK_URL is not set.' };
+      }
+
+      try {
+        console.log(`\x1b[36m[n8n Automation Gateway]\x1b[0m Dispatching to n8n webhook: ${webhookUrl}...`);
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(process.env.N8N_API_KEY ? { 'X-N8N-API-KEY': process.env.N8N_API_KEY } : {}),
+          },
+          body: JSON.stringify({
+            phone: phone,
+            raw10Digits: indian10Digits,
+            code: code,
+            action: 'SEND_OTP',
+            appName: 'FG DRIVO',
+            message: `Your FG DRIVO verification code is: ${code}. Valid for 5 minutes.`,
+            timestamp: new Date().toISOString(),
+          }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        console.log(`\x1b[32m[n8n Automation Gateway]\x1b[0m Workflow executed:`, data);
+
+        return {
+          success: true,
+          provider: 'n8n',
+          data,
+          code: data.code || data.otp || code,
+        };
+      } catch (err) {
+        console.error(`\x1b[31m[n8n Automation Gateway]\x1b[0m Webhook network error:`, err.message);
+        return { success: false, provider: 'n8n', error: err.message };
+      }
+    }
 
     // 1. MOCK / DEVELOPMENT MODE (Free, instantaneous, no external SMS charges)
     if (provider === 'mock' || !apiKey) {
@@ -101,7 +143,7 @@ export class SMSService {
     return {
       success: true,
       provider: 'mock',
-      message: 'Unknown provider, defaulted to mock.',
+      message: 'Unknown provider or mock mode active.',
       demoCode: code,
     };
   }
