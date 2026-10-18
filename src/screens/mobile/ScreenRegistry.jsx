@@ -34,8 +34,49 @@ export let GLOBAL_USER_GPS_COORDS = null;
 export let GLOBAL_DESTINATION_LOCATION = 'Palani Road, Dindigul';
 export let GLOBAL_PAYMENT_RETURN_SCREEN = 's13_fare_estimate';
 export let GLOBAL_USER_PHONE = '';
+export let GLOBAL_USER_NAME = '';
+export let GLOBAL_USER_EMAIL = '';
 export let GLOBAL_FIREBASE_CONFIRMATION = null;
 export let GLOBAL_LATEST_OTP = '';
+
+export function getStoredUser() {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('fg_user') : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && (parsed.name || parsed.phone)) return { ...CURRENT_USER, ...parsed };
+    }
+  } catch (e) {}
+  const phone = GLOBAL_USER_PHONE || '+91 ••••• •••••';
+  const name = GLOBAL_USER_NAME || 'Customer';
+  const greetingName = name.split(' ')[0] || 'Customer';
+  return {
+    ...CURRENT_USER,
+    name,
+    greetingName,
+    phone,
+    email: GLOBAL_USER_EMAIL || 'customer@fgdrivo.com',
+  };
+}
+
+export function saveStoredUser(partial) {
+  try {
+    const prev = getStoredUser();
+    const updated = { ...prev, ...partial };
+    if (updated.name) {
+      updated.greetingName = updated.name.split(' ')[0];
+      GLOBAL_USER_NAME = updated.name;
+    }
+    if (updated.phone) GLOBAL_USER_PHONE = updated.phone;
+    if (updated.email) GLOBAL_USER_EMAIL = updated.email;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('fg_user', JSON.stringify(updated));
+    }
+    return updated;
+  } catch (e) {
+    return partial;
+  }
+}
 
 // Shared Bottom Nav for Mobile (White Background + Indigo Pill Indicator)
 export function MobileBottomNav({ activeTab, onTabChange, onNavigate }) {
@@ -211,6 +252,13 @@ export function Screen03Login({ onNavigate }) {
     const cleanPhone = `${countryCode} ${rawNumber}`;
     GLOBAL_USER_PHONE = cleanPhone;
     GLOBAL_LATEST_OTP = '';
+
+    if (name && name.trim()) {
+      GLOBAL_USER_NAME = name.trim();
+    }
+    if (email && email.trim()) {
+      GLOBAL_USER_EMAIL = email.trim();
+    }
 
     setIsSubmitting(true);
     try {
@@ -872,16 +920,25 @@ export function Screen04OTP({ onNavigate }) {
 
     const proceedSuccess = (token, user) => {
       setIsVerifying(false);
+      const resolvedName = GLOBAL_USER_NAME || (user && user.name && user.name !== 'Ashfar Khan' ? user.name : '') || 'Customer';
+      const resolvedPhone = currentPhone || (user && user.phone) || '';
+      const resolvedEmail = GLOBAL_USER_EMAIL || (user && user.email && !user.email.includes('ashfar') ? user.email : '') || `${resolvedName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'customer'}@fgdrivo.com`;
+      saveStoredUser({
+        ...(user || {}),
+        name: resolvedName,
+        greetingName: resolvedName.split(' ')[0] || 'Customer',
+        phone: resolvedPhone,
+        email: resolvedEmail,
+      });
       try {
         if (token) localStorage.setItem('fg_auth_token', token);
-        if (user) localStorage.setItem('fg_user', JSON.stringify({ ...user, phone: currentPhone }));
       } catch (e) {}
       onNavigate('s05_location_permission');
     };
 
     // Instant master code bypass for reliable testing anytime
     if (code === '529481') {
-      proceedSuccess('fg_token_live_demo', { name: 'Customer', phone: currentPhone });
+      proceedSuccess('fg_token_live_demo', { name: GLOBAL_USER_NAME || 'Customer', phone: currentPhone });
       return;
     }
 
@@ -1450,7 +1507,7 @@ export function Screen07Home({ onNavigate }) {
                 lineHeight: 1.2,
               }}
             >
-              <span>Ashfar</span>
+              <span>{getStoredUser().greetingName || getStoredUser().name || 'Customer'}</span>
               <span>👋</span>
             </div>
             <div style={{ fontSize: '10.5px', color: '#64748B', fontWeight: 500, marginTop: '2px' }}>
@@ -4934,6 +4991,7 @@ export function Screen28Wallet({ onNavigate }) {
 
 // Screen 29 — Profile Hub
 export function Screen29Profile({ onNavigate }) {
+  const currentUser = getStoredUser();
   const accountMenu = [
     { title: 'Personal Information', icon: User, screen: 's30_edit_profile', desc: 'Name, phone, email & preferences' },
     { title: 'Payment Methods', icon: CreditCard, screen: 's26_payment_methods', desc: 'Cards, UPI & Net Banking' },
@@ -5064,12 +5122,12 @@ export function Screen29Profile({ onNavigate }) {
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>
-                {CURRENT_USER.name}
+                {currentUser.name}
               </span>
               <span style={{ fontSize: '16px' }}>👋</span>
             </div>
             <div style={{ fontSize: '12.5px', color: '#64748B', fontWeight: 500, marginTop: '1px' }}>
-              {CURRENT_USER.phone}
+              {currentUser.phone}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
               <div
@@ -5324,9 +5382,10 @@ export function Screen29Profile({ onNavigate }) {
 
 // Screen 30 — Edit Profile
 export function Screen30EditProfile({ onNavigate }) {
-  const [name, setName] = useState(CURRENT_USER.name);
-  const [phone, setPhone] = useState(CURRENT_USER.phone);
-  const [email, setEmail] = useState(CURRENT_USER.email);
+  const initialUser = getStoredUser();
+  const [name, setName] = useState(initialUser.name);
+  const [phone, setPhone] = useState(initialUser.phone);
+  const [email, setEmail] = useState(initialUser.email);
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', padding: '20px' }}>
@@ -5380,6 +5439,7 @@ export function Screen30EditProfile({ onNavigate }) {
 
       <button
         onClick={() => {
+          saveStoredUser({ name, phone, email });
           RideXAPI.updateProfile({ name, phone, email }).catch((err) => console.warn('Offline profile update:', err));
           onNavigate('s29_profile');
         }}

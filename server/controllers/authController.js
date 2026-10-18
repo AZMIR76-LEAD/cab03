@@ -77,7 +77,12 @@ export class AuthController {
     otpStore.delete(phone);
     if (tenDigits) otpStore.delete(tenDigits);
 
-    const user = db.get('user');
+    const dbUser = db.get('user') || {};
+    const user = {
+      ...dbUser,
+      phone: cleanPhone,
+      ...(req.body.name ? { name: req.body.name, greetingName: req.body.name.split(' ')[0] } : {}),
+    };
     const token = `${appConfig.auth.tokenPrefix}${Buffer.from(`${cleanPhone}_${Date.now()}`).toString('base64')}`;
 
     return res.json({
