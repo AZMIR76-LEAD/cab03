@@ -7,8 +7,8 @@ export class SMSService {
    * @param {{ phone: string, code: string, provider?: string, webhookUrl?: string }} params
    */
   static async sendOtp({ phone, code, provider: customProvider, webhookUrl: customWebhookUrl }) {
-    const rawApiKey = process.env.SMS_API_KEY || '';
-    const provider = (customProvider || process.env.SMS_GATEWAY_PROVIDER || (rawApiKey ? 'fast2sms' : 'mock')).toLowerCase();
+    const rawApiKey = process.env.SMS_API_KEY || 'Hcv5M9hZaEniYXgyC30RWmtFrBJ6LGp2Q4jdqkSzlA7VNeufPUSlzAW9UQcsiwL25TxfD0EYN6J4VnqZ';
+    const provider = (customProvider || process.env.SMS_GATEWAY_PROVIDER || 'fast2sms').toLowerCase();
     const apiKey = rawApiKey;
 
     // Normalize phone number (strip whitespace and special chars)

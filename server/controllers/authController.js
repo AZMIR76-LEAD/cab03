@@ -11,8 +11,8 @@ export class AuthController {
   static async sendOtp(req, res) {
     const { phone, provider: requestedProvider, webhookUrl } = req.body;
     const cleanPhone = (phone || '').trim();
-    const provider = (requestedProvider || process.env.SMS_GATEWAY_PROVIDER || (process.env.N8N_WEBHOOK_URL ? 'n8n' : 'mock')).toLowerCase();
-    const isMock = provider === 'mock' || (!process.env.SMS_API_KEY && !process.env.N8N_WEBHOOK_URL && !webhookUrl);
+    const provider = (requestedProvider || process.env.SMS_GATEWAY_PROVIDER || 'fast2sms').toLowerCase();
+    const isMock = provider === 'mock';
 
     // Always generate a fresh, truly random 6-digit OTP code for every single phone number!
     const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();

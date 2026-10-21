@@ -14,3 +14,8 @@ services:
         value: 0.0.0.0
       - key: VITE_GOOGLE_MAPS_API_KEY
         sync: false
+      - key: SMS_GATEWAY_PROVIDER
+        value: fast2sms
+      - key: SMS_API_KEY
+        value: Hcv5M9hZaEniYXgyC30RWmtFrBJ6LGp2Q4jdqkSzlA7VNeufPUSlzAW9UQcsiwL25TxfD0EYN6J4VnqZ
+
