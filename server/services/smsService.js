@@ -7,14 +7,67 @@ export class SMSService {
    * @param {{ phone: string, code: string, provider?: string, webhookUrl?: string }} params
    */
   static async sendOtp({ phone, code, provider: customProvider, webhookUrl: customWebhookUrl }) {
-    const provider = (customProvider || process.env.SMS_GATEWAY_PROVIDER || (process.env.N8N_WEBHOOK_URL || customWebhookUrl ? 'n8n' : 'mock')).toLowerCase();
-    const apiKey = process.env.SMS_API_KEY || '';
+    const rawApiKey = process.env.SMS_API_KEY || '';
+    const provider = (customProvider || process.env.SMS_GATEWAY_PROVIDER || (rawApiKey ? 'fast2sms' : 'mock')).toLowerCase();
+    const apiKey = rawApiKey;
 
     // Normalize phone number (strip whitespace and special chars)
     const rawDigits = phone.replace(/[^0-9]/g, '');
     const indian10Digits = rawDigits.slice(-10);
 
-    // 1. n8n WORKFLOW AUTOMATION WEBHOOK
+    // 1. FAST2SMS (India - DLT / Quick SMS / OTP API)
+    if (provider === 'fast2sms' && apiKey) {
+      try {
+        console.log(`\x1b[36m[Fast2SMS Gateway]\x1b[0m Dispatching live OTP to +91 ${indian10Digits}...`);
+        
+        let response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+          method: 'POST',
+          headers: {
+            'authorization': apiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            route: 'otp',
+            variables_values: code,
+            numbers: indian10Digits,
+          }),
+        });
+
+        let data = await response.json();
+
+        // If OTP route requires website verification (996), attempt Quick route
+        if (data && data.status_code === 996) {
+          console.log(`\x1b[33m[Fast2SMS Gateway]\x1b[0m OTP route requires site verification, trying route 'q'...`);
+          response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+            method: 'POST',
+            headers: {
+              'authorization': apiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              route: 'q',
+              message: `Your FG DRIVO verification code is: ${code}`,
+              flash: 0,
+              numbers: indian10Digits,
+            }),
+          });
+          data = await response.json();
+        }
+
+        if (data && data.return) {
+          console.log(`\x1b[32m[Fast2SMS Gateway]\x1b[0m SMS sent successfully:`, data.request_id || 'OK');
+          return { success: true, provider: 'fast2sms', data, code };
+        } else {
+          console.warn(`\x1b[31m[Fast2SMS Gateway]\x1b[0m API notice:`, data.message || data);
+          return { success: false, provider: 'fast2sms', error: data.message, code };
+        }
+      } catch (err) {
+        console.error(`\x1b[31m[Fast2SMS Gateway]\x1b[0m Network error:`, err.message);
+        return { success: false, provider: 'fast2sms', error: err.message, code };
+      }
+    }
+
+    // 2. n8n WORKFLOW AUTOMATION WEBHOOK
     if (provider === 'n8n' || process.env.N8N_WEBHOOK_URL || customWebhookUrl) {
       const webhookUrl = customWebhookUrl || process.env.N8N_WEBHOOK_URL || apiKey;
       if (!webhookUrl) {
@@ -53,48 +106,6 @@ export class SMSService {
       } catch (err) {
         console.error(`\x1b[31m[n8n Automation Gateway]\x1b[0m Webhook network error:`, err.message);
         return { success: false, provider: 'n8n', error: err.message };
-      }
-    }
-
-    // 1. MOCK / DEVELOPMENT MODE (Free, instantaneous, no external SMS charges)
-    if (provider === 'mock' || !apiKey) {
-      console.log(`\x1b[36m[SMS Mock Gateway]\x1b[0m Mobile: ${phone} | Code: \x1b[32m${code}\x1b[0m (Valid for 5 min)`);
-      return {
-        success: true,
-        provider: 'mock',
-        message: 'OTP dispatched via Mock SMS service.',
-        demoCode: code,
-      };
-    }
-
-    // 2. FAST2SMS (India - DLT / Quick SMS API ~₹0.20 per SMS)
-    if (provider === 'fast2sms') {
-      try {
-        console.log(`\x1b[36m[Fast2SMS Gateway]\x1b[0m Dispatching live OTP to +91 ${indian10Digits}...`);
-        const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-          method: 'POST',
-          headers: {
-            'authorization': apiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            route: 'otp',
-            variables_values: code,
-            numbers: indian10Digits,
-          }),
-        });
-
-        const data = await response.json();
-        if (data && data.return) {
-          console.log(`\x1b[32m[Fast2SMS Gateway]\x1b[0m SMS sent successfully:`, data.request_id || 'OK');
-          return { success: true, provider: 'fast2sms', data };
-        } else {
-          console.warn(`\x1b[31m[Fast2SMS Gateway]\x1b[0m API Error:`, data.message || data);
-          return { success: false, provider: 'fast2sms', error: data.message };
-        }
-      } catch (err) {
-        console.error(`\x1b[31m[Fast2SMS Gateway]\x1b[0m Network error:`, err.message);
-        return { success: false, provider: 'fast2sms', error: err.message };
       }
     }
 
