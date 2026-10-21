@@ -30,6 +30,7 @@ import safetyRoutes from './routes/safety.js';
 import userRoutes from './routes/user.js';
 import driversRoutes from './routes/drivers.js';
 import notificationsRoutes from './routes/notifications.js';
+import { db } from './db.js';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -118,6 +119,11 @@ app.get('/api/health', (req, res) => {
     version: '2.0.0',
     region: `${CITY_INFO.name}, ${CITY_INFO.state} (${CITY_INFO.rtoCode})`,
     environment: appConfig.env,
+    database: {
+      provider: db.isPostgresConnected ? 'PostgreSQL (Cloud Database)' : 'Local Atomic JSON Store',
+      connected: db.isPostgresConnected,
+      tables: ['users', 'drivers', 'rides', 'transactions'],
+    },
     socketConnectedClients: io ? io.engine.clientsCount : 0,
     timestamp: new Date().toISOString(),
     uptimeSeconds: Math.floor(process.uptime()),
