@@ -91,7 +91,7 @@ export const CURRENT_USER = {
   rating: 5.0,
   memberSince: "October 2026",
   totalRides: 0,
-  avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+  avatar: "",
 };
 
 export const MOCK_DRIVER = {

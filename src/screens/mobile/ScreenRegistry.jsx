@@ -79,6 +79,59 @@ export function saveStoredUser(partial) {
   }
 }
 
+// Production Dynamic Initials & Photo Avatar (Designed for 10,000+ real users)
+export function UserAvatar({ user, size = 48, border = 'none', style = {}, className = '' }) {
+  const name = (user && user.name) || 'Passenger';
+  const initial = name.trim().charAt(0).toUpperCase() || 'P';
+  const avatarUrl = user && user.avatar;
+  const hasValidPhoto = avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim().length > 0 && !avatarUrl.includes('unsplash.com');
+
+  if (hasValidPhoto) {
+    return (
+      <div
+        className={className}
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          borderRadius: '50%',
+          backgroundImage: `url(${avatarUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          border,
+          flexShrink: 0,
+          ...style,
+        }}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={className}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg, #5427A8 0%, #7C3AED 100%)',
+        color: '#FFFFFF',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: `${Math.round(size * 0.42)}px`,
+        fontWeight: 800,
+        letterSpacing: '-0.5px',
+        border,
+        boxShadow: '0 3px 10px rgba(84, 39, 168, 0.25)',
+        flexShrink: 0,
+        userSelect: 'none',
+        ...style,
+      }}
+    >
+      {initial}
+    </div>
+  );
+}
+
 // Shared Bottom Nav for Mobile (White Background + Indigo Pill Indicator)
 export function MobileBottomNav({ activeTab, onTabChange, onNavigate }) {
   const tabs = [
@@ -1616,20 +1669,9 @@ export function Screen07Home({ onNavigate }) {
         {/* Left: User Avatar & Greeting */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 2 }}>
           <div style={{ position: 'relative' }}>
-            <div
-              onClick={() => onNavigate('s29_profile')}
-              style={{
-                width: '46px',
-                height: '46px',
-                borderRadius: '50%',
-                backgroundImage: `url(${CURRENT_USER.avatar})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                border: '2px solid #3B82F6',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.2)',
-              }}
-            />
+            <div onClick={() => onNavigate('s29_profile')} style={{ cursor: 'pointer' }}>
+              <UserAvatar user={getStoredUser()} size={46} border="2px solid #3B82F6" />
+            </div>
             {/* Active green status indicator */}
             <div
               style={{
@@ -5302,18 +5344,7 @@ export function Screen29Profile({ onNavigate }) {
           }}
         >
           <div style={{ position: 'relative' }}>
-            <div
-              style={{
-                width: '58px',
-                height: '58px',
-                borderRadius: '50%',
-                backgroundImage: `url(${CURRENT_USER.avatar})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                border: '3px solid #3B82F6',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
-              }}
-            />
+            <UserAvatar user={currentUser} size={58} border="3px solid #3B82F6" />
             <div
               style={{
                 position: 'absolute',
@@ -5592,12 +5623,58 @@ export function Screen29Profile({ onNavigate }) {
 // Screen 30 — Edit Profile
 export function Screen30EditProfile({ onNavigate }) {
   const initialUser = getStoredUser();
-  const [name, setName] = useState(initialUser.name);
-  const [phone, setPhone] = useState(initialUser.phone);
-  const [email, setEmail] = useState(initialUser.email);
+  const [name, setName] = useState(initialUser.name || '');
+  const [phone] = useState(initialUser.phone || '');
+  const [email, setEmail] = useState(initialUser.email || '');
+  const [avatar, setAvatar] = useState(initialUser.avatar || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 4 * 1024 * 1024) {
+        alert('Please choose an image under 4MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const base64 = ev.target?.result;
+        if (base64) {
+          setAvatar(base64);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveSuccess(false);
+    saveStoredUser({ name, phone, email, avatar });
+    try {
+      await RideXAPI.updateProfile({ name, phone, email, avatar });
+    } catch (err) {
+      console.warn('Profile sync fallback:', err.message);
+    }
+    setIsSaving(false);
+    setSaveSuccess(true);
+    setTimeout(() => {
+      onNavigate('s29_profile');
+    }, 500);
+  };
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', padding: '20px' }}>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handlePhotoUpload}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
+
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <button onClick={() => onNavigate('s29_profile')} style={{ color: '#24153F' }}>
           <ArrowLeft size={20} />
@@ -5608,53 +5685,101 @@ export function Screen30EditProfile({ onNavigate }) {
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
           <div style={{ position: 'relative' }}>
-            <div style={{ width: '74px', height: '74px', borderRadius: '50%', backgroundImage: `url(${CURRENT_USER.avatar})`, backgroundSize: 'cover', border: '2.5px solid #5427A8' }} />
-            <button style={{ position: 'absolute', bottom: 0, right: 0, width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#F5C400', color: '#24153F', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #FFFFFF' }}>
-              <Edit3 size={13} />
+            <UserAvatar user={{ name, avatar }} size={76} border="3px solid #5427A8" />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              title="Change Profile Photo"
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                backgroundColor: '#F5C400',
+                color: '#24153F',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '2px solid #FFFFFF',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                cursor: 'pointer',
+              }}
+            >
+              <Edit3 size={14} />
             </button>
           </div>
+          <span style={{ fontSize: '11px', color: '#6B5B7D', marginTop: '8px', fontWeight: 600 }}>
+            Tap pencil to change photo
+          </span>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ fontSize: '11px', color: '#5427A8', fontWeight: 700, display: 'block', marginBottom: '4px' }}>FULL NAME</label>
+            <label style={{ fontSize: '11px', color: '#5427A8', fontWeight: 700, display: 'block', marginBottom: '6px' }}>FULL NAME</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder="Your Full Name"
               style={{ width: '100%', height: '48px', backgroundColor: '#F8F6FD', borderRadius: '12px', border: '1.5px solid #E5DFF0', padding: '0 14px', color: '#24153F', fontWeight: 600, fontSize: '14px', outline: 'none' }}
             />
           </div>
+
           <div>
-            <label style={{ fontSize: '11px', color: '#5427A8', fontWeight: 700, display: 'block', marginBottom: '4px' }}>PHONE NUMBER</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontSize: '11px', color: '#5427A8', fontWeight: 700 }}>PHONE NUMBER</label>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#16A34A', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                <CheckCircle2 size={13} /> Verified
+              </span>
+            </div>
             <input
               type="text"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              style={{ width: '100%', height: '48px', backgroundColor: '#F8F6FD', borderRadius: '12px', border: '1.5px solid #E5DFF0', padding: '0 14px', color: '#24153F', fontWeight: 600, fontSize: '14px', outline: 'none' }}
+              disabled
+              style={{ width: '100%', height: '48px', backgroundColor: '#F1EDF9', borderRadius: '12px', border: '1.5px solid #DDD6FE', padding: '0 14px', color: '#4B5563', fontWeight: 600, fontSize: '14px', outline: 'none', cursor: 'not-allowed' }}
             />
           </div>
+
           <div>
-            <label style={{ fontSize: '11px', color: '#5427A8', fontWeight: 700, display: 'block', marginBottom: '4px' }}>EMAIL ADDRESS</label>
+            <label style={{ fontSize: '11px', color: '#5427A8', fontWeight: 700, display: 'block', marginBottom: '6px' }}>EMAIL ADDRESS</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@fgdrivo.com"
               style={{ width: '100%', height: '48px', backgroundColor: '#F8F6FD', borderRadius: '12px', border: '1.5px solid #E5DFF0', padding: '0 14px', color: '#24153F', fontWeight: 600, fontSize: '14px', outline: 'none' }}
             />
           </div>
         </div>
+
+        {saveSuccess && (
+          <div style={{ marginTop: '16px', padding: '10px 14px', borderRadius: '12px', backgroundColor: '#DCFCE7', color: '#166534', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CheckCircle2 size={16} /> Profile updated successfully!
+          </div>
+        )}
       </div>
 
       <button
-        onClick={() => {
-          saveStoredUser({ name, phone, email });
-          RideXAPI.updateProfile({ name, phone, email }).catch((err) => console.warn('Offline profile update:', err));
-          onNavigate('s29_profile');
+        type="button"
+        disabled={isSaving}
+        onClick={handleSave}
+        style={{
+          width: '100%',
+          height: '52px',
+          backgroundColor: '#F5C400',
+          color: '#24153F',
+          fontWeight: 800,
+          fontSize: '15px',
+          borderRadius: '14px',
+          boxShadow: '0 4px 16px rgba(245, 196, 0, 0.4)',
+          border: 'none',
+          cursor: isSaving ? 'not-allowed' : 'pointer',
+          opacity: isSaving ? 0.7 : 1,
         }}
-        style={{ width: '100%', height: '52px', backgroundColor: '#F5C400', color: '#24153F', fontWeight: 800, fontSize: '15px', borderRadius: '14px', boxShadow: '0 4px 16px rgba(245, 196, 0, 0.4)' }}
       >
-        Save Changes
+        {isSaving ? 'Saving...' : saveSuccess ? '✓ Saved!' : 'Save Changes'}
       </button>
     </div>
   );

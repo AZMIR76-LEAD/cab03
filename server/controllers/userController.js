@@ -8,7 +8,7 @@ export class UserController {
   }
 
   static async updateProfile(req, res) {
-    const { name, phone, email } = req.body;
+    const { name, phone, email, avatar } = req.body;
     const user = (await db.getUserFromReq(req)) || db.get('user');
 
     if (name) {
@@ -21,12 +21,15 @@ export class UserController {
     if (email) {
       user.email = email.trim();
     }
+    if (avatar !== undefined) {
+      user.avatar = avatar;
+    }
 
     if (db.isPostgresConnected && db.pgPool && user.id) {
       try {
         await db.pgPool.query(
-          'UPDATE users SET name = $1, greeting_name = $2, phone = $3, email = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5',
-          [user.name, user.greetingName, user.phone, user.email, user.id]
+          'UPDATE users SET name = $1, greeting_name = $2, phone = $3, email = $4, avatar = COALESCE($5, avatar), updated_at = CURRENT_TIMESTAMP WHERE id = $6',
+          [user.name, user.greetingName, user.phone, user.email, user.avatar || null, user.id]
         );
       } catch (e) {
         console.warn('Failed to update user in Supabase:', e.message);
