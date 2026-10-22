@@ -275,10 +275,10 @@ export function Screen03Login({ onNavigate }) {
 
     setIsSubmitting(true);
     try {
-      // 1. Strict database check:
-      // - In Sign Up: Same mobile number cannot be registered twice.
-      // - In Log In: Must be registered already, otherwise reject.
-      const checkRes = await RideXAPI.checkPhone(cleanPhone).catch(() => null);
+      // 1. Strict database verification:
+      // - In Sign Up: Same mobile number cannot be registered twice in Supabase.
+      // - In Log In: Number MUST be registered already in Supabase, otherwise reject immediately.
+      const checkRes = await RideXAPI.checkPhone(cleanPhone);
       if (checkRes) {
         if (authMode === 'signup' && checkRes.exists) {
           setIsSubmitting(false);
