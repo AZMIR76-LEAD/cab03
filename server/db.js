@@ -13,16 +13,16 @@ const DB_FILE = path.join(DATA_DIR, 'database.json');
 // Pristine Seed Dataset customized for Dindigul, Tamil Nadu (TN 57)
 export const initialSeedData = {
   user: {
-    id: "USR-1001",
-    name: "Ashfar Khan",
-    greetingName: "Ashfar",
-    phone: "+91 98765 43210",
-    email: "ashfar.khan@fgdrivo.com",
-    rating: 4.95,
-    memberSince: "March 2023",
-    totalRides: 142,
+    id: "USR-0001",
+    name: "Passenger",
+    greetingName: "Passenger",
+    phone: "",
+    email: "passenger@fgdrivo.com",
+    rating: 5.0,
+    memberSince: "October 2026",
+    totalRides: 0,
     avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-    goldTier: true,
+    goldTier: false,
   },
   activeRide: null,
   drivers: [
@@ -397,9 +397,17 @@ class DatabaseManager {
         CREATE INDEX IF NOT EXISTS idx_drivers_online ON drivers(is_online);
       `);
 
+      // 2. Automatically purge demo mock user from Supabase
+      await client.query(`
+        DELETE FROM users 
+        WHERE id = 'USR-1001' 
+           OR phone = '+91 98765 43210' 
+           OR name = 'Ashfar Khan';
+      `);
+
       client.release();
 
-      // 2. Synchronize PostgreSQL state with in-memory cache
+      // 3. Synchronize PostgreSQL state with in-memory cache
       await this.syncFromPostgres();
     } catch (err) {
       this.isPostgresConnected = false;
@@ -408,31 +416,113 @@ class DatabaseManager {
     }
   }
 
+  async findOrCreateUser({ phone, name, email }) {
+    if (!phone) return this.data.user;
+    const cleanPhone = phone.trim();
+    const cleanName = (name || '').trim();
+    const cleanEmail = (email || '').trim();
+
+    if (this.pgPool && this.isPostgresConnected) {
+      try {
+        const res = await this.pgPool.query('SELECT * FROM users WHERE phone = $1', [cleanPhone]);
+        if (res.rows.length > 0) {
+          const row = res.rows[0];
+          let updatedName = row.name;
+          let updatedGreeting = row.greeting_name;
+          if (cleanName && (!row.name || row.name === 'Passenger' || row.name === 'Ashfar Khan')) {
+            updatedName = cleanName;
+            updatedGreeting = cleanName.split(' ')[0];
+            await this.pgPool.query(
+              'UPDATE users SET name = $1, greeting_name = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+              [updatedName, updatedGreeting, row.id]
+            );
+          }
+          const userObj = {
+            id: row.id,
+            phone: row.phone,
+            name: updatedName || 'Passenger',
+            greetingName: updatedGreeting || 'Passenger',
+            email: row.email || (cleanEmail || `${(updatedName || 'user').toLowerCase().replace(/[^a-z0-9]/g, '')}@fgdrivo.com`),
+            rating: parseFloat(row.rating) || 5.0,
+            walletBalance: parseFloat(row.wallet_balance) || 250,
+            totalRides: row.total_rides || 0,
+            avatar: row.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+          };
+          this.set('user', userObj);
+          return userObj;
+        } else {
+          // Create real user in Supabase
+          const newId = `USR-${Math.floor(1000 + Math.random() * 9000)}`;
+          const userName = cleanName || 'Passenger';
+          const greetingName = userName.split(' ')[0];
+          const userEmail = cleanEmail || `${userName.toLowerCase().replace(/[^a-z0-9]/g, '')}@fgdrivo.com`;
+
+          await this.pgPool.query(
+            `INSERT INTO users (id, phone, name, greeting_name, email, rating, wallet_balance, total_rides, avatar)
+             VALUES ($1, $2, $3, $4, $5, 5.0, 250.00, 0, $6)`,
+            [newId, cleanPhone, userName, greetingName, userEmail, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80']
+          );
+
+          const newUser = {
+            id: newId,
+            phone: cleanPhone,
+            name: userName,
+            greetingName,
+            email: userEmail,
+            rating: 5.0,
+            walletBalance: 250,
+            totalRides: 0,
+            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+          };
+          this.set('user', newUser);
+          return newUser;
+        }
+      } catch (err) {
+        console.warn('[PostgreSQL Engine] findOrCreateUser error:', err.message);
+      }
+    }
+
+    // Local in-memory / JSON fallback
+    const newId = `USR-${Math.floor(1000 + Math.random() * 9000)}`;
+    const userName = cleanName || 'Passenger';
+    const fallbackUser = {
+      id: newId,
+      phone: cleanPhone,
+      name: userName,
+      greetingName: userName.split(' ')[0],
+      email: cleanEmail || `${userName.toLowerCase().replace(/[^a-z0-9]/g, '')}@fgdrivo.com`,
+      rating: 5.0,
+      walletBalance: 250,
+      totalRides: 0,
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+    };
+    this.set('user', fallbackUser);
+    return fallbackUser;
+  }
+
   async syncFromPostgres() {
     if (!this.pgPool || !this.isPostgresConnected) return;
     try {
-      // Check if users exist in Postgres; if empty, auto-seed from local data
-      const userRes = await this.pgPool.query('SELECT * FROM users LIMIT 1');
-      if (userRes.rows.length === 0) {
-        console.log('\x1b[36m[PostgreSQL Engine]\x1b[0m Cloud database is fresh. Auto-migrating initial local data...');
-        await this.seedPostgresFromLocal();
-        return;
-      }
+      // Load real user (excluding demo mock user)
+      const userRes = await this.pgPool.query(
+        `SELECT * FROM users 
+         WHERE phone != '+91 98765 43210' 
+           AND name != 'Ashfar Khan' 
+         ORDER BY updated_at DESC LIMIT 1`
+      );
 
-      // Load user
-      const userRow = userRes.rows[0];
-      if (userRow) {
+      if (userRes.rows.length > 0) {
+        const userRow = userRes.rows[0];
         this.data.user = {
-          ...this.data.user,
           id: userRow.id,
           phone: userRow.phone,
-          name: userRow.name || this.data.user.name,
-          greetingName: userRow.greeting_name || this.data.user.greetingName,
-          email: userRow.email || this.data.user.email,
-          rating: parseFloat(userRow.rating) || 4.95,
+          name: userRow.name || 'Passenger',
+          greetingName: userRow.greeting_name || userRow.name?.split(' ')[0] || 'Passenger',
+          email: userRow.email || 'passenger@fgdrivo.com',
+          rating: parseFloat(userRow.rating) || 5.0,
           walletBalance: parseFloat(userRow.wallet_balance) || 250,
           totalRides: userRow.total_rides || 0,
-          avatar: userRow.avatar || this.data.user.avatar,
+          avatar: userRow.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
         };
         if (this.data.wallet) {
           this.data.wallet.balance = parseFloat(userRow.wallet_balance) || this.data.wallet.balance;

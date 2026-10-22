@@ -46,9 +46,9 @@ export const RideXAPI = {
     body: JSON.stringify({ phone }),
   }),
 
-  verifyOtp: (phone, otp) => request('/auth/verify-otp', {
+  verifyOtp: (phone, otp, name = '', email = '') => request('/auth/verify-otp', {
     method: 'POST',
-    body: JSON.stringify({ phone, otp }),
+    body: JSON.stringify({ phone, otp, name, email }),
   }),
 
   // User Profile

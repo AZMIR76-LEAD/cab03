@@ -21,6 +21,7 @@
     "@capacitor/geolocation": "^8.2.3",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.4",
+    "@supabase/supabase-js": "^2.118.0",
     "@vis.gl/react-google-maps": "^1.10.1",
     "clsx": "^2.1.1",
     "cors": "^2.8.6",

@@ -8,11 +8,23 @@ export default function DriverChatDrawer({
   onOpenCall,
   driver = MOCK_DRIVER,
 }) {
+  const passengerName = (() => {
+    try {
+      const stored = localStorage.getItem('fgdrivo_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        if (u.greetingName && u.greetingName !== 'Ashfar') return u.greetingName;
+        if (u.name && u.name !== 'Ashfar Khan') return u.name.split(' ')[0];
+      }
+    } catch (e) {}
+    return 'there';
+  })();
+
   const [messages, setMessages] = useState([
     {
       id: 1,
       sender: 'driver',
-      text: `Hello Ashfar! I have accepted your ride and am on my way in my ${driver.vehicle?.model || 'White Swift Dzire'}.`,
+      text: `Hello ${passengerName}! I have accepted your ride and am on my way in my ${driver.vehicle?.model || 'White Swift Dzire'}.`,
       time: 'Just now',
     },
   ]);

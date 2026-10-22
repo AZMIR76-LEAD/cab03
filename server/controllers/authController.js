@@ -53,8 +53,8 @@ export class AuthController {
     });
   }
 
-  static verifyOtp(req, res) {
-    const { phone, otp } = req.body;
+  static async verifyOtp(req, res) {
+    const { phone, otp, name, email } = req.body;
     const cleanPhone = (phone || '').trim();
     const cleanOtp = (otp || '').trim();
     const rawDigits = cleanPhone.replace(/[^0-9]/g, '');
@@ -77,12 +77,13 @@ export class AuthController {
     otpStore.delete(phone);
     if (tenDigits) otpStore.delete(tenDigits);
 
-    const dbUser = db.get('user') || {};
-    const user = {
-      ...dbUser,
+    // Find or register real user in Supabase cloud database
+    const user = await db.findOrCreateUser({
       phone: cleanPhone,
-      ...(req.body.name ? { name: req.body.name, greetingName: req.body.name.split(' ')[0] } : {}),
-    };
+      name: name || req.body.name,
+      email: email || req.body.email,
+    });
+
     const token = `${appConfig.auth.tokenPrefix}${Buffer.from(`${cleanPhone}_${Date.now()}`).toString('base64')}`;
 
     return res.json({

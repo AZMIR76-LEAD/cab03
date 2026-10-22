@@ -949,7 +949,7 @@ export function Screen04OTP({ onNavigate }) {
         })
         .catch((fbErr) => {
           console.warn('[Firebase Auth] verifyCode failed, checking backend fallback:', fbErr.message);
-          RideXAPI.verifyOtp(currentPhone, code)
+          RideXAPI.verifyOtp(currentPhone, code, GLOBAL_USER_NAME, GLOBAL_USER_EMAIL)
             .then((res) => proceedSuccess(res.token, res.user))
             .catch((err) => {
               setIsVerifying(false);
@@ -958,7 +958,7 @@ export function Screen04OTP({ onNavigate }) {
             });
         });
     } else {
-      RideXAPI.verifyOtp(currentPhone, code)
+      RideXAPI.verifyOtp(currentPhone, code, GLOBAL_USER_NAME, GLOBAL_USER_EMAIL)
         .then((res) => proceedSuccess(res.token, res.user))
         .catch((err) => {
           setIsVerifying(false);
@@ -4825,7 +4825,7 @@ export function Screen27AddCard({ onNavigate }) {
   const [cardNumber, setCardNumber] = useState('4242 •••• •••• 4289');
   const [expiry, setExpiry] = useState('08/29');
   const [cvv, setCvv] = useState('•••');
-  const [name, setName] = useState('ASHFAR KHAN');
+  const [name, setName] = useState(getStoredUser()?.name?.toUpperCase() || 'PASSENGER NAME');
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', padding: '20px' }}>

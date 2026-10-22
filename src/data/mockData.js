@@ -84,13 +84,13 @@ export const VEHICLE_CATEGORIES = [
 ];
 
 export const CURRENT_USER = {
-  name: "Ashfar Khan",
-  greetingName: "Ashfar",
-  phone: "+91 98765 43210",
-  email: "ashfar.khan@ridex.com",
-  rating: 4.95,
-  memberSince: "March 2023",
-  totalRides: 142,
+  name: "Passenger",
+  greetingName: "Passenger",
+  phone: "",
+  email: "passenger@fgdrivo.com",
+  rating: 5.0,
+  memberSince: "October 2026",
+  totalRides: 0,
   avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
 };
 
