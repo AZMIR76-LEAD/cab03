@@ -42,24 +42,72 @@ import {
   Screen35Settings,
 } from './screens/mobile/ScreenRegistry';
 
+function getInitialScreen() {
+  try {
+    if (typeof window !== 'undefined') {
+      // 1. Check URL hash (e.g. #s28_wallet, #s07_home, #s23_ride_history)
+      const hash = window.location.hash.replace('#', '').trim();
+      if (hash && ALL_MOBILE_SCREENS.some((s) => s.id === hash)) {
+        return hash;
+      }
+
+      const token = localStorage.getItem('fg_auth_token');
+      const user = localStorage.getItem('fg_user');
+      const savedScreen = localStorage.getItem('fg_active_screen');
+
+      // 2. If logged in, stay on saved screen or go to home (never splash/onboarding)
+      if (token || user) {
+        const authScreens = ['s01_splash', 's02_onboarding', 's03_login', 's04_otp'];
+        if (savedScreen && !authScreens.includes(savedScreen) && ALL_MOBILE_SCREENS.some((s) => s.id === savedScreen)) {
+          return savedScreen;
+        }
+        return 's07_home';
+      }
+
+      // 3. If not logged in, but was on onboarding or login
+      if (savedScreen && ['s02_onboarding', 's03_login', 's04_otp'].includes(savedScreen)) {
+        return savedScreen;
+      }
+    }
+  } catch (e) {}
+  return 's01_splash';
+}
+
 export default function App() {
-  // Mobile Navigation State — Launches directly with FG DRIVO Splash
-  const [currentMobileScreen, setCurrentMobileScreen] = useState('s01_splash');
+  const initialScreen = getInitialScreen();
+  const [currentMobileScreen, setCurrentMobileScreen] = useState(initialScreen);
   const [selectedVehicle, setSelectedVehicle] = useState('sedan');
-  const [historyStack, setHistoryStack] = useState(['s01_splash']);
-  const historyStackRef = useRef(['s01_splash']);
+  const [historyStack, setHistoryStack] = useState([initialScreen]);
+  const historyStackRef = useRef([initialScreen]);
 
   historyStackRef.current = historyStack;
+
+  // Sync active screen to localStorage and URL hash
+  useEffect(() => {
+    if (typeof window !== 'undefined' && currentMobileScreen) {
+      try {
+        localStorage.setItem('fg_active_screen', currentMobileScreen);
+        if (window.location.hash !== `#${currentMobileScreen}`) {
+          window.history.replaceState({ screen: currentMobileScreen }, '', `#${currentMobileScreen}`);
+        }
+      } catch (e) {}
+    }
+  }, [currentMobileScreen]);
 
   // Screen Navigation with History Support
   const handleNavigate = useCallback((screenId) => {
     setCurrentMobileScreen(screenId);
     setHistoryStack((prev) => [...prev, screenId]);
 
-    // Push browser history state for back button sync
-    if (typeof window !== 'undefined' && window.history) {
-      window.history.pushState({ screen: screenId }, '', '');
-    }
+    // Push browser history state for back button sync and refresh preservation
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('fg_active_screen', screenId);
+      }
+      if (typeof window !== 'undefined' && window.history) {
+        window.history.pushState({ screen: screenId }, '', `#${screenId}`);
+      }
+    } catch (e) {}
   }, []);
 
   const handleBack = useCallback(() => {
@@ -69,9 +117,25 @@ export default function App() {
       const prevScreen = nextStack[nextStack.length - 1];
       setHistoryStack(nextStack);
       setCurrentMobileScreen(prevScreen);
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('fg_active_screen', prevScreen);
+        }
+        if (typeof window !== 'undefined' && window.history) {
+          window.history.replaceState({ screen: prevScreen }, '', `#${prevScreen}`);
+        }
+      } catch (e) {}
     } else if (currentMobileScreen !== 's07_home' && currentMobileScreen !== 's01_splash') {
       setCurrentMobileScreen('s07_home');
       setHistoryStack(['s07_home']);
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('fg_active_screen', 's07_home');
+        }
+        if (typeof window !== 'undefined' && window.history) {
+          window.history.replaceState({ screen: 's07_home' }, '', '#s07_home');
+        }
+      } catch (e) {}
     }
   }, [currentMobileScreen]);
 
@@ -97,8 +161,12 @@ export default function App() {
 
     // 2. Hook Browser Popstate for Web / PWA back navigation
     const handlePopState = (e) => {
-      if (e.state && e.state.screen) {
-        setCurrentMobileScreen(e.state.screen);
+      const targetScreen = e.state?.screen || (window.location.hash ? window.location.hash.replace('#', '') : null);
+      if (targetScreen && ALL_MOBILE_SCREENS.some((s) => s.id === targetScreen)) {
+        setCurrentMobileScreen(targetScreen);
+        try {
+          localStorage.setItem('fg_active_screen', targetScreen);
+        } catch (err) {}
       } else {
         handleBack();
       }

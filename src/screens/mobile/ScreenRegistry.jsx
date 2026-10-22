@@ -215,7 +215,10 @@ export function Screen01Splash({ onNavigate }) {
       }}
     >
       <FGDrivoIntroSplash
-        onFinish={() => onNavigate('s02_onboarding')}
+        onFinish={() => {
+          const hasAuth = typeof localStorage !== 'undefined' && (localStorage.getItem('fg_auth_token') || localStorage.getItem('fg_user'));
+          onNavigate(hasAuth ? 's07_home' : 's02_onboarding');
+        }}
         autoTransition={true}
         durationMs={3200}
       />
@@ -5897,8 +5900,18 @@ export function Screen35Settings({ onNavigate }) {
         </div>
 
         <button
-          onClick={() => onNavigate('s03_login')}
-          style={{ height: '48px', backgroundColor: '#FFF0F0', color: '#EF4444', borderRadius: '12px', fontWeight: 800, fontSize: '14px', border: '1px solid #FCA5A5', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+          onClick={() => {
+            try {
+              localStorage.removeItem('fg_auth_token');
+              localStorage.removeItem('fg_user');
+              localStorage.removeItem('fg_active_screen');
+              if (typeof window !== 'undefined' && window.location) {
+                window.location.hash = '';
+              }
+            } catch (e) {}
+            onNavigate('s03_login');
+          }}
+          style={{ height: '48px', backgroundColor: '#FFF0F0', color: '#EF4444', borderRadius: '12px', fontWeight: 800, fontSize: '14px', border: '1px solid #FCA5A5', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer' }}
         >
           <LogOut size={16} /> Sign Out of FG DRIVO
         </button>
