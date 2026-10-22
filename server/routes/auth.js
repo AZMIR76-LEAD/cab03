@@ -5,6 +5,7 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = Router();
 
+router.post('/check-phone', asyncHandler(AuthController.checkPhone));
 router.post('/send-otp', validateSendOtp, asyncHandler(AuthController.sendOtp));
 router.post('/verify-otp', validateVerifyOtp, asyncHandler(AuthController.verifyOtp));
 

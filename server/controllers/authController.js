@@ -8,11 +8,37 @@ import { SMSService } from '../services/smsService.js';
 const otpStore = new Map();
 
 export class AuthController {
-  static async sendOtp(req, res) {
-    const { phone, provider: requestedProvider, webhookUrl } = req.body;
+  static async checkPhone(req, res) {
+    const { phone } = req.body;
     const cleanPhone = (phone || '').trim();
+    if (!cleanPhone || cleanPhone.replace(/[^0-9]/g, '').length < 8) {
+      throw new ApiError('A valid mobile phone number is required.', 400);
+    }
+    const user = await db.findUserByPhone(cleanPhone);
+    return res.json({
+      success: true,
+      exists: !!user,
+      user: user ? { id: user.id, name: user.name, phone: user.phone } : null,
+      message: user ? 'Mobile number is registered.' : 'Mobile number is not registered.',
+    });
+  }
+
+  static async sendOtp(req, res) {
+    const { phone, provider: requestedProvider, webhookUrl, mode } = req.body;
+    const cleanPhone = (phone || '').trim();
+    const authMode = (mode || 'login').toLowerCase();
     const provider = (requestedProvider || process.env.SMS_GATEWAY_PROVIDER || 'fast2sms').toLowerCase();
-    const isMock = provider === 'mock';
+
+    // Check database to separate Login vs Sign Up
+    const existingUser = await db.findUserByPhone(cleanPhone);
+
+    if (authMode === 'signup' && existingUser) {
+      throw new ApiError('This mobile number is already registered! Please switch to Log In.', 409);
+    }
+
+    if (authMode === 'login' && !existingUser) {
+      throw new ApiError('No account found with this mobile number! Please Sign Up first.', 404);
+    }
 
     // Always generate a fresh, truly random 6-digit OTP code for every single phone number!
     const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -54,9 +80,10 @@ export class AuthController {
   }
 
   static async verifyOtp(req, res) {
-    const { phone, otp, name, email } = req.body;
+    const { phone, otp, name, email, mode } = req.body;
     const cleanPhone = (phone || '').trim();
     const cleanOtp = (otp || '').trim();
+    const authMode = (mode || 'login').toLowerCase();
     const rawDigits = cleanPhone.replace(/[^0-9]/g, '');
     const tenDigits = rawDigits.slice(-10);
 
@@ -77,12 +104,68 @@ export class AuthController {
     otpStore.delete(phone);
     if (tenDigits) otpStore.delete(tenDigits);
 
-    // Find or register real user in Supabase cloud database
-    const user = await db.findOrCreateUser({
-      phone: cleanPhone,
-      name: name || req.body.name,
-      email: email || req.body.email,
-    });
+    // Check user existence
+    const existingUser = await db.findUserByPhone(cleanPhone);
+    let user;
+
+    if (authMode === 'login') {
+      if (!existingUser) {
+        throw new ApiError('No account found for this mobile number. Please Sign Up first.', 404);
+      }
+      user = existingUser;
+      db.set('user', existingUser);
+      if (db.pgPool && db.isPostgresConnected) {
+        try {
+          const userRidesRes = await db.pgPool.query('SELECT * FROM rides WHERE user_id = $1 ORDER BY created_at DESC', [existingUser.id]);
+          if (userRidesRes && userRidesRes.rows) {
+            db.set('rides', userRidesRes.rows.map(row => ({
+              id: row.id,
+              date: new Date(row.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+              status: row.status,
+              category: row.category || 'FG DRIVO Sedan',
+              pickup: row.pickup_name,
+              pickupCoords: row.pickup_coords,
+              destination: row.drop_name,
+              destinationCoords: row.drop_coords,
+              fare: parseFloat(row.fare),
+              distance: row.distance || '0 km',
+              duration: row.duration || '0 mins',
+              driver: row.driver_name,
+              vehicle: row.vehicle_info,
+              ratingGiven: row.rating_given,
+              paymentMethod: row.payment_method,
+            })));
+          }
+          const userTxRes = await db.pgPool.query('SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC', [existingUser.id]);
+          if (db.data.wallet) {
+            db.data.wallet.balance = parseFloat(existingUser.walletBalance || 0.0);
+            if (userTxRes && userTxRes.rows) {
+              db.data.wallet.transactions = userTxRes.rows.map(row => ({
+                id: row.id,
+                title: row.title || row.description || 'Transaction',
+                date: new Date(row.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+                amount: parseFloat(row.amount),
+                type: row.type,
+                status: row.status,
+                gatewayRef: row.gateway_ref,
+              }));
+            }
+          }
+        } catch (e) {
+          console.warn('[PostgreSQL Engine] User state sync error:', e.message);
+        }
+      }
+    } else {
+      // authMode === 'signup'
+      if (existingUser) {
+        throw new ApiError('This mobile number is already registered! Please switch to Log In.', 409);
+      }
+      user = await db.createUser({
+        phone: cleanPhone,
+        name: name || req.body.name,
+        email: email || req.body.email,
+      });
+    }
 
     const token = `${appConfig.auth.tokenPrefix}${Buffer.from(`${cleanPhone}_${Date.now()}`).toString('base64')}`;
 

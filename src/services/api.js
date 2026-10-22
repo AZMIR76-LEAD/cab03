@@ -45,14 +45,19 @@ export const RideXAPI = {
   checkHealth: () => request('/health'),
 
   // Auth
-  sendOtp: (phone) => request('/auth/send-otp', {
+  checkPhone: (phone) => request('/auth/check-phone', {
     method: 'POST',
     body: JSON.stringify({ phone }),
   }),
 
-  verifyOtp: (phone, otp, name = '', email = '') => request('/auth/verify-otp', {
+  sendOtp: (phone, mode = 'login') => request('/auth/send-otp', {
     method: 'POST',
-    body: JSON.stringify({ phone, otp, name, email }),
+    body: JSON.stringify({ phone, mode }),
+  }),
+
+  verifyOtp: (phone, otp, name = '', email = '', mode = 'login') => request('/auth/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify({ phone, otp, name, email, mode }),
   }),
 
   // User Profile

@@ -379,6 +379,89 @@ class DatabaseManager {
     return this.data.user || null;
   }
 
+  async findUserByPhone(phone) {
+    if (!phone) return null;
+    const cleanPhone = phone.trim();
+    const rawDigits = cleanPhone.replace(/[^0-9]/g, '');
+    const tenDigits = rawDigits.slice(-10);
+
+    if (this.pgPool && this.isPostgresConnected) {
+      try {
+        const res = await this.pgPool.query(
+          `SELECT * FROM users WHERE phone = $1 OR RIGHT(REGEXP_REPLACE(phone, '[^0-9]', '', 'g'), 10) = $2 LIMIT 1`,
+          [cleanPhone, tenDigits]
+        );
+        if (res.rows.length > 0) {
+          const row = res.rows[0];
+          return {
+            id: row.id,
+            phone: row.phone,
+            name: row.name || 'Passenger',
+            greetingName: row.greeting_name || row.name?.split(' ')[0] || 'Passenger',
+            email: row.email,
+            rating: parseFloat(row.rating) || 5.0,
+            walletBalance: parseFloat(row.wallet_balance) || 0.0,
+            totalRides: row.total_rides || 0,
+            avatar: row.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+          };
+        }
+        return null;
+      } catch (err) {
+        console.warn('[PostgreSQL Engine] findUserByPhone error:', err.message);
+      }
+    }
+
+    const localUser = this.data.user;
+    if (localUser && localUser.phone) {
+      const localDigits = localUser.phone.replace(/[^0-9]/g, '').slice(-10);
+      if (localDigits === tenDigits && localUser.name && localUser.name !== 'Passenger') {
+        return localUser;
+      }
+    }
+    return null;
+  }
+
+  async createUser({ phone, name, email }) {
+    const cleanPhone = phone.trim();
+    const cleanName = (name || '').trim();
+    const cleanEmail = (email || '').trim();
+    const newId = `USR-${Math.floor(1000 + Math.random() * 9000)}`;
+    const userName = cleanName || 'Customer';
+    const greetingName = userName.split(' ')[0];
+    const userEmail = cleanEmail || `${userName.toLowerCase().replace(/[^a-z0-9]/g, '')}@fgdrivo.com`;
+
+    if (this.pgPool && this.isPostgresConnected) {
+      try {
+        await this.pgPool.query(
+          `INSERT INTO users (id, phone, name, greeting_name, email, rating, wallet_balance, total_rides, avatar)
+           VALUES ($1, $2, $3, $4, $5, 5.0, 0.00, 0, $6)`,
+          [newId, cleanPhone, userName, greetingName, userEmail, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80']
+        );
+      } catch (err) {
+        console.warn('[PostgreSQL Engine] createUser error:', err.message);
+      }
+    }
+
+    const newUser = {
+      id: newId,
+      phone: cleanPhone,
+      name: userName,
+      greetingName,
+      email: userEmail,
+      rating: 5.0,
+      walletBalance: 0.0,
+      totalRides: 0,
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+    };
+    this.set('user', newUser);
+    this.set('rides', []);
+    if (this.data.wallet) {
+      this.data.wallet.balance = 0.0;
+      this.data.wallet.transactions = [];
+    }
+    return newUser;
+  }
+
   async findOrCreateUser({ phone, name, email }) {
     if (!phone) return this.data.user;
     const cleanPhone = phone.trim();

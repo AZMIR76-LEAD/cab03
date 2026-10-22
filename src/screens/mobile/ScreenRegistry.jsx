@@ -36,6 +36,7 @@ export let GLOBAL_PAYMENT_RETURN_SCREEN = 's13_fare_estimate';
 export let GLOBAL_USER_PHONE = '';
 export let GLOBAL_USER_NAME = '';
 export let GLOBAL_USER_EMAIL = '';
+export let GLOBAL_AUTH_MODE = 'signup';
 export let GLOBAL_FIREBASE_CONFIRMATION = null;
 export let GLOBAL_LATEST_OTP = '';
 
@@ -237,7 +238,7 @@ export function Screen02Onboarding({ onNavigate }) {
 
 // Screen 03 — Login & Sign Up
 export function Screen03Login({ onNavigate }) {
-  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+  const [authMode, setAuthMode] = useState('signup'); // Default to Sign Up first as mandatory
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+91');
   const [name, setName] = useState('');
@@ -245,15 +246,24 @@ export function Screen03Login({ onNavigate }) {
   const [useEmail, setUseEmail] = useState(false);
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authError, setAuthError] = useState('');
 
   const handleProceed = async () => {
+    setAuthError('');
     const rawNumber = phone.replace(/[^0-9]/g, '');
     if (!useEmail && rawNumber.length < 10) {
-      alert('Please enter your 10-digit mobile number.');
+      setAuthError('Please enter your 10-digit mobile number.');
       return;
     }
+
+    if (authMode === 'signup' && (!name || !name.trim())) {
+      setAuthError('Full Name is required to create a new account.');
+      return;
+    }
+
     const cleanPhone = `${countryCode} ${rawNumber}`;
     GLOBAL_USER_PHONE = cleanPhone;
+    GLOBAL_AUTH_MODE = authMode;
     GLOBAL_LATEST_OTP = '';
 
     if (name && name.trim()) {
@@ -265,16 +275,33 @@ export function Screen03Login({ onNavigate }) {
 
     setIsSubmitting(true);
     try {
-      // Directly dispatch random 6-digit OTP via backend SMS engine
-      const res = await RideXAPI.sendOtp(cleanPhone);
+      // 1. Strict database check:
+      // - In Sign Up: Same mobile number cannot be registered twice.
+      // - In Log In: Must be registered already, otherwise reject.
+      const checkRes = await RideXAPI.checkPhone(cleanPhone).catch(() => null);
+      if (checkRes) {
+        if (authMode === 'signup' && checkRes.exists) {
+          setIsSubmitting(false);
+          setAuthError('This mobile number is already registered! Please switch to Log In.');
+          return;
+        }
+        if (authMode === 'login' && !checkRes.exists) {
+          setIsSubmitting(false);
+          setAuthError('No account found for this mobile number! Please Sign Up first.');
+          return;
+        }
+      }
+
+      // 2. Dispatch OTP from backend with mode
+      const res = await RideXAPI.sendOtp(cleanPhone, authMode);
       if (res && (res.code || res.demoCode)) {
         GLOBAL_LATEST_OTP = res.code || res.demoCode;
       }
-    } catch (err) {
-      console.warn('[FG DRIVO] sendOtp notice:', err.message);
-    } finally {
       setIsSubmitting(false);
       onNavigate('s04_otp');
+    } catch (err) {
+      setIsSubmitting(false);
+      setAuthError(err.message || 'Verification request failed. Please check details and try again.');
     }
   };
 
@@ -441,7 +468,7 @@ export function Screen03Login({ onNavigate }) {
           zIndex: 4,
         }}
       >
-        {/* Top Segmented Mode Tabs: Log In vs Sign Up */}
+        {/* Top Segmented Mode Tabs: Sign Up (Mandatory First) vs Log In */}
         <div
           style={{
             display: 'flex',
@@ -453,30 +480,7 @@ export function Screen03Login({ onNavigate }) {
           }}
         >
           <button
-            onClick={() => setAuthMode('login')}
-            style={{
-              flex: 1,
-              padding: '9px 0',
-              borderRadius: '9px',
-              border: 'none',
-              backgroundColor: authMode === 'login' ? '#5427A8' : 'transparent',
-              color: authMode === 'login' ? '#FFFFFF' : '#64748B',
-              fontSize: '13px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              boxShadow: authMode === 'login' ? '0 2px 8px rgba(84, 39, 168, 0.25)' : 'none',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <LogIn size={15} />
-            <span>Log In</span>
-          </button>
-          <button
-            onClick={() => setAuthMode('signup')}
+            onClick={() => { setAuthMode('signup'); setAuthError(''); }}
             style={{
               flex: 1,
               padding: '9px 0',
@@ -498,7 +502,89 @@ export function Screen03Login({ onNavigate }) {
             <UserPlus size={15} />
             <span>Sign Up</span>
           </button>
+          <button
+            onClick={() => { setAuthMode('login'); setAuthError(''); }}
+            style={{
+              flex: 1,
+              padding: '9px 0',
+              borderRadius: '9px',
+              border: 'none',
+              backgroundColor: authMode === 'login' ? '#5427A8' : 'transparent',
+              color: authMode === 'login' ? '#FFFFFF' : '#64748B',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              boxShadow: authMode === 'login' ? '0 2px 8px rgba(84, 39, 168, 0.25)' : 'none',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <LogIn size={15} />
+            <span>Log In</span>
+          </button>
         </div>
+
+        {/* Prominent Auth Error Banner */}
+        {authError && (
+          <div
+            style={{
+              backgroundColor: '#FEF2F2',
+              border: '1.5px solid #F87171',
+              borderRadius: '12px',
+              padding: '12px 14px',
+              marginBottom: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', color: '#991B1B', fontSize: '12.5px', fontWeight: 700, lineHeight: 1.4 }}>
+              <AlertTriangle size={16} color="#DC2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <span>{authError}</span>
+            </div>
+            {authError.includes('already registered') && (
+              <button
+                onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                style={{
+                  alignSelf: 'flex-start',
+                  marginTop: '4px',
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontSize: '11.5px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                Switch to Log In →
+              </button>
+            )}
+            {authError.includes('Sign Up first') && (
+              <button
+                onClick={() => { setAuthMode('signup'); setAuthError(''); }}
+                style={{
+                  alignSelf: 'flex-start',
+                  marginTop: '4px',
+                  backgroundColor: '#4338CA',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontSize: '11.5px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                Switch to Sign Up →
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Field 1: Mobile Number or Email */}
         {!useEmail ? (
@@ -942,14 +1028,14 @@ export function Screen04OTP({ onNavigate }) {
     };
 
     // Always dispatch to backend API to ensure user is saved and registered in Supabase cloud database
-    RideXAPI.verifyOtp(currentPhone, code, GLOBAL_USER_NAME, GLOBAL_USER_EMAIL)
+    RideXAPI.verifyOtp(currentPhone, code, GLOBAL_USER_NAME, GLOBAL_USER_EMAIL, GLOBAL_AUTH_MODE)
       .then((res) => {
         proceedSuccess(res.token, res.user);
       })
       .catch((err) => {
         // Master test code offline fallback
         if (code === '529481') {
-          proceedSuccess('fg_token_live_demo', { name: GLOBAL_USER_NAME || 'Customer', phone: currentPhone, walletBalance: 0 });
+          proceedSuccess('fg_token_live_demo', { name: GLOBAL_USER_NAME || 'Customer', phone: currentPhone, walletBalance: 0, totalRides: 0 });
         } else {
           setIsVerifying(false);
           setHasError(true);
@@ -962,7 +1048,7 @@ export function Screen04OTP({ onNavigate }) {
     setCountdown(30);
     setHasError(false);
     try {
-      const res = await RideXAPI.sendOtp(currentPhone);
+      const res = await RideXAPI.sendOtp(currentPhone, GLOBAL_AUTH_MODE);
       if (res && (res.code || res.demoCode)) {
         GLOBAL_LATEST_OTP = res.code || res.demoCode;
       }
