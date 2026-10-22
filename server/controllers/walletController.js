@@ -2,9 +2,49 @@
 import { db } from '../db.js';
 
 export class WalletController {
-  static getWallet(req, res) {
-    const wallet = db.get('wallet');
-    return res.json(wallet);
+  static async getWallet(req, res) {
+    const currentUser = (await db.getUserFromReq(req)) || db.get('user') || {};
+    const userId = currentUser.id || null;
+    let balance = parseFloat(currentUser.walletBalance !== undefined ? currentUser.walletBalance : 0);
+    let transactions = [];
+
+    if (db.isPostgresConnected && db.pgPool && userId) {
+      try {
+        const userRes = await db.pgPool.query('SELECT wallet_balance FROM users WHERE id = $1', [userId]);
+        if (userRes.rows.length > 0) {
+          balance = parseFloat(userRes.rows[0].wallet_balance) || 0;
+        }
+        const txRes = await db.pgPool.query('SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+        transactions = txRes.rows.map(row => ({
+          id: row.id,
+          title: row.title || row.description || 'Transaction',
+          date: new Date(row.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+          amount: parseFloat(row.amount),
+          type: row.type,
+          status: row.status,
+          gatewayRef: row.gateway_ref,
+        }));
+      } catch (err) {
+        console.warn('PostgreSQL wallet fetch error:', err.message);
+      }
+    } else {
+      const wallet = db.get('wallet') || {};
+      balance = parseFloat(wallet.balance || 0);
+      transactions = wallet.transactions || [];
+    }
+
+    return res.json({
+      balance,
+      currency: '₹',
+      cashbackEarned: 0,
+      paymentMethods: [
+        { id: 'pm-upi', type: 'UPI', title: 'Google Pay / PhonePe UPI', detail: 'Instant UPI Transfer', isPrimary: true, icon: 'smartphone' },
+        { id: 'pm-card', type: 'CARD', title: 'Credit or Debit Card', detail: 'Visa, Mastercard, RuPay', isPrimary: false, icon: 'credit-card' },
+        { id: 'pm-wallet', type: 'WALLET', title: 'FG DRIVO Money', detail: `Balance: ₹${balance.toFixed(2)}`, isPrimary: false, icon: 'wallet' },
+        { id: 'pm-cash', type: 'CASH', title: 'Cash on Arrival', detail: 'Pay driver directly via cash or QR', isPrimary: false, icon: 'banknote' },
+      ],
+      transactions,
+    });
   }
 
   static topup(req, res) {

@@ -162,17 +162,51 @@ export class RidesController {
     });
   }
 
-  static getRideHistory(req, res) {
-    const rides = db.get('rides');
+  static async getRideHistory(req, res) {
     const { status } = req.query;
+    const currentUser = (await db.getUserFromReq(req)) || db.get('user');
+    const userId = currentUser ? currentUser.id : null;
 
-    if (status) {
-      return res.json({
-        rides: rides.filter((r) => r.status.toLowerCase() === status.toLowerCase()),
-      });
+    if (db.isPostgresConnected && db.pgPool && userId) {
+      try {
+        let sql = 'SELECT * FROM rides WHERE user_id = $1';
+        const params = [userId];
+        if (status) {
+          sql += ' AND LOWER(status) = LOWER($2)';
+          params.push(status);
+        }
+        sql += ' ORDER BY created_at DESC';
+        const result = await db.pgPool.query(sql, params);
+        const rides = result.rows.map(row => ({
+          id: row.id,
+          date: new Date(row.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+          status: row.status,
+          category: row.category || 'FG DRIVO Sedan',
+          pickup: row.pickup_name,
+          pickupCoords: row.pickup_coords,
+          destination: row.drop_name,
+          destinationCoords: row.drop_coords,
+          fare: parseFloat(row.fare),
+          distance: row.distance || '0 km',
+          duration: row.duration || '0 mins',
+          driver: row.driver_name,
+          vehicle: row.vehicle_info,
+          ratingGiven: row.rating_given,
+          paymentMethod: row.payment_method,
+        }));
+        return res.json({ rides });
+      } catch (err) {
+        console.warn('PostgreSQL ride history query error:', err.message);
+      }
     }
 
-    return res.json({ rides });
+    const allRides = db.get('rides') || [];
+    let userRides = userId ? allRides.filter((r) => r.userId === userId) : [];
+    if (status) {
+      userRides = userRides.filter((r) => r.status.toLowerCase() === status.toLowerCase());
+    }
+
+    return res.json({ rides: userRides });
   }
 
   static getReceipt(req, res) {

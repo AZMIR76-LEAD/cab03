@@ -95,86 +95,25 @@ export const initialSeedData = {
       status: "available",
     },
   ],
-  rides: [
-    {
-      id: "RX-99410",
-      date: "Today, 02:45 PM",
-      status: "Completed",
-      category: "FG DRIVO Sedan",
-      pickup: "Dindigul Railway Junction (Main Entrance)",
-      destination: "Palani Road Bypass, Near Velu Vidyalaya",
-      fare: 284,
-      distance: "7.8 km",
-      duration: "22 mins",
-      driver: "Vikram Rathore",
-      vehicle: "Hyundai Verna (TN 57 MJ 3321)",
-      ratingGiven: 5,
-      paymentMethod: "UPI (Google Pay)",
-    },
-    {
-      id: "RX-98204",
-      date: "Yesterday, 09:15 AM",
-      status: "Completed",
-      category: "FG DRIVO Mini",
-      pickup: "Rock Fort Temple Road, Dindigul Historic Zone",
-      destination: "Central Bus Stand (Mofussil Terminus)",
-      fare: 198,
-      distance: "6.2 km",
-      duration: "19 mins",
-      driver: "Suresh Pandian",
-      vehicle: "Maruti Swift (TN 57 AB 8912)",
-      ratingGiven: 5,
-      paymentMethod: "FG DRIVO Wallet",
-    },
-    {
-      id: "RX-97552",
-      date: "28 Sep 2026, 08:30 PM",
-      status: "Completed",
-      category: "FG DRIVO SUV",
-      pickup: "Batlagundu Highway NH-83 Junction",
-      destination: "Sirumalai Foothills Gate & Checkpost",
-      fare: 940,
-      distance: "41.5 km",
-      duration: "58 mins",
-      driver: "Mohammed Farooq",
-      vehicle: "Toyota Innova Crysta (TN 57 EQ 7780)",
-      ratingGiven: 5,
-      paymentMethod: "HDFC Visa ••4289",
-    },
-    {
-      id: "RX-96120",
-      date: "24 Sep 2026, 11:10 AM",
-      status: "Cancelled",
-      category: "FG DRIVO Sedan",
-      pickup: "Collectorate Complex & Court Buildings",
-      destination: "Dindigul Railway Junction",
-      fare: 0,
-      distance: "3.4 km",
-      duration: "Cancelled by passenger",
-      driver: "Ramesh Kumar",
-      vehicle: "Honda Amaze (TN 57 NC 1092)",
-      ratingGiven: null,
-      paymentMethod: "N/A",
-    },
-  ],
+  rides: [],
   wallet: {
-    balance: 1450.0,
+    balance: 0.0,
     currency: "₹",
-    cashbackEarned: 320.0,
+    cashbackEarned: 0.0,
     paymentMethods: [
       {
         id: "pm-upi",
         type: "UPI",
-        title: "Google Pay UPI",
-        detail: "ashfar@oksbi",
+        title: "Google Pay / PhonePe UPI",
+        detail: "Instant UPI Transfer",
         isPrimary: true,
         icon: "smartphone",
       },
       {
         id: "pm-card",
         type: "CARD",
-        title: "HDFC Bank Credit Card",
-        detail: "•••• 4289 (Expires 08/29)",
+        title: "Credit or Debit Card",
+        detail: "Visa, Mastercard, RuPay",
         isPrimary: false,
         icon: "credit-card",
       },
@@ -182,7 +121,7 @@ export const initialSeedData = {
         id: "pm-wallet",
         type: "WALLET",
         title: "FG DRIVO Money",
-        detail: "Balance: ₹1,450.00",
+        detail: "Balance: ₹0.00",
         isPrimary: false,
         icon: "wallet",
       },
@@ -195,32 +134,7 @@ export const initialSeedData = {
         icon: "banknote",
       },
     ],
-    transactions: [
-      {
-        id: "TXN-8812",
-        title: "Trip Payment #RX-99410",
-        date: "Today, 03:07 PM",
-        amount: -284,
-        type: "debit",
-        status: "Successful",
-      },
-      {
-        id: "TXN-8740",
-        title: "Wallet Top-up (NetBanking)",
-        date: "Yesterday, 07:15 PM",
-        amount: 1000,
-        type: "credit",
-        status: "Successful",
-      },
-      {
-        id: "TXN-8519",
-        title: "Promotional Cashback",
-        date: "27 Sep 2026",
-        amount: 50,
-        type: "credit",
-        status: "Successful",
-      },
-    ],
+    transactions: [],
   },
   savedPlaces: [
     {
@@ -329,12 +243,14 @@ class DatabaseManager {
           greeting_name VARCHAR(64),
           email VARCHAR(128),
           rating NUMERIC(3,2) DEFAULT 5.0,
-          wallet_balance NUMERIC(10,2) DEFAULT 250.00,
+          wallet_balance NUMERIC(10,2) DEFAULT 0.00,
           total_rides INT DEFAULT 0,
           avatar TEXT,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
+
+        ALTER TABLE users ALTER COLUMN wallet_balance SET DEFAULT 0.00;
 
         CREATE TABLE IF NOT EXISTS drivers (
           id VARCHAR(64) PRIMARY KEY,
@@ -397,12 +313,20 @@ class DatabaseManager {
         CREATE INDEX IF NOT EXISTS idx_drivers_online ON drivers(is_online);
       `);
 
-      // 2. Automatically purge demo mock user from Supabase
+      // 2. Automatically purge demo mock user and mock history from Supabase
       await client.query(`
         DELETE FROM users 
         WHERE id = 'USR-1001' 
            OR phone = '+91 98765 43210' 
            OR name = 'Ashfar Khan';
+
+        DELETE FROM rides 
+        WHERE user_id = 'USR-1001' 
+           OR user_id IS NULL;
+
+        DELETE FROM transactions 
+        WHERE user_id = 'USR-1001' 
+           OR user_id IS NULL;
       `);
 
       client.release();
@@ -416,20 +340,64 @@ class DatabaseManager {
     }
   }
 
+  async getUserFromReq(req) {
+    try {
+      const authHeader = req?.headers?.authorization || '';
+      if (authHeader.startsWith('Bearer ')) {
+        const token = authHeader.slice(7).trim();
+        if (token.startsWith('fg_token_live_')) {
+          const payload = token.replace('fg_token_live_', '');
+          const decoded = Buffer.from(payload, 'base64').toString('utf-8');
+          const phone = decoded.split('_')[0];
+          if (phone) {
+            const rawDigits = phone.replace(/[^0-9]/g, '');
+            const tenDigits = rawDigits.slice(-10);
+            if (this.pgPool && this.isPostgresConnected) {
+              const res = await this.pgPool.query(
+                `SELECT * FROM users WHERE phone = $1 OR RIGHT(REGEXP_REPLACE(phone, '[^0-9]', '', 'g'), 10) = $2 LIMIT 1`,
+                [phone, tenDigits]
+              );
+              if (res.rows.length > 0) {
+                const row = res.rows[0];
+                return {
+                  id: row.id,
+                  phone: row.phone,
+                  name: row.name || 'Passenger',
+                  greetingName: row.greeting_name || row.name?.split(' ')[0] || 'Passenger',
+                  email: row.email,
+                  rating: parseFloat(row.rating) || 5.0,
+                  walletBalance: parseFloat(row.wallet_balance) || 0.0,
+                  totalRides: row.total_rides || 0,
+                  avatar: row.avatar,
+                };
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {}
+    return this.data.user || null;
+  }
+
   async findOrCreateUser({ phone, name, email }) {
     if (!phone) return this.data.user;
     const cleanPhone = phone.trim();
     const cleanName = (name || '').trim();
     const cleanEmail = (email || '').trim();
+    const rawDigits = cleanPhone.replace(/[^0-9]/g, '');
+    const tenDigits = rawDigits.slice(-10);
 
     if (this.pgPool && this.isPostgresConnected) {
       try {
-        const res = await this.pgPool.query('SELECT * FROM users WHERE phone = $1', [cleanPhone]);
+        const res = await this.pgPool.query(
+          `SELECT * FROM users WHERE phone = $1 OR RIGHT(REGEXP_REPLACE(phone, '[^0-9]', '', 'g'), 10) = $2 LIMIT 1`,
+          [cleanPhone, tenDigits]
+        );
         if (res.rows.length > 0) {
           const row = res.rows[0];
           let updatedName = row.name;
           let updatedGreeting = row.greeting_name;
-          if (cleanName && (!row.name || row.name === 'Passenger' || row.name === 'Ashfar Khan')) {
+          if (cleanName && (!row.name || row.name === 'Passenger' || row.name === 'Ashfar Khan' || row.name === 'User')) {
             updatedName = cleanName;
             updatedGreeting = cleanName.split(' ')[0];
             await this.pgPool.query(
@@ -444,14 +412,14 @@ class DatabaseManager {
             greetingName: updatedGreeting || 'Passenger',
             email: row.email || (cleanEmail || `${(updatedName || 'user').toLowerCase().replace(/[^a-z0-9]/g, '')}@fgdrivo.com`),
             rating: parseFloat(row.rating) || 5.0,
-            walletBalance: parseFloat(row.wallet_balance) || 250,
+            walletBalance: parseFloat(row.wallet_balance) || 0.0,
             totalRides: row.total_rides || 0,
             avatar: row.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
           };
           this.set('user', userObj);
           return userObj;
         } else {
-          // Create real user in Supabase
+          // Create real user in Supabase with 0.00 balance
           const newId = `USR-${Math.floor(1000 + Math.random() * 9000)}`;
           const userName = cleanName || 'Passenger';
           const greetingName = userName.split(' ')[0];
@@ -459,7 +427,7 @@ class DatabaseManager {
 
           await this.pgPool.query(
             `INSERT INTO users (id, phone, name, greeting_name, email, rating, wallet_balance, total_rides, avatar)
-             VALUES ($1, $2, $3, $4, $5, 5.0, 250.00, 0, $6)`,
+             VALUES ($1, $2, $3, $4, $5, 5.0, 0.00, 0, $6)`,
             [newId, cleanPhone, userName, greetingName, userEmail, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80']
           );
 
@@ -470,7 +438,7 @@ class DatabaseManager {
             greetingName,
             email: userEmail,
             rating: 5.0,
-            walletBalance: 250,
+            walletBalance: 0.0,
             totalRides: 0,
             avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
           };
@@ -492,7 +460,7 @@ class DatabaseManager {
       greetingName: userName.split(' ')[0],
       email: cleanEmail || `${userName.toLowerCase().replace(/[^a-z0-9]/g, '')}@fgdrivo.com`,
       rating: 5.0,
-      walletBalance: 250,
+      walletBalance: 0.0,
       totalRides: 0,
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
     };
@@ -520,7 +488,7 @@ class DatabaseManager {
           greetingName: userRow.greeting_name || userRow.name?.split(' ')[0] || 'Passenger',
           email: userRow.email || 'passenger@fgdrivo.com',
           rating: parseFloat(userRow.rating) || 5.0,
-          walletBalance: parseFloat(userRow.wallet_balance) || 250,
+          walletBalance: parseFloat(userRow.wallet_balance) || 0.0,
           totalRides: userRow.total_rides || 0,
           avatar: userRow.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
         };

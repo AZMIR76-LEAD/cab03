@@ -920,7 +920,7 @@ export function Screen04OTP({ onNavigate }) {
 
     const proceedSuccess = (token, user) => {
       setIsVerifying(false);
-      const resolvedName = GLOBAL_USER_NAME || (user && user.name && user.name !== 'Ashfar Khan' ? user.name : '') || 'Customer';
+      const resolvedName = (user && user.name && user.name !== 'Ashfar Khan' && user.name !== 'Passenger' ? user.name : '') || GLOBAL_USER_NAME || 'Customer';
       const resolvedPhone = currentPhone || (user && user.phone) || '';
       const resolvedEmail = GLOBAL_USER_EMAIL || (user && user.email && !user.email.includes('ashfar') ? user.email : '') || `${resolvedName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'customer'}@fgdrivo.com`;
       saveStoredUser({
@@ -929,6 +929,8 @@ export function Screen04OTP({ onNavigate }) {
         greetingName: resolvedName.split(' ')[0] || 'Customer',
         phone: resolvedPhone,
         email: resolvedEmail,
+        walletBalance: user && typeof user.walletBalance === 'number' ? user.walletBalance : 0,
+        totalRides: user && typeof user.totalRides === 'number' ? user.totalRides : 0,
       });
       try {
         if (token) localStorage.setItem('fg_auth_token', token);
@@ -936,36 +938,21 @@ export function Screen04OTP({ onNavigate }) {
       onNavigate('s05_location_permission');
     };
 
-    // Instant master code bypass for reliable testing anytime
-    if (code === '529481') {
-      proceedSuccess('fg_token_live_demo', { name: GLOBAL_USER_NAME || 'Customer', phone: currentPhone });
-      return;
-    }
-
-    if (GLOBAL_FIREBASE_CONFIRMATION) {
-      FirebaseAuthService.verifyCode(GLOBAL_FIREBASE_CONFIRMATION, code)
-        .then((res) => {
-          proceedSuccess(res.idToken, res.user);
-        })
-        .catch((fbErr) => {
-          console.warn('[Firebase Auth] verifyCode failed, checking backend fallback:', fbErr.message);
-          RideXAPI.verifyOtp(currentPhone, code, GLOBAL_USER_NAME, GLOBAL_USER_EMAIL)
-            .then((res) => proceedSuccess(res.token, res.user))
-            .catch((err) => {
-              setIsVerifying(false);
-              setHasError(true);
-              setErrorMessage(fbErr.message || err.message || 'Invalid verification code.');
-            });
-        });
-    } else {
-      RideXAPI.verifyOtp(currentPhone, code, GLOBAL_USER_NAME, GLOBAL_USER_EMAIL)
-        .then((res) => proceedSuccess(res.token, res.user))
-        .catch((err) => {
+    // Always dispatch to backend API to ensure user is saved and registered in Supabase cloud database
+    RideXAPI.verifyOtp(currentPhone, code, GLOBAL_USER_NAME, GLOBAL_USER_EMAIL)
+      .then((res) => {
+        proceedSuccess(res.token, res.user);
+      })
+      .catch((err) => {
+        // Master test code offline fallback
+        if (code === '529481') {
+          proceedSuccess('fg_token_live_demo', { name: GLOBAL_USER_NAME || 'Customer', phone: currentPhone, walletBalance: 0 });
+        } else {
           setIsVerifying(false);
           setHasError(true);
           setErrorMessage(err.message || 'Invalid or expired OTP code.');
-        });
-    }
+        }
+      });
   };
 
   const handleResend = async () => {
@@ -4458,12 +4445,36 @@ export const Screen22Receipt = Screen23Receipt;
 // Screen 23 — Ride History
 export function Screen23RideHistory({ onNavigate }) {
   const [tab, setTab] = useState('completed');
+  const [rides, setRides] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    RideXAPI.getRideHistory()
+      .then((data) => {
+        if (data && Array.isArray(data.rides)) {
+          setRides(data.rides);
+        } else {
+          setRides([]);
+        }
+      })
+      .catch((err) => {
+        console.warn('[FG DRIVO] Ride history fetch error:', err);
+        setRides([]);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const completedRides = rides.filter(r => (r.status || '').toLowerCase() === 'completed');
+  const cancelledRides = rides.filter(r => (r.status || '').toLowerCase() === 'cancelled');
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
       <div style={{ padding: '16px 20px', backgroundColor: '#5427A8', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(84, 39, 168, 0.2)' }}>
         <span style={{ fontSize: '18px', fontWeight: 800 }}>Your Rides</span>
-        <span style={{ fontSize: '12px', backgroundColor: '#F5C400', color: '#24153F', fontWeight: 800, padding: '3px 8px', borderRadius: '8px' }}>142 Total</span>
+        <span style={{ fontSize: '12px', backgroundColor: '#F5C400', color: '#24153F', fontWeight: 800, padding: '3px 8px', borderRadius: '8px' }}>
+          {rides.length} Total
+        </span>
       </div>
 
       {/* Tabs (Purple / Yellow / White) */}
@@ -4482,6 +4493,7 @@ export function Screen23RideHistory({ onNavigate }) {
               color: tab === t ? '#24153F' : '#6B5B7D',
               border: tab === t ? '1.5px solid #F5C400' : '1px solid #E5DFF0',
               boxShadow: tab === t ? '0 2px 8px rgba(245, 196, 0, 0.3)' : 'none',
+              cursor: 'pointer',
             }}
           >
             {t}
@@ -4495,11 +4507,25 @@ export function Screen23RideHistory({ onNavigate }) {
           <div style={{ textAlign: 'center', padding: '40px 20px', color: '#6B5B7D' }}>
             <Clock size={36} color="#5427A8" style={{ margin: '0 auto 12px' }} />
             <div style={{ fontSize: '16px', fontWeight: 800, color: '#24153F', marginBottom: '4px' }}>No Upcoming Rides</div>
-            <div style={{ fontSize: '13px' }}>Schedule a ride up to 7 days in advance.</div>
+            <div style={{ fontSize: '13px', marginBottom: '16px' }}>Schedule a ride up to 7 days in advance.</div>
+            <button onClick={() => onNavigate('s07_home')} style={{ backgroundColor: '#F5C400', color: '#24153F', fontWeight: 800, padding: '10px 20px', borderRadius: '10px', border: 'none', cursor: 'pointer' }}>
+              Book a Ride
+            </button>
           </div>
         )}
 
-        {tab === 'completed' && RIDE_HISTORY.filter(r => r.status === 'Completed').map((ride) => (
+        {tab === 'completed' && completedRides.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#6B5B7D' }}>
+            <Car size={36} color="#5427A8" style={{ margin: '0 auto 12px' }} />
+            <div style={{ fontSize: '16px', fontWeight: 800, color: '#24153F', marginBottom: '4px' }}>No Completed Rides</div>
+            <div style={{ fontSize: '13px', marginBottom: '16px' }}>You haven't taken any rides yet. Book your first trip in Dindigul!</div>
+            <button onClick={() => onNavigate('s07_home')} style={{ backgroundColor: '#F5C400', color: '#24153F', fontWeight: 800, padding: '10px 20px', borderRadius: '10px', border: 'none', cursor: 'pointer' }}>
+              Book Your First Ride
+            </button>
+          </div>
+        )}
+
+        {tab === 'completed' && completedRides.map((ride) => (
           <div
             key={ride.id}
             onClick={() => onNavigate('s24_ride_details')}
@@ -4526,7 +4552,14 @@ export function Screen23RideHistory({ onNavigate }) {
           </div>
         ))}
 
-        {tab === 'cancelled' && RIDE_HISTORY.filter(r => r.status === 'Cancelled').map((ride) => (
+        {tab === 'cancelled' && cancelledRides.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#6B5B7D' }}>
+            <div style={{ fontSize: '16px', fontWeight: 800, color: '#24153F', marginBottom: '4px' }}>No Cancelled Rides</div>
+            <div style={{ fontSize: '13px' }}>You have no cancelled trips.</div>
+          </div>
+        )}
+
+        {tab === 'cancelled' && cancelledRides.map((ride) => (
           <div
             key={ride.id}
             style={{ backgroundColor: '#F8F6FD', borderRadius: '16px', padding: '16px', border: '1.5px solid #E5DFF0' }}
@@ -4903,15 +4936,18 @@ export function Screen27AddCard({ onNavigate }) {
 
 // Screen 28 — Wallet
 export function Screen28Wallet({ onNavigate }) {
-  const [balance, setBalance] = useState(WALLET_DATA.balance);
-  const [transactions, setTransactions] = useState(WALLET_DATA.transactions);
+  const [balance, setBalance] = useState(() => {
+    const u = getStoredUser();
+    return typeof u?.walletBalance === 'number' ? u.walletBalance : 0.0;
+  });
+  const [transactions, setTransactions] = useState([]);
 
   useEffect(() => {
     RideXAPI.getWallet()
       .then((w) => {
         if (w && typeof w.balance === 'number') {
           setBalance(w.balance);
-          if (w.transactions) setTransactions(w.transactions);
+          if (Array.isArray(w.transactions)) setTransactions(w.transactions);
         }
       })
       .catch((err) => console.warn('Using local wallet data:', err));
@@ -4924,6 +4960,8 @@ export function Screen28Wallet({ onNavigate }) {
         if (res.transaction) {
           setTransactions((prev) => [res.transaction, ...prev]);
         }
+        const u = getStoredUser();
+        if (u) saveStoredUser({ ...u, walletBalance: res.newBalance });
       })
       .catch(() => setBalance((prev) => prev + amt));
   };
@@ -4932,7 +4970,7 @@ export function Screen28Wallet({ onNavigate }) {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
       <div style={{ padding: '16px 20px', backgroundColor: '#5427A8', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(84, 39, 168, 0.2)' }}>
         <span style={{ fontSize: '18px', fontWeight: 800 }}>FG DRIVO Wallet</span>
-        <button onClick={() => onNavigate('s26_payment_methods')} style={{ color: '#24153F', backgroundColor: '#F5C400', fontSize: '12px', fontWeight: 800, padding: '4px 10px', borderRadius: '8px' }}>
+        <button onClick={() => onNavigate('s26_payment_methods')} style={{ color: '#24153F', backgroundColor: '#F5C400', fontSize: '12px', fontWeight: 800, padding: '4px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
           Manage
         </button>
       </div>
@@ -4950,7 +4988,7 @@ export function Screen28Wallet({ onNavigate }) {
               <button
                 key={amt}
                 onClick={() => addAmount(amt)}
-                style={{ height: '38px', backgroundColor: '#FFFFFF', borderRadius: '10px', fontSize: '13px', fontWeight: 800, color: '#5427A8', border: 'none', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}
+                style={{ height: '38px', backgroundColor: '#FFFFFF', borderRadius: '10px', fontSize: '13px', fontWeight: 800, color: '#5427A8', border: 'none', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', cursor: 'pointer' }}
               >
                 +₹{amt}
               </button>
@@ -4963,20 +5001,27 @@ export function Screen28Wallet({ onNavigate }) {
           RECENT TRANSACTIONS
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {transactions.map((txn) => (
-            <div
-              key={txn.id}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8F6FD', borderRadius: '14px', padding: '12px 14px', border: '1px solid #E5DFF0' }}
-            >
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#24153F' }}>{txn.title}</div>
-                <div style={{ fontSize: '11px', color: '#6B5B7D' }}>{txn.date}</div>
-              </div>
-              <div style={{ fontSize: '15px', fontWeight: 800, color: txn.type === 'credit' ? '#16A34A' : '#24153F' }}>
-                {txn.amount > 0 ? `+₹${txn.amount}` : `-₹${Math.abs(txn.amount)}`}
-              </div>
+          {transactions.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '30px 16px', color: '#6B5B7D', backgroundColor: '#F8F6FD', borderRadius: '14px', border: '1px dashed #E5DFF0' }}>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#24153F', marginBottom: '4px' }}>No Transactions Yet</div>
+              <div style={{ fontSize: '12px' }}>Your wallet top-ups and ride payments will appear here.</div>
             </div>
-          ))}
+          ) : (
+            transactions.map((txn) => (
+              <div
+                key={txn.id}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8F6FD', borderRadius: '14px', padding: '12px 14px', border: '1px solid #E5DFF0' }}
+              >
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#24153F' }}>{txn.title}</div>
+                  <div style={{ fontSize: '11px', color: '#6B5B7D' }}>{txn.date}</div>
+                </div>
+                <div style={{ fontSize: '15px', fontWeight: 800, color: txn.type === 'credit' ? '#16A34A' : '#24153F' }}>
+                  {txn.amount > 0 ? `+₹${txn.amount}` : `-₹${Math.abs(txn.amount)}`}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -5144,9 +5189,9 @@ export function Screen29Profile({ onNavigate }) {
                 }}
               >
                 <Star size={11} fill="#F59E0B" color="#F59E0B" />
-                <span>{CURRENT_USER.rating} Rating</span>
+                <span>{currentUser.rating || 5.0} Rating</span>
               </div>
-              <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 600 }}>• 142 Safe Rides</span>
+              <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 600 }}>• {currentUser.totalRides || 0} Safe Rides</span>
             </div>
           </div>
         </div>
@@ -5184,7 +5229,7 @@ export function Screen29Profile({ onNavigate }) {
                   Wallet Balance
                 </div>
                 <div style={{ fontSize: '24px', fontWeight: 900, color: '#0F172A', lineHeight: 1.1 }}>
-                  ₹ 250<span style={{ fontSize: '14px', fontWeight: 600, color: '#64748B' }}>.00</span>
+                  ₹ {(typeof currentUser.walletBalance === 'number' ? currentUser.walletBalance : 0).toFixed(2)}
                 </div>
               </div>
             </div>
