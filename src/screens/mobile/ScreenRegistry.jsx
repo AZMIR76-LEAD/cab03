@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, Search, MapPin, Navigation, Clock, Shield, Star, Phone, MessageSquare,
   Share2, AlertTriangle, Check, CheckCircle2, ChevronRight, Plus, Minus, Trash2, Edit3,
@@ -989,6 +989,12 @@ export function Screen04OTP({ onNavigate }) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const inputRefs = useRef([]);
+
+  useEffect(() => {
+    // Focus first input box on load
+    inputRefs.current[0]?.focus();
+  }, []);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -1089,19 +1095,87 @@ export function Screen04OTP({ onNavigate }) {
           {otp.map((digit, i) => (
             <input
               key={i}
+              ref={(el) => (inputRefs.current[i] = el)}
               type="text"
               inputMode="numeric"
               maxLength={1}
               value={digit}
+              onFocus={(e) => e.target.select()}
+              onKeyDown={(e) => {
+                if (e.key === 'Backspace') {
+                  e.preventDefault();
+                  const newOtp = [...otp];
+                  if (otp[i]) {
+                    // Current box has value: clear it and remain focused here
+                    newOtp[i] = '';
+                    setOtp(newOtp);
+                    setHasError(false);
+                  } else if (i > 0) {
+                    // Current box is already empty: clear previous box and jump back to it
+                    newOtp[i - 1] = '';
+                    setOtp(newOtp);
+                    setHasError(false);
+                    inputRefs.current[i - 1]?.focus();
+                  }
+                } else if (e.key === 'ArrowLeft' && i > 0) {
+                  e.preventDefault();
+                  inputRefs.current[i - 1]?.focus();
+                } else if (e.key === 'ArrowRight' && i < 5) {
+                  e.preventDefault();
+                  inputRefs.current[i + 1]?.focus();
+                } else if (e.key === 'Delete') {
+                  e.preventDefault();
+                  const newOtp = [...otp];
+                  newOtp[i] = '';
+                  setOtp(newOtp);
+                  setHasError(false);
+                }
+              }}
               onChange={(e) => {
-                const val = e.target.value.replace(/[^0-9]/g, '');
+                const raw = e.target.value.replace(/[^0-9]/g, '');
+                if (!raw) {
+                  const newOtp = [...otp];
+                  newOtp[i] = '';
+                  setOtp(newOtp);
+                  return;
+                }
+                // Handle multi-character autofill/paste in onChange
+                if (raw.length > 1) {
+                  const newOtp = [...otp];
+                  const digits = raw.split('');
+                  let curr = i;
+                  for (let d = 0; d < digits.length && curr < 6; d++, curr++) {
+                    newOtp[curr] = digits[d];
+                  }
+                  setOtp(newOtp);
+                  setHasError(false);
+                  const nextIdx = Math.min(i + digits.length, 5);
+                  inputRefs.current[nextIdx]?.focus();
+                  return;
+                }
+                // Single digit typed
                 const newOtp = [...otp];
-                newOtp[i] = val.slice(-1);
+                newOtp[i] = raw.slice(-1);
                 setOtp(newOtp);
                 setHasError(false);
-                // Auto focus next input
-                if (val && e.target.nextElementSibling) {
-                  e.target.nextElementSibling.focus();
+                if (i < 5) {
+                  inputRefs.current[i + 1]?.focus();
+                }
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pasteData = e.clipboardData.getData('text').replace(/[^0-9]/g, '');
+                if (pasteData) {
+                  const newOtp = [...otp];
+                  for (let idx = 0; idx < 6; idx++) {
+                    if (pasteData[idx]) {
+                      newOtp[idx] = pasteData[idx];
+                    }
+                  }
+                  setOtp(newOtp);
+                  setHasError(false);
+                  const targetIdx = Math.min(pasteData.length, 5);
+                  inputRefs.current[targetIdx]?.focus();
                 }
               }}
               style={{
@@ -1134,6 +1208,7 @@ export function Screen04OTP({ onNavigate }) {
               const codeToFill = GLOBAL_LATEST_OTP || '529481';
               setOtp(codeToFill.split(''));
               setHasError(false);
+              inputRefs.current[5]?.focus();
             }}
             style={{
               padding: '6px 14px',
