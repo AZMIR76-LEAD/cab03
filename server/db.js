@@ -294,6 +294,7 @@ class DatabaseManager {
     this.data = initialSeedData;
     this.pgPool = null;
     this.isPostgresConnected = false;
+    this.lastPostgresError = null;
     this.init();
     this.initPostgres().catch(() => {});
   }
@@ -301,6 +302,7 @@ class DatabaseManager {
   async initPostgres() {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
+      this.lastPostgresError = 'DATABASE_URL environment variable is not set on Render.';
       console.log('\x1b[36m[DB Engine]\x1b[0m Running on local persistent atomic JSON store (DATABASE_URL not set).');
       return;
     }
@@ -401,6 +403,7 @@ class DatabaseManager {
       await this.syncFromPostgres();
     } catch (err) {
       this.isPostgresConnected = false;
+      this.lastPostgresError = err.message;
       console.warn('\x1b[33m[PostgreSQL Engine]\x1b[0m Connection notice (falling back to atomic JSON store):', err.message);
     }
   }

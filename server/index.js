@@ -122,6 +122,7 @@ app.get('/api/health', (req, res) => {
     database: {
       provider: db.isPostgresConnected ? 'PostgreSQL (Cloud Database)' : 'Local Atomic JSON Store',
       connected: db.isPostgresConnected,
+      error: db.lastPostgresError || null,
       tables: ['users', 'drivers', 'rides', 'transactions'],
     },
     socketConnectedClients: io ? io.engine.clientsCount : 0,
