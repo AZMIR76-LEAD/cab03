@@ -40,40 +40,29 @@ import {
   Screen33Notifications,
   Screen34Help,
   Screen35Settings,
-  DriverCockpit,
 } from './screens/mobile/ScreenRegistry';
 
 function getInitialScreen() {
   try {
     if (typeof window !== 'undefined') {
-      // 1. Check URL hash (e.g. #driver, #s28_wallet, #s07_home, #s23_ride_history)
       const hash = window.location.hash.replace('#', '').trim();
-      if (hash === 'driver' || hash === 'captain' || hash === 'driver_cockpit') {
-        return 'driver_cockpit';
-      }
-      if (hash && ALL_MOBILE_SCREENS.some((s) => s.id === hash)) {
-        return hash;
-      }
+      const params = new URLSearchParams(window.location.search);
 
-      const token = localStorage.getItem('fg_auth_token');
-      const user = localStorage.getItem('fg_user');
-      const savedScreen = localStorage.getItem('fg_active_screen');
-
-      // 2. If logged in, stay on saved screen or go to home (never splash/onboarding)
-      if (token || user) {
-        const authScreens = ['s01_splash', 's02_onboarding', 's03_login', 's04_otp'];
-        if (savedScreen && !authScreens.includes(savedScreen) && ALL_MOBILE_SCREENS.some((s) => s.id === savedScreen)) {
-          return savedScreen;
-        }
+      // Optional dev bypass: ?nosplash=true
+      if (params.get('nosplash') === 'true') {
+        if (hash && ALL_MOBILE_SCREENS.some((s) => s.id === hash)) return hash;
+        const saved = localStorage.getItem('fg_active_screen');
+        if (saved && ALL_MOBILE_SCREENS.some((s) => s.id === saved)) return saved;
         return 's07_home';
       }
 
-      // 3. If not logged in, but was on onboarding or login
-      if (savedScreen && ['s02_onboarding', 's03_login', 's04_otp'].includes(savedScreen)) {
-        return savedScreen;
+      // If user opened with a specific hash (e.g. #s28_wallet), preserve it for post-splash navigation
+      if (hash && hash !== 's01_splash' && ALL_MOBILE_SCREENS.some((s) => s.id === hash)) {
+        sessionStorage.setItem('fg_target_screen', hash);
       }
     }
   } catch (e) {}
+  // Always start on the animated starting splash screen (Screen01Splash) on app launch!
   return 's01_splash';
 }
 
@@ -90,7 +79,9 @@ export default function App() {
   useEffect(() => {
     if (typeof window !== 'undefined' && currentMobileScreen) {
       try {
-        localStorage.setItem('fg_active_screen', currentMobileScreen);
+        if (currentMobileScreen !== 's01_splash') {
+          localStorage.setItem('fg_active_screen', currentMobileScreen);
+        }
         if (window.location.hash !== `#${currentMobileScreen}`) {
           window.history.replaceState({ screen: currentMobileScreen }, '', `#${currentMobileScreen}`);
         }
@@ -105,7 +96,7 @@ export default function App() {
 
     // Push browser history state for back button sync and refresh preservation
     try {
-      if (typeof localStorage !== 'undefined') {
+      if (typeof localStorage !== 'undefined' && screenId !== 's01_splash') {
         localStorage.setItem('fg_active_screen', screenId);
       }
       if (typeof window !== 'undefined' && window.history) {
@@ -253,7 +244,6 @@ export default function App() {
       case 's33_notifications': return <Screen33Notifications {...props} />;
       case 's34_help': return <Screen34Help {...props} />;
       case 's35_settings': return <Screen35Settings {...props} />;
-      case 'driver_cockpit': return <DriverCockpit onNavigateToPassenger={() => handleNavigate('s07_home')} {...props} />;
       default: return <Screen07Home {...props} />;
     }
   };
