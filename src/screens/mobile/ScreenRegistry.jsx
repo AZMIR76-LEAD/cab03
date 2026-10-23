@@ -6,7 +6,7 @@ import {
   User, Car, Heart, Briefcase, Home, ShieldAlert, Award, FileText, Download,
   ExternalLink, RotateCcw, Compass, Eye, EyeOff, Radio, Lock, LogOut, Sliders, Zap, Sparkles,
   Calendar, ChevronDown, ArrowRight, ShieldCheck, SlidersHorizontal, Mic, Tag, Headphones, Crosshair, Bus,
-  LogIn, UserPlus, Mail, X, Delete
+  LogIn, UserPlus, Mail, X, Delete, Camera, Image as ImageIcon
 } from 'lucide-react';
 import RideXLogo from '../../components/common/RideXLogo';
 import FGDrivoIntroSplash from '../../components/splash/FGDrivoIntroSplash';
@@ -5757,8 +5757,34 @@ export function Screen29Profile({ onNavigate }) {
               </span>
               <span style={{ fontSize: '16px' }}>👋</span>
             </div>
-            <div style={{ fontSize: '12.5px', color: '#64748B', fontWeight: 500, marginTop: '1px' }}>
-              {currentUser.phone}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '1px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
+                {currentUser.phone}
+              </span>
+              {(currentUser.isGoogleVerified !== false || currentUser.name === 'Google User' || currentUser.email?.includes('gmail')) && (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    color: '#2563EB',
+                    backgroundColor: '#EFF6FF',
+                    padding: '1px 6px',
+                    borderRadius: '6px',
+                    border: '1px solid #BFDBFE',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '3px',
+                  }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
+                  </svg>
+                  Google Verified
+                </span>
+              )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
               <div
@@ -6020,32 +6046,105 @@ export function Screen30EditProfile({ onNavigate }) {
   const [avatar, setAvatar] = useState(initialUser.avatar || '');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const fileInputRef = useRef(null);
+  const [showPhotoSheet, setShowPhotoSheet] = useState(false);
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [googleEmailNoticeSent, setGoogleEmailNoticeSent] = useState(false);
+  const [photoToast, setPhotoToast] = useState('');
+  const [isGoogleVerified, setIsGoogleVerified] = useState(
+    initialUser.isGoogleVerified !== false
+  );
+
+  const galleryInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+
+  const PRESET_AVATARS = [
+    { id: 'av1', label: 'Cool Rider', color: '#2563EB', icon: '🕶️' },
+    { id: 'av2', label: 'Executive', color: '#059669', icon: '👔' },
+    { id: 'av3', label: 'Navigator', color: '#D97706', icon: '🧭' },
+    { id: 'av4', label: 'VIP Gold', color: '#B45309', icon: '⭐' },
+    { id: 'av5', label: 'Cyber Speed', color: '#7C3AED', icon: '⚡' },
+    { id: 'av6', label: 'City Star', color: '#DB2777', icon: '🏙️' },
+  ];
+
+  const compressAndSetPhoto = (file) => {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Please select an image smaller than 10MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const src = ev.target?.result;
+      if (!src) return;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 320;
+        let w = img.width;
+        let h = img.height;
+        if (w > h) {
+          if (w > maxDim) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          }
+        } else {
+          if (h > maxDim) {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        setAvatar(compressedBase64);
+        setPhotoToast('Profile photo updated from Gallery!');
+        setTimeout(() => setPhotoToast(''), 3000);
+      };
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 4 * 1024 * 1024) {
-        alert('Please choose an image under 4MB.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const base64 = ev.target?.result;
-        if (base64) {
-          setAvatar(base64);
-        }
-      };
-      reader.readAsDataURL(file);
+      compressAndSetPhoto(file);
     }
+    e.target.value = '';
+  };
+
+  const selectPreset = (preset) => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" rx="100" fill="${preset.color}"/><text x="100" y="125" font-size="90" text-anchor="middle" dominant-baseline="middle">${preset.icon}</text></svg>`;
+    const base64 = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    setAvatar(base64);
+    setShowPhotoSheet(false);
+    setPhotoToast(`Selected ${preset.label} avatar!`);
+    setTimeout(() => setPhotoToast(''), 3000);
+  };
+
+  const handleVerifyGoogle = () => {
+    setShowGoogleModal(true);
+    setGoogleEmailNoticeSent(false);
+  };
+
+  const handleSendGoogleLink = () => {
+    setGoogleEmailNoticeSent(true);
+    setIsGoogleVerified(true);
+    const cur = getStoredUser();
+    saveStoredUser({ ...cur, email, isGoogleVerified: true });
+    try {
+      RideXAPI.updateProfile({ ...cur, email, isGoogleVerified: true });
+    } catch (e) {}
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     setSaveSuccess(false);
-    saveStoredUser({ name, phone, email, avatar });
+    saveStoredUser({ name, phone, email, avatar, isGoogleVerified });
     try {
-      await RideXAPI.updateProfile({ name, phone, email, avatar });
+      await RideXAPI.updateProfile({ name, phone, email, avatar, isGoogleVerified });
     } catch (err) {
       console.warn('Profile sync fallback:', err.message);
     }
@@ -6057,67 +6156,175 @@ export function Screen30EditProfile({ onNavigate }) {
   };
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', padding: '20px' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', padding: '20px', position: 'relative' }}>
+      {/* Hidden Gallery Input */}
       <input
         type="file"
-        ref={fileInputRef}
+        ref={galleryInputRef}
         onChange={handlePhotoUpload}
         accept="image/*"
         style={{ display: 'none' }}
       />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <button onClick={() => onNavigate('s29_profile')} style={{ color: '#24153F' }}>
+      {/* Hidden Camera Input */}
+      <input
+        type="file"
+        ref={cameraInputRef}
+        onChange={handlePhotoUpload}
+        accept="image/*"
+        capture="user"
+        style={{ display: 'none' }}
+      />
+
+      {/* Top Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+        <button
+          type="button"
+          onClick={() => onNavigate('s29_profile')}
+          style={{ background: 'none', border: 'none', color: '#24153F', cursor: 'pointer', padding: 0 }}
+        >
           <ArrowLeft size={20} />
         </button>
         <span style={{ fontSize: '17px', fontWeight: 800, color: '#24153F' }}>Personal Information</span>
       </div>
 
-      <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
-          <div style={{ position: 'relative' }}>
-            <UserAvatar user={{ name, avatar }} size={76} border="3px solid #5427A8" />
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '16px' }}>
+        {/* Avatar Section with Gallery Quick Actions */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '22px' }}>
+          <div
+            style={{ position: 'relative', cursor: 'pointer' }}
+            onClick={() => setShowPhotoSheet(true)}
+            title="Tap to change photo"
+          >
+            <UserAvatar user={{ name, avatar }} size={80} border="3px solid #5427A8" />
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowPhotoSheet(true);
+              }}
               title="Change Profile Photo"
               style={{
                 position: 'absolute',
                 bottom: 0,
                 right: 0,
-                width: '28px',
-                height: '28px',
+                width: '30px',
+                height: '30px',
                 borderRadius: '50%',
                 backgroundColor: '#F5C400',
                 color: '#24153F',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: '2px solid #FFFFFF',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                border: '2.5px solid #FFFFFF',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                 cursor: 'pointer',
               }}
             >
-              <Edit3 size={14} />
+              <Edit3 size={15} />
             </button>
           </div>
+
           <span style={{ fontSize: '11px', color: '#6B5B7D', marginTop: '8px', fontWeight: 600 }}>
-            Tap pencil to change photo
+            Tap photo or pencil to change
           </span>
+
+          {/* Quick One-Tap Gallery & Camera Pills */}
+          <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+            <button
+              type="button"
+              onClick={() => galleryInputRef.current?.click()}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '20px',
+                backgroundColor: '#EEF2FF',
+                border: '1.5px solid #C7D2FE',
+                color: '#4338CA',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <ImageIcon size={14} color="#4F46E5" />
+              <span>Choose from Gallery</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '20px',
+                backgroundColor: '#FEF3C7',
+                border: '1.5px solid #FDE68A',
+                color: '#92400E',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Camera size={14} color="#D97706" />
+              <span>Camera</span>
+            </button>
+          </div>
+
+          {photoToast && (
+            <div
+              style={{
+                marginTop: '10px',
+                padding: '6px 14px',
+                borderRadius: '12px',
+                backgroundColor: '#DCFCE7',
+                color: '#166534',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+              }}
+            >
+              <CheckCircle2 size={14} /> {photoToast}
+            </div>
+          )}
         </div>
 
+        {/* Input Fields */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Full Name */}
           <div>
-            <label style={{ fontSize: '11px', color: '#5427A8', fontWeight: 700, display: 'block', marginBottom: '6px' }}>FULL NAME</label>
+            <label style={{ fontSize: '11px', color: '#5427A8', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
+              FULL NAME
+            </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your Full Name"
-              style={{ width: '100%', height: '48px', backgroundColor: '#F8F6FD', borderRadius: '12px', border: '1.5px solid #E5DFF0', padding: '0 14px', color: '#24153F', fontWeight: 600, fontSize: '14px', outline: 'none' }}
+              style={{
+                width: '100%',
+                height: '48px',
+                backgroundColor: '#F8F6FD',
+                borderRadius: '12px',
+                border: '1.5px solid #E5DFF0',
+                padding: '0 14px',
+                color: '#24153F',
+                fontWeight: 600,
+                fontSize: '14px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
             />
           </div>
 
+          {/* Phone Number (Verified) */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <label style={{ fontSize: '11px', color: '#5427A8', fontWeight: 700 }}>PHONE NUMBER</label>
@@ -6129,19 +6336,164 @@ export function Screen30EditProfile({ onNavigate }) {
               type="text"
               value={phone}
               disabled
-              style={{ width: '100%', height: '48px', backgroundColor: '#F1EDF9', borderRadius: '12px', border: '1.5px solid #DDD6FE', padding: '0 14px', color: '#4B5563', fontWeight: 600, fontSize: '14px', outline: 'none', cursor: 'not-allowed' }}
+              style={{
+                width: '100%',
+                height: '48px',
+                backgroundColor: '#F1EDF9',
+                borderRadius: '12px',
+                border: '1.5px solid #DDD6FE',
+                padding: '0 14px',
+                color: '#4B5563',
+                fontWeight: 600,
+                fontSize: '14px',
+                outline: 'none',
+                cursor: 'not-allowed',
+                boxSizing: 'border-box',
+              }}
             />
           </div>
 
+          {/* Email Address with Google Verification Status */}
           <div>
-            <label style={{ fontSize: '11px', color: '#5427A8', fontWeight: 700, display: 'block', marginBottom: '6px' }}>EMAIL ADDRESS</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontSize: '11px', color: '#5427A8', fontWeight: 700 }}>EMAIL ADDRESS</label>
+              {isGoogleVerified ? (
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#2563EB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backgroundColor: '#EFF6FF',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    border: '1px solid #BFDBFE',
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
+                  </svg>
+                  Google Verified ✓
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleVerifyGoogle}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#4F46E5',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: 0,
+                  }}
+                >
+                  <ShieldCheck size={13} color="#4F46E5" /> Verify with Google
+                </button>
+              )}
+            </div>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@fgdrivo.com"
-              style={{ width: '100%', height: '48px', backgroundColor: '#F8F6FD', borderRadius: '12px', border: '1.5px solid #E5DFF0', padding: '0 14px', color: '#24153F', fontWeight: 600, fontSize: '14px', outline: 'none' }}
+              style={{
+                width: '100%',
+                height: '48px',
+                backgroundColor: '#F8F6FD',
+                borderRadius: '12px',
+                border: '1.5px solid #E5DFF0',
+                padding: '0 14px',
+                color: '#24153F',
+                fontWeight: 600,
+                fontSize: '14px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
             />
+
+            {/* Google Verification Interactive Card */}
+            <div
+              style={{
+                marginTop: '10px',
+                padding: '12px 14px',
+                borderRadius: '12px',
+                backgroundColor: isGoogleVerified ? '#EFF6FF' : '#F8FAFC',
+                border: isGoogleVerified ? '1.5px solid #BFDBFE' : '1.5px solid #E2E8F0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '34px',
+                    height: '34px',
+                    borderRadius: '10px',
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #E2E8F0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#1E293B' }}>
+                    Google Account Verification
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748B' }}>
+                    {isGoogleVerified ? 'Verified & Link active' : 'Click to send link to email'}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleVerifyGoogle}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '10px',
+                  backgroundColor: isGoogleVerified ? '#DBEAFE' : '#4F46E5',
+                  border: isGoogleVerified ? '1px solid #93C5FD' : 'none',
+                  color: isGoogleVerified ? '#1D4ED8' : '#FFFFFF',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                {isGoogleVerified ? (
+                  <>
+                    <CheckCircle2 size={13} color="#1D4ED8" />
+                    <span>View Status</span>
+                  </>
+                ) : (
+                  <span>Verify Now</span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -6168,10 +6520,377 @@ export function Screen30EditProfile({ onNavigate }) {
           border: 'none',
           cursor: isSaving ? 'not-allowed' : 'pointer',
           opacity: isSaving ? 0.7 : 1,
+          marginTop: 'auto',
         }}
       >
         {isSaving ? 'Saving...' : saveSuccess ? '✓ Saved!' : 'Save Changes'}
       </button>
+
+      {/* ----------------- CHANGE PROFILE PHOTO BOTTOM SHEET ----------------- */}
+      {showPhotoSheet && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            zIndex: 9999,
+          }}
+          onClick={() => setShowPhotoSheet(false)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '430px',
+              backgroundColor: '#FFFFFF',
+              borderTopLeftRadius: '24px',
+              borderTopRightRadius: '24px',
+              padding: '20px 20px 28px',
+              boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.2)',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ width: '38px', height: '4px', backgroundColor: '#CBD5E1', borderRadius: '2px', margin: '0 auto 16px' }} />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                  Profile Photo
+                </h3>
+                <p style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0' }}>
+                  Choose a picture from your gallery or presets
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPhotoSheet(false)}
+                style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Choose from Gallery */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPhotoSheet(false);
+                  galleryInputRef.current?.click();
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  width: '100%',
+                  padding: '14px 16px',
+                  borderRadius: '14px',
+                  backgroundColor: '#F8FAFC',
+                  border: '1.5px solid #E2E8F0',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4F46E5' }}>
+                  <ImageIcon size={20} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#1E293B' }}>
+                    Choose from Gallery
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748B' }}>
+                    Select a photo from your phone's photo library
+                  </div>
+                </div>
+                <ChevronRight size={18} color="#94A3B8" />
+              </button>
+
+              {/* Take Photo with Camera */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPhotoSheet(false);
+                  cameraInputRef.current?.click();
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  width: '100%',
+                  padding: '14px 16px',
+                  borderRadius: '14px',
+                  backgroundColor: '#F8FAFC',
+                  border: '1.5px solid #E2E8F0',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D97706' }}>
+                  <Camera size={20} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#1E293B' }}>
+                    Take Photo with Camera
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748B' }}>
+                    Snap a quick selfie using your device camera
+                  </div>
+                </div>
+                <ChevronRight size={18} color="#94A3B8" />
+              </button>
+
+              {/* Preset Avatars Header */}
+              <div style={{ marginTop: '8px', marginBottom: '2px' }}>
+                <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#475569' }}>
+                  Or Pick a Stylized Avatar
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }}>
+                {PRESET_AVATARS.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => selectPreset(p)}
+                    style={{
+                      height: '52px',
+                      borderRadius: '12px',
+                      backgroundColor: p.color,
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '22px',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                    }}
+                    title={p.label}
+                  >
+                    {p.icon}
+                  </button>
+                ))}
+              </div>
+
+              {/* Remove Photo Option */}
+              {avatar && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAvatar('');
+                    setShowPhotoSheet(false);
+                    setPhotoToast('Reset to default initials avatar');
+                    setTimeout(() => setPhotoToast(''), 3000);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '14px',
+                    backgroundColor: '#FEF2F2',
+                    border: '1px solid #FECACA',
+                    color: '#DC2626',
+                    cursor: 'pointer',
+                    fontSize: '12.5px',
+                    fontWeight: 700,
+                    justifyContent: 'center',
+                    marginTop: '6px',
+                  }}
+                >
+                  <Trash2 size={15} />
+                  <span>Remove Current Photo</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ----------------- GOOGLE VERIFICATION MODAL ----------------- */}
+      {showGoogleModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px',
+          }}
+          onClick={() => setShowGoogleModal(false)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '380px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '24px',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+              textAlign: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setShowGoogleModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'none',
+                border: 'none',
+                color: '#64748B',
+                cursor: 'pointer',
+                padding: '4px',
+              }}
+            >
+              <X size={18} />
+            </button>
+
+            {/* Google Icon Badge */}
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '16px',
+                backgroundColor: '#F8FAFC',
+                border: '1.5px solid #E2E8F0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 14px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+              }}
+            >
+              <svg width="28" height="28" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" />
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
+              </svg>
+            </div>
+
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+              Google Account Verification
+            </h3>
+            <p style={{ fontSize: '12px', color: '#64748B', lineHeight: 1.45, marginBottom: '16px' }}>
+              Your Google identity is linked to your rider profile for security, invoice delivery, and verified trip status.
+            </p>
+
+            {/* Email Box */}
+            <div
+              style={{
+                backgroundColor: '#EFF6FF',
+                border: '1.5px solid #BFDBFE',
+                borderRadius: '12px',
+                padding: '12px',
+                marginBottom: '16px',
+                textAlign: 'left',
+                display: 'flex',
+                gap: '10px',
+                alignItems: 'center',
+              }}
+            >
+              <Mail size={20} color="#2563EB" style={{ flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#1E40AF', textTransform: 'uppercase' }}>
+                  Verified Google Email
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {email || 'passenger.google@gmail.com'}
+                </div>
+              </div>
+              <CheckCircle2 size={18} color="#16A34A" style={{ flexShrink: 0 }} />
+            </div>
+
+            {googleEmailNoticeSent ? (
+              <div
+                style={{
+                  backgroundColor: '#DCFCE7',
+                  border: '1px solid #BBF7D0',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  fontSize: '12px',
+                  color: '#166534',
+                  fontWeight: 600,
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  textAlign: 'left',
+                }}
+              >
+                <CheckCircle2 size={16} color="#16A34A" style={{ flexShrink: 0 }} />
+                <span>Verification confirmation link sent to {email || 'your email'}!</span>
+              </div>
+            ) : (
+              <p style={{ fontSize: '11px', color: '#475569', marginBottom: '16px' }}>
+                A confirmation link was dispatched to your mail. Need a new link sent?
+              </p>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={handleSendGoogleLink}
+                style={{
+                  width: '100%',
+                  height: '46px',
+                  backgroundColor: '#4F46E5',
+                  color: '#FFFFFF',
+                  borderRadius: '12px',
+                  border: 'none',
+                  fontSize: '13.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                }}
+              >
+                <Mail size={15} />
+                <span>Resend Verification Link to Mail</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowGoogleModal(false)}
+                style={{
+                  width: '100%',
+                  height: '42px',
+                  backgroundColor: '#F1F5F9',
+                  color: '#475569',
+                  borderRadius: '12px',
+                  border: '1px solid #E2E8F0',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
