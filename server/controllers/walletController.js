@@ -24,13 +24,26 @@ export class WalletController {
           status: row.status,
           gatewayRef: row.gateway_ref,
         }));
+
+        // Strict fix: If user has no credit transactions, any legacy 250/195 mock balance MUST be normalized to 0.00
+        const hasCredit = transactions.some(t => t.type === 'credit');
+        if (!hasCredit && (balance === 250 || balance === 195 || transactions.length === 0)) {
+          if (balance !== 0) {
+            balance = 0.0;
+            await db.pgPool.query('UPDATE users SET wallet_balance = 0.00 WHERE id = $1', [userId]).catch(() => {});
+          }
+        }
       } catch (err) {
         console.warn('PostgreSQL wallet fetch error:', err.message);
       }
     } else {
       const wallet = db.get('wallet') || {};
-      balance = parseFloat(wallet.balance || 0);
       transactions = wallet.transactions || [];
+      const hasCredit = transactions.some(t => t.type === 'credit');
+      balance = (!hasCredit && (wallet.balance === 250 || wallet.balance === 195 || transactions.length === 0)) ? 0.0 : parseFloat(wallet.balance || 0);
+      if (wallet.balance !== balance) {
+        wallet.balance = balance;
+      }
     }
 
     return res.json({

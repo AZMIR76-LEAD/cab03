@@ -251,6 +251,7 @@ class DatabaseManager {
         );
 
         ALTER TABLE users ALTER COLUMN wallet_balance SET DEFAULT 0.00;
+        UPDATE users SET wallet_balance = 0.00 WHERE (wallet_balance = 250.00 OR wallet_balance = 195.00) AND NOT EXISTS (SELECT 1 FROM transactions WHERE transactions.user_id = users.id AND transactions.type = 'credit');
 
         CREATE TABLE IF NOT EXISTS drivers (
           id VARCHAR(64) PRIMARY KEY,
@@ -576,7 +577,7 @@ class DatabaseManager {
           avatar: userRow.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
         };
         if (this.data.wallet) {
-          this.data.wallet.balance = parseFloat(userRow.wallet_balance) || this.data.wallet.balance;
+          this.data.wallet.balance = typeof userRow.wallet_balance !== 'undefined' ? (parseFloat(userRow.wallet_balance) || 0.0) : 0.0;
         }
       }
 
@@ -658,7 +659,7 @@ class DatabaseManager {
            greeting_name = EXCLUDED.greeting_name,
            email = EXCLUDED.email,
            wallet_balance = EXCLUDED.wallet_balance`,
-        [u.id, u.phone || '+91 98765 43210', u.name, u.greetingName || u.name, u.email, u.rating || 5.0, (this.data.wallet && this.data.wallet.balance) || 250, u.totalRides || 0, u.avatar]
+        [u.id, u.phone || '+91 98765 43210', u.name, u.greetingName || u.name, u.email, u.rating || 5.0, (this.data.wallet && typeof this.data.wallet.balance === 'number') ? this.data.wallet.balance : 0.0, u.totalRides || 0, u.avatar]
       );
 
       // Seed drivers
@@ -736,7 +737,7 @@ class DatabaseManager {
   async syncUserToPostgres(user) {
     if (!this.pgPool || !this.isPostgresConnected || !user) return;
     try {
-      const balance = this.data.wallet?.balance || user.walletBalance || 250;
+      const balance = typeof user.walletBalance === 'number' ? user.walletBalance : (typeof this.data.wallet?.balance === 'number' ? this.data.wallet.balance : 0.0);
       await this.pgPool.query(
         `INSERT INTO users (id, phone, name, greeting_name, email, rating, wallet_balance, total_rides, avatar, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP)

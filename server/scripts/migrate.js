@@ -80,7 +80,7 @@ async function runMigration() {
         greeting_name VARCHAR(64),
         email VARCHAR(128),
         rating NUMERIC(3,2) DEFAULT 5.0,
-        wallet_balance NUMERIC(10,2) DEFAULT 250.00,
+        wallet_balance NUMERIC(10,2) DEFAULT 0.00,
         total_rides INT DEFAULT 0,
         avatar TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -181,7 +181,7 @@ async function runMigration() {
           u.greetingName || u.name || 'User',
           u.email || 'user@fgdrivo.com',
           u.rating || 5.0,
-          localData.wallet?.balance || 250,
+          (typeof localData.wallet?.balance === 'number') ? localData.wallet.balance : 0.0,
           u.totalRides || 0,
           u.avatar || ''
         ]

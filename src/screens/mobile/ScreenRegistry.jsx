@@ -36,6 +36,7 @@ export let GLOBAL_PAYMENT_RETURN_SCREEN = 's13_fare_estimate';
 export let GLOBAL_USER_PHONE = '';
 export let GLOBAL_USER_NAME = '';
 export let GLOBAL_USER_EMAIL = '';
+export let GLOBAL_USER_DOB = '';
 export let GLOBAL_AUTH_MODE = 'signup';
 export let GLOBAL_FIREBASE_CONFIRMATION = null;
 export let GLOBAL_LATEST_OTP = '';
@@ -45,7 +46,10 @@ export function getStoredUser() {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('fg_user') : null;
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && (parsed.name || parsed.phone)) return { ...CURRENT_USER, ...parsed };
+      if (parsed && (parsed.name || parsed.phone)) {
+        const fixedBalance = (parsed.walletBalance === 250 || parsed.walletBalance === 195) ? 0.0 : (typeof parsed.walletBalance === 'number' ? parsed.walletBalance : 0.0);
+        return { ...CURRENT_USER, ...parsed, walletBalance: fixedBalance };
+      }
     }
   } catch (e) {}
   const phone = GLOBAL_USER_PHONE || '+91 ••••• •••••';
@@ -57,6 +61,7 @@ export function getStoredUser() {
     greetingName,
     phone,
     email: GLOBAL_USER_EMAIL || 'customer@fgdrivo.com',
+    walletBalance: 0.0,
   };
 }
 
@@ -296,6 +301,35 @@ export function Screen03Login({ onNavigate }) {
   const [countryCode, setCountryCode] = useState('+91');
   const [name, setName] = useState('');
   const [dob, setDob] = useState('');
+  const dateInputRef = useRef(null);
+
+  const openDatePicker = () => {
+    if (dateInputRef.current) {
+      if (typeof dateInputRef.current.showPicker === 'function') {
+        dateInputRef.current.showPicker();
+      } else {
+        dateInputRef.current.focus();
+        dateInputRef.current.click();
+      }
+    }
+  };
+
+  const handleNativeDateChange = (e) => {
+    const val = e.target.value; // Format: YYYY-MM-DD
+    if (val) {
+      const parts = val.split('-');
+      if (parts.length === 3) {
+        setDob(`${parts[2]}-${parts[1]}-${parts[0]}`);
+      } else {
+        setDob(val);
+      }
+    }
+  };
+
+  const nativeDateVal = dob && /^\d{2}-\d{2}-\d{4}$/.test(dob)
+    ? dob.split('-').reverse().join('-')
+    : '';
+
   const [useEmail, setUseEmail] = useState(false);
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -379,6 +413,9 @@ export function Screen03Login({ onNavigate }) {
 
     if (name && name.trim()) {
       GLOBAL_USER_NAME = name.trim();
+    }
+    if (dob && dob.trim()) {
+      GLOBAL_USER_DOB = dob.trim();
     }
     if (email && email.trim()) {
       GLOBAL_USER_EMAIL = email.trim();
@@ -860,9 +897,28 @@ export function Screen03Login({ onNavigate }) {
               </div>
             </div>
 
-            {/* Field 3: Date of Birth */}
-            <div>
+            {/* Field 3: Date of Birth with OS Native DatePicker */}
+            <div style={{ position: 'relative' }}>
+              <input
+                ref={dateInputRef}
+                type="date"
+                value={nativeDateVal}
+                onChange={handleNativeDateChange}
+                max={new Date().toISOString().split('T')[0]}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  opacity: 0,
+                  pointerEvents: 'none',
+                  zIndex: -1,
+                }}
+                tabIndex={-1}
+              />
               <label
+                onClick={openDatePicker}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -871,12 +927,14 @@ export function Screen03Login({ onNavigate }) {
                   fontWeight: 600,
                   color: '#334155',
                   marginBottom: '6px',
+                  cursor: 'pointer',
                 }}
               >
                 <Calendar size={16} color="#4338CA" />
                 <span>Date of Birth</span>
               </label>
               <div
+                onClick={openDatePicker}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -887,12 +945,36 @@ export function Screen03Login({ onNavigate }) {
                   padding: '0 12px',
                   gap: '10px',
                   marginBottom: '10px',
+                  cursor: 'pointer',
                 }}
               >
-                <Calendar size={18} color="#94A3B8" />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDatePicker();
+                  }}
+                  aria-label="Pick date of birth"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    margin: 0,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Calendar size={18} color="#4338CA" />
+                </button>
                 <input
                   type="text"
                   value={dob}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDatePicker();
+                  }}
                   onChange={(e) => setDob(e.target.value)}
                   placeholder="DD-MM-YYYY"
                   style={{
@@ -903,9 +985,29 @@ export function Screen03Login({ onNavigate }) {
                     fontSize: '14.5px',
                     fontWeight: 600,
                     color: '#1E293B',
+                    cursor: 'pointer',
                   }}
                 />
-                <Calendar size={17} color="#94A3B8" style={{ cursor: 'pointer' }} />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDatePicker();
+                  }}
+                  aria-label="Open Calendar Picker"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '4px',
+                    margin: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Calendar size={18} color="#4338CA" />
+                </button>
               </div>
             </div>
           </>
@@ -5535,7 +5637,8 @@ export function Screen27AddCard({ onNavigate }) {
 export function Screen28Wallet({ onNavigate }) {
   const [balance, setBalance] = useState(() => {
     const u = getStoredUser();
-    return typeof u?.walletBalance === 'number' ? u.walletBalance : 0.0;
+    const bal = typeof u?.walletBalance === 'number' ? u.walletBalance : 0.0;
+    return (bal === 250 || bal === 195) ? 0.0 : bal;
   });
   const [transactions, setTransactions] = useState([]);
 
@@ -5543,8 +5646,15 @@ export function Screen28Wallet({ onNavigate }) {
     RideXAPI.getWallet()
       .then((w) => {
         if (w && typeof w.balance === 'number') {
-          setBalance(w.balance);
-          if (Array.isArray(w.transactions)) setTransactions(w.transactions);
+          const txs = Array.isArray(w.transactions) ? w.transactions : [];
+          const hasCredit = txs.some(t => t.type === 'credit');
+          const finalBal = (!hasCredit && (w.balance === 250 || w.balance === 195 || txs.length === 0)) ? 0.0 : w.balance;
+          setBalance(finalBal);
+          setTransactions(txs);
+          const u = getStoredUser();
+          if (u && (u.walletBalance === 250 || u.walletBalance === 195)) {
+            saveStoredUser({ ...u, walletBalance: finalBal });
+          }
         }
       })
       .catch((err) => console.warn('Using local wallet data:', err));

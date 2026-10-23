@@ -91,6 +91,7 @@ export const CURRENT_USER = {
   rating: 5.0,
   memberSince: "October 2026",
   totalRides: 0,
+  walletBalance: 0.0,
   avatar: "",
 };
 
