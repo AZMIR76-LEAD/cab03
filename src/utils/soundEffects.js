@@ -98,6 +98,52 @@ class SoundEffectsManager {
       osc.stop(now + 0.08);
     } catch (e) {}
   }
+
+  // Incoming Trip Radar Chime (Pulsing Urgent Beep: 659Hz -> 880Hz)
+  playIncomingRideRadar() {
+    this.stopIncomingRideRadar();
+    const playBeep = () => {
+      try {
+        const ctx = this.getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        // Beep 1
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(700, now);
+        gain1.gain.setValueAtTime(0.2, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.18);
+
+        // Beep 2
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(950, now + 0.14);
+        gain2.gain.setValueAtTime(0.25, now + 0.14);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.14);
+        osc2.stop(now + 0.38);
+      } catch (e) {}
+    };
+
+    playBeep();
+    this.radarInterval = setInterval(playBeep, 1100);
+  }
+
+  stopIncomingRideRadar() {
+    if (this.radarInterval) {
+      clearInterval(this.radarInterval);
+      this.radarInterval = null;
+    }
+  }
 }
 
 export const sounds = new SoundEffectsManager();

@@ -4,6 +4,7 @@ import { VEHICLE_PRICING, RIDE_STATUSES } from '../config/constants.js';
 import { calculateFare, getAllFareEstimates } from '../services/pricingService.js';
 import { RideSimulationService } from '../services/rideSimulationService.js';
 import { DispatchAlgorithmService } from '../services/dispatchAlgorithmService.js';
+import { broadcastIncomingTripToDrivers, getOnlineDriversCount } from '../services/socketService.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
 export class RidesController {
@@ -79,8 +80,24 @@ export class RidesController {
 
     db.set('activeRide', newRide);
 
-    // Kick off autonomous background ride lifecycle simulation
-    RideSimulationService.startSimulation(rideId);
+    // 1. Broadcast 15-second radar alert to all connected online captains
+    broadcastIncomingTripToDrivers(newRide);
+
+    // 2. If no real captain is online, start automated simulation immediately.
+    // Otherwise, give real captain 15 seconds to accept before fallback simulation.
+    const onlineCaptains = getOnlineDriversCount();
+    if (onlineCaptains === 0) {
+      RideSimulationService.startSimulation(rideId);
+    } else {
+      console.log(`[Dispatch] ${onlineCaptains} real captain(s) online. Awaiting 15s radar response.`);
+      setTimeout(() => {
+        const currentRide = db.get('activeRide');
+        if (currentRide && currentRide.id === rideId && currentRide.status === RIDE_STATUSES.FINDING_DRIVER) {
+          console.log(`[Dispatch] No real captain claimed trip ${rideId} in 15s. Falling back to simulation.`);
+          RideSimulationService.startSimulation(rideId);
+        }
+      }, 15000);
+    }
 
     return res.status(201).json({
       success: true,

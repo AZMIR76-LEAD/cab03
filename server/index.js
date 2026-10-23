@@ -108,6 +108,7 @@ app.use('/api/saved-places', placesRoutes);
 app.use('/api/safety', safetyRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/drivers', driversRoutes);
+app.use('/api/driver', driversRoutes);
 app.use('/api/notifications', notificationsRoutes);
 
 // 5. System Health Check

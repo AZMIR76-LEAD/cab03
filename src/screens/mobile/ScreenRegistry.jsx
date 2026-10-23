@@ -23,6 +23,7 @@ import { RideXAPI } from '../../services/api';
 import { socketService } from '../../services/socket';
 import { sounds } from '../../utils/soundEffects';
 import { DeviceLocation, DEFAULT_FALLBACK_LOCATION } from '../../services/deviceLocation';
+import DriverCockpit from '../driver/DriverCockpit';
 import { FirebaseAuthService, isFirebaseConfigured } from '../../services/firebase';
 
 // Global Bargaining State & Location Coordinates
@@ -6086,6 +6087,52 @@ export function Screen29Profile({ onNavigate }) {
           </div>
         </div>
 
+        {/* ----------------- SWITCH TO CAPTAIN / DRIVER MODE BANNER ----------------- */}
+        <div
+          onClick={() => onNavigate('driver_cockpit')}
+          style={{
+            backgroundColor: '#1E1B4B',
+            borderRadius: '20px',
+            padding: '16px',
+            border: '1.5px solid #6366F1',
+            boxShadow: '0 6px 20px rgba(99, 102, 241, 0.25)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div
+              style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '14px',
+                backgroundColor: '#4338CA',
+                border: '1px solid #818CF8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#F5C400',
+              }}
+            >
+              <Car size={24} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '15px', fontWeight: 900, color: '#FFFFFF' }}>Switch to Captain Mode</span>
+                <span style={{ fontSize: '10px', fontWeight: 800, backgroundColor: '#F5C400', color: '#1E1B4B', padding: '2px 7px', borderRadius: '6px' }}>
+                  DRIVER APP
+                </span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#C7D2FE', marginTop: '2px' }}>
+                Manage duty, 15s radar alerts & earnings in Dindigul
+              </div>
+            </div>
+          </div>
+          <ChevronRight size={20} color="#A5B4FC" />
+        </div>
+
         {/* ----------------- ACCOUNT SETTINGS LIST ----------------- */}
         <div
           style={{
@@ -7464,4 +7511,7 @@ export const ALL_MOBILE_SCREENS = [
   { id: 's33_notifications', title: '34 Notification Center', phase: 'Phase O — Notifications' },
   { id: 's34_help', title: '35 Help & Support (FAQ & Chat)', phase: 'Phase P — Help' },
   { id: 's35_settings', title: '36 App Settings & Privacy', phase: 'Phase Q — Settings' },
+  { id: 'driver_cockpit', title: 'Captain Cockpit (Driver Fleet App)', phase: 'Phase R — Driver Fleet' },
 ];
+
+export { DriverCockpit };

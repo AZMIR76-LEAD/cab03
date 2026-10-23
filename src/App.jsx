@@ -40,13 +40,17 @@ import {
   Screen33Notifications,
   Screen34Help,
   Screen35Settings,
+  DriverCockpit,
 } from './screens/mobile/ScreenRegistry';
 
 function getInitialScreen() {
   try {
     if (typeof window !== 'undefined') {
-      // 1. Check URL hash (e.g. #s28_wallet, #s07_home, #s23_ride_history)
+      // 1. Check URL hash (e.g. #driver, #s28_wallet, #s07_home, #s23_ride_history)
       const hash = window.location.hash.replace('#', '').trim();
+      if (hash === 'driver' || hash === 'captain' || hash === 'driver_cockpit') {
+        return 'driver_cockpit';
+      }
       if (hash && ALL_MOBILE_SCREENS.some((s) => s.id === hash)) {
         return hash;
       }
@@ -249,6 +253,7 @@ export default function App() {
       case 's33_notifications': return <Screen33Notifications {...props} />;
       case 's34_help': return <Screen34Help {...props} />;
       case 's35_settings': return <Screen35Settings {...props} />;
+      case 'driver_cockpit': return <DriverCockpit onNavigateToPassenger={() => handleNavigate('s07_home')} {...props} />;
       default: return <Screen07Home {...props} />;
     }
   };
