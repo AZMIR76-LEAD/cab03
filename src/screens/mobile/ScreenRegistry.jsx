@@ -6,7 +6,7 @@ import {
   User, Car, Heart, Briefcase, Home, ShieldAlert, Award, FileText, Download,
   ExternalLink, RotateCcw, Compass, Eye, EyeOff, Radio, Lock, LogOut, Sliders, Zap, Sparkles,
   Calendar, ChevronDown, ArrowRight, ShieldCheck, SlidersHorizontal, Mic, Tag, Headphones, Crosshair, Bus,
-  LogIn, UserPlus
+  LogIn, UserPlus, Mail, X, Delete
 } from 'lucide-react';
 import RideXLogo from '../../components/common/RideXLogo';
 import FGDrivoIntroSplash from '../../components/splash/FGDrivoIntroSplash';
@@ -300,6 +300,64 @@ export function Screen03Login({ onNavigate }) {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
+
+  // Social linking modal state (Google / Apple)
+  const [socialModal, setSocialModal] = useState(null); // 'google' | 'apple' | null
+  const [socialPhone, setSocialPhone] = useState('');
+  const [socialCountryCode, setSocialCountryCode] = useState('+91');
+  const [socialName, setSocialName] = useState('');
+  const [socialEmail, setSocialEmail] = useState('');
+  const [socialError, setSocialError] = useState('');
+  const [socialLoading, setSocialLoading] = useState(false);
+
+  const openSocialAuth = (provider) => {
+    setSocialModal(provider);
+    setSocialPhone('');
+    setSocialError('');
+    if (provider === 'google') {
+      setSocialName(name && name.trim() ? name.trim() : 'Google User');
+      setSocialEmail(email && email.trim() ? email.trim() : 'passenger.google@gmail.com');
+    } else {
+      setSocialName(name && name.trim() ? name.trim() : 'Apple User');
+      setSocialEmail(email && email.trim() ? email.trim() : 'passenger.apple@privaterelay.appleid.com');
+    }
+  };
+
+  const handleSocialSubmit = async () => {
+    setSocialError('');
+    const rawNumber = socialPhone.replace(/[^0-9]/g, '');
+    if (rawNumber.length < 10) {
+      setSocialError('Mobile number is strictly mandatory! Please enter a 10-digit number.');
+      return;
+    }
+
+    const cleanPhone = `${socialCountryCode} ${rawNumber}`;
+    setSocialLoading(true);
+
+    try {
+      // 1. Strict check in database
+      const checkRes = await RideXAPI.checkPhone(cleanPhone).catch(() => null);
+      const mode = checkRes && checkRes.exists ? 'login' : 'signup';
+
+      GLOBAL_USER_PHONE = cleanPhone;
+      GLOBAL_USER_NAME = socialName || (socialModal === 'google' ? 'Google Passenger' : 'Apple Passenger');
+      GLOBAL_USER_EMAIL = socialEmail;
+      GLOBAL_AUTH_MODE = mode;
+
+      // 2. Dispatch OTP to the mandatory mobile number
+      const res = await RideXAPI.sendOtp(cleanPhone, mode);
+      if (res && (res.code || res.demoCode)) {
+        GLOBAL_LATEST_OTP = res.code || res.demoCode;
+      }
+
+      setSocialLoading(false);
+      setSocialModal(null);
+      onNavigate('s04_otp');
+    } catch (err) {
+      setSocialLoading(false);
+      setSocialError(err.message || 'Verification request failed. Please check phone number and try again.');
+    }
+  };
 
   const handleProceed = async () => {
     setAuthError('');
@@ -958,7 +1016,8 @@ export function Screen03Login({ onNavigate }) {
         {/* Social Buttons: Google & Apple */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
           <button
-            onClick={() => onNavigate('s04_otp')}
+            type="button"
+            onClick={() => openSocialAuth('google')}
             style={{
               height: '44px',
               backgroundColor: '#F8FAFC',
@@ -985,7 +1044,8 @@ export function Screen03Login({ onNavigate }) {
           </button>
 
           <button
-            onClick={() => onNavigate('s04_otp')}
+            type="button"
+            onClick={() => openSocialAuth('apple')}
             style={{
               height: '44px',
               backgroundColor: '#F8FAFC',
@@ -1029,6 +1089,283 @@ export function Screen03Login({ onNavigate }) {
           <path d="M0,24 Q140,6 260,26 Q320,34 375,20 L375,34 L0,34 Z" fill="#24153F" />
         </svg>
       </div>
+
+      {/* ----------------- SOCIAL AUTH MANDATORY MOBILE LINKING MODAL ----------------- */}
+      {socialModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            zIndex: 9999,
+          }}
+          onClick={() => !socialLoading && setSocialModal(null)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '430px',
+              backgroundColor: '#FFFFFF',
+              borderTopLeftRadius: '24px',
+              borderTopRightRadius: '24px',
+              padding: '22px 20px 28px',
+              boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Drag Indicator */}
+            <div style={{ width: '38px', height: '4px', backgroundColor: '#CBD5E1', borderRadius: '2px', margin: '0 auto 16px' }} />
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '12px',
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {socialModal === 'google' ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
+                      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" />
+                      <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
+                      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
+                    </svg>
+                  ) : (
+                    <svg width="19" height="19" viewBox="0 0 170 170" fill="#000000">
+                      <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.59-7.71-11.71-14.01-6.19-9.46-11.08-20.2-14.67-32.22-3.59-12.02-5.39-23.2-5.39-33.56 0-14.58 3.64-26.68 10.92-36.3 7.28-9.62 16.4-14.51 27.36-14.68 4.79 0 10.22 1.25 16.3 3.76 6.08 2.51 10.15 3.82 12.22 3.93 1.96 0 6.13-1.37 12.51-4.1 6.38-2.73 11.97-4.01 16.78-3.85 12.63.65 22.84 5.34 30.64 14.07-11.1 6.74-16.54 16.03-16.32 27.87.22 9.35 3.86 17.18 10.93 23.49 7.07 6.31 15.55 9.89 25.44 10.74-2.18 6.53-4.96 13.52-8.34 20.97zM119.22 33.15c0-7.29 2.67-14.15 8.01-20.59 5.34-6.43 11.92-10.36 19.74-11.78.22 1.3.33 2.5.33 3.59 0 7.18-2.83 14.2-8.49 21.05-5.66 6.86-12.41 10.78-20.26 11.77-.22-1.3-.33-2.65-.33-4.04z" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16.5px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                    {socialModal === 'google' ? 'Google Account Link' : 'Apple Account Link'}
+                  </h3>
+                  <p style={{ fontSize: '11.5px', color: '#64748B', margin: 0 }}>
+                    Enter mobile number to complete verification
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !socialLoading && setSocialModal(null)}
+                style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Email Verification Link Sent Notice */}
+            <div
+              style={{
+                backgroundColor: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                borderRadius: '12px',
+                padding: '12px 14px',
+                marginBottom: '14px',
+                display: 'flex',
+                gap: '10px',
+                alignItems: 'flex-start',
+              }}
+            >
+              <Mail size={18} color="#2563EB" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ fontSize: '12px', color: '#1E40AF', lineHeight: 1.45 }}>
+                <span style={{ fontWeight: 700 }}>Account link sent to your mail:</span>
+                <br />
+                <span style={{ fontWeight: 600 }}>{socialEmail}</span>
+                <div style={{ marginTop: '3px', fontSize: '11px', color: '#3B82F6' }}>
+                  A verification confirmation has been dispatched to your email address.
+                </div>
+              </div>
+            </div>
+
+            {/* Mandatory Mobile Notice */}
+            <div
+              style={{
+                backgroundColor: '#FFFBEB',
+                border: '1px solid #FDE68A',
+                borderRadius: '12px',
+                padding: '12px 14px',
+                marginBottom: '16px',
+                display: 'flex',
+                gap: '10px',
+                alignItems: 'flex-start',
+              }}
+            >
+              <Smartphone size={18} color="#D97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ fontSize: '12px', color: '#92400E', lineHeight: 1.45 }}>
+                <span style={{ fontWeight: 700 }}>Mobile Number is strictly required:</span>
+                <br />
+                Every rider must link an active mobile number so drivers can call upon arrival and for dispatch tracking.
+              </div>
+            </div>
+
+            {/* Phone Input Field */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                Mobile Number <span style={{ color: '#EF4444' }}>* (Mandatory)</span>
+              </label>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: '#F8FAFC',
+                  border: '1.5px solid #CBD5E1',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    padding: '0 12px',
+                    height: '46px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    backgroundColor: '#F1F5F9',
+                    borderRight: '1px solid #CBD5E1',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: '#334155',
+                  }}
+                >
+                  🇮🇳 +91
+                </div>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="Enter 10-digit mobile number"
+                  value={socialPhone}
+                  onChange={(e) => {
+                    setSocialPhone(e.target.value.replace(/[^0-9]/g, ''));
+                    setSocialError('');
+                  }}
+                  style={{
+                    flex: 1,
+                    height: '46px',
+                    border: 'none',
+                    outline: 'none',
+                    padding: '0 12px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#0F172A',
+                    backgroundColor: 'transparent',
+                  }}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Full Name Field */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                Full Name
+              </label>
+              <input
+                type="text"
+                value={socialName}
+                onChange={(e) => setSocialName(e.target.value)}
+                placeholder="Your full name"
+                style={{
+                  width: '100%',
+                  height: '46px',
+                  backgroundColor: '#F8FAFC',
+                  border: '1.5px solid #CBD5E1',
+                  borderRadius: '12px',
+                  padding: '0 12px',
+                  fontSize: '13.5px',
+                  fontWeight: 600,
+                  color: '#0F172A',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {socialError && (
+              <div
+                style={{
+                  backgroundColor: '#FEF2F2',
+                  border: '1px solid #FECACA',
+                  borderRadius: '10px',
+                  padding: '10px 12px',
+                  fontSize: '12px',
+                  color: '#B91C1C',
+                  fontWeight: 600,
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <AlertTriangle size={15} color="#DC2626" />
+                <span>{socialError}</span>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => !socialLoading && setSocialModal(null)}
+                style={{
+                  flex: 1,
+                  height: '48px',
+                  backgroundColor: '#F1F5F9',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '12px',
+                  fontSize: '13.5px',
+                  fontWeight: 700,
+                  color: '#475569',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSocialSubmit}
+                disabled={socialLoading}
+                style={{
+                  flex: 2,
+                  height: '48px',
+                  backgroundColor: '#F5C400',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 800,
+                  color: '#24153F',
+                  cursor: socialLoading ? 'default' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 14px rgba(245, 196, 0, 0.4)',
+                }}
+              >
+                {socialLoading ? 'Sending OTP...' : 'Send SMS OTP'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1037,16 +1374,17 @@ export function Screen03Login({ onNavigate }) {
 export function Screen04OTP({ onNavigate }) {
   const currentPhone = GLOBAL_USER_PHONE || '+91 ••••• •••••';
   const maskedPhone = currentPhone.includes('•') ? currentPhone : currentPhone.replace(/(\d{2})\d{4}(\d{4})/, '$1••••$2');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otpCode, setOtpCode] = useState('');
+  const [isInputFocused, setIsInputFocused] = useState(true);
   const [countdown, setCountdown] = useState(28);
   const [isVerifying, setIsVerifying] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const inputRefs = useRef([]);
+  const singleInputRef = useRef(null);
 
   useEffect(() => {
-    // Focus first input box on load
-    inputRefs.current[0]?.focus();
+    // Auto-focus single native overlay input on mount
+    singleInputRef.current?.focus();
   }, []);
 
   useEffect(() => {
@@ -1057,7 +1395,7 @@ export function Screen04OTP({ onNavigate }) {
   }, [countdown]);
 
   const handleVerify = () => {
-    const code = otp.join('');
+    const code = otpCode.trim();
     if (code.length < 4) {
       setHasError(true);
       setErrorMessage('Please enter the 6-digit OTP code.');
@@ -1127,10 +1465,19 @@ export function Screen04OTP({ onNavigate }) {
         padding: '24px 20px',
       }}
     >
+      {/* Blinking Cursor Animation */}
+      <style>{`
+        @keyframes otpBlinkCursor {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+      `}</style>
+
       <div>
         <button
+          type="button"
           onClick={() => onNavigate('s03_login')}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#5427A8', fontWeight: 700, marginBottom: '24px' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#5427A8', fontWeight: 700, marginBottom: '24px', background: 'none', border: 'none', cursor: 'pointer' }}
         >
           <ArrowLeft size={18} />
           <span style={{ fontSize: '13px' }}>Back</span>
@@ -1143,108 +1490,152 @@ export function Screen04OTP({ onNavigate }) {
           We sent a 6-digit confirmation code to <span style={{ color: '#5427A8', fontWeight: 700 }}>{maskedPhone}</span>
         </p>
 
-        {/* 6-digit OTP Inputs */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '20px' }}>
-          {otp.map((digit, i) => (
-            <input
-              key={i}
-              ref={(el) => (inputRefs.current[i] = el)}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onFocus={(e) => e.target.select()}
-              onKeyDown={(e) => {
-                if (e.key === 'Backspace') {
-                  e.preventDefault();
-                  const newOtp = [...otp];
-                  if (otp[i]) {
-                    // Current box has value: clear it and remain focused here
-                    newOtp[i] = '';
-                    setOtp(newOtp);
-                    setHasError(false);
-                  } else if (i > 0) {
-                    // Current box is already empty: clear previous box and jump back to it
-                    newOtp[i - 1] = '';
-                    setOtp(newOtp);
-                    setHasError(false);
-                    inputRefs.current[i - 1]?.focus();
-                  }
-                } else if (e.key === 'ArrowLeft' && i > 0) {
-                  e.preventDefault();
-                  inputRefs.current[i - 1]?.focus();
-                } else if (e.key === 'ArrowRight' && i < 5) {
-                  e.preventDefault();
-                  inputRefs.current[i + 1]?.focus();
-                } else if (e.key === 'Delete') {
-                  e.preventDefault();
-                  const newOtp = [...otp];
-                  newOtp[i] = '';
-                  setOtp(newOtp);
-                  setHasError(false);
-                }
-              }}
-              onChange={(e) => {
-                const raw = e.target.value.replace(/[^0-9]/g, '');
-                if (!raw) {
-                  const newOtp = [...otp];
-                  newOtp[i] = '';
-                  setOtp(newOtp);
-                  return;
-                }
-                // Handle multi-character autofill/paste in onChange
-                if (raw.length > 1) {
-                  const newOtp = [...otp];
-                  const digits = raw.split('');
-                  let curr = i;
-                  for (let d = 0; d < digits.length && curr < 6; d++, curr++) {
-                    newOtp[curr] = digits[d];
-                  }
-                  setOtp(newOtp);
-                  setHasError(false);
-                  const nextIdx = Math.min(i + digits.length, 5);
-                  inputRefs.current[nextIdx]?.focus();
-                  return;
-                }
-                // Single digit typed
-                const newOtp = [...otp];
-                newOtp[i] = raw.slice(-1);
-                setOtp(newOtp);
+        {/* 6-digit OTP Inputs with Single Native Overlay Input: Native Backspace Always Works */}
+        <div
+          style={{ position: 'relative', width: '100%', marginBottom: '12px' }}
+          onClick={() => singleInputRef.current?.focus()}
+        >
+          {/* 6 Visual Display Boxes */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }}>
+            {[0, 1, 2, 3, 4, 5].map((idx) => {
+              const digit = otpCode[idx] || '';
+              const isCurrent = isInputFocused && (otpCode.length === idx || (otpCode.length === 6 && idx === 5));
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    height: '56px',
+                    borderRadius: '12px',
+                    backgroundColor: digit ? '#F5F3FF' : '#F8FAFC',
+                    border: hasError
+                      ? '2px solid #EF4444'
+                      : isCurrent
+                      ? '2.5px solid #5427A8'
+                      : digit
+                      ? '2px solid #7C3AED'
+                      : '1.5px solid #CBD5E1',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '22px',
+                    fontWeight: 800,
+                    color: '#24153F',
+                    boxShadow: isCurrent ? '0 0 0 3px rgba(84, 39, 168, 0.18)' : 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {digit ? digit : isCurrent ? (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: '2px',
+                        height: '22px',
+                        backgroundColor: '#5427A8',
+                        animation: 'otpBlinkCursor 1s infinite',
+                      }}
+                    />
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Real Single Native Transparent Input: Native Backspace, Gboard, Paste, SMS Autofill */}
+          <input
+            ref={singleInputRef}
+            type="tel"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]*"
+            maxLength={6}
+            value={otpCode}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 6);
+              setOtpCode(val);
+              setHasError(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Backspace' || e.keyCode === 8) {
+                // Explicit backup handler for any desktop or physical backspace
+                setOtpCode((prev) => prev.slice(0, -1));
                 setHasError(false);
-                if (i < 5) {
-                  inputRefs.current[i + 1]?.focus();
-                }
+              }
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              opacity: 0.001,
+              fontSize: '24px',
+              cursor: 'pointer',
+              zIndex: 10,
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+            }}
+            autoFocus
+          />
+        </div>
+
+        {/* Dedicated Backspace & Clear Action Helper */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 600 }}>
+            {otpCode.length}/6 digits entered
+          </span>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setOtpCode((prev) => prev.slice(0, -1));
+                setHasError(false);
+                singleInputRef.current?.focus();
               }}
-              onPaste={(e) => {
-                e.preventDefault();
-                const pasteData = e.clipboardData.getData('text').replace(/[^0-9]/g, '');
-                if (pasteData) {
-                  const newOtp = [...otp];
-                  for (let idx = 0; idx < 6; idx++) {
-                    if (pasteData[idx]) {
-                      newOtp[idx] = pasteData[idx];
-                    }
-                  }
-                  setOtp(newOtp);
-                  setHasError(false);
-                  const targetIdx = Math.min(pasteData.length, 5);
-                  inputRefs.current[targetIdx]?.focus();
-                }
-              }}
+              disabled={otpCode.length === 0}
               style={{
-                width: '46px',
-                height: '56px',
-                backgroundColor: '#F8F6FD',
-                border: hasError ? '2px solid #EF4444' : '2px solid #5427A8',
-                borderRadius: '12px',
-                textAlign: 'center',
-                fontSize: '22px',
-                fontWeight: 800,
-                color: '#24153F',
-                outline: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                backgroundColor: otpCode.length > 0 ? '#EEF2FF' : '#F8FAFC',
+                border: '1px solid #CBD5E1',
+                color: otpCode.length > 0 ? '#4338CA' : '#94A3B8',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: otpCode.length > 0 ? 'pointer' : 'default',
+                transition: 'all 0.15s ease',
               }}
-            />
-          ))}
+            >
+              <Delete size={14} />
+              <span>Backspace ⌫</span>
+            </button>
+            {otpCode.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOtpCode('');
+                  setHasError(false);
+                  singleInputRef.current?.focus();
+                }}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '8px',
+                  backgroundColor: '#FEF2F2',
+                  border: '1px solid #FECACA',
+                  color: '#DC2626',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {hasError && (
@@ -1259,9 +1650,9 @@ export function Screen04OTP({ onNavigate }) {
             type="button"
             onClick={() => {
               const codeToFill = GLOBAL_LATEST_OTP || '529481';
-              setOtp(codeToFill.split(''));
+              setOtpCode(codeToFill);
               setHasError(false);
-              inputRefs.current[5]?.focus();
+              singleInputRef.current?.focus();
             }}
             style={{
               padding: '6px 14px',
