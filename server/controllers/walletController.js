@@ -62,17 +62,21 @@ export class WalletController {
 
   static topup(req, res) {
     const amount = parseFloat(req.body.amount);
-    const wallet = db.get('wallet');
+    const upiId = req.body.upiId || req.body.method || 'UPI';
+    const wallet = db.get('wallet') || {};
 
-    wallet.balance = parseFloat((wallet.balance + amount).toFixed(2));
+    wallet.balance = parseFloat(((wallet.balance || 0) + amount).toFixed(2));
 
+    const utrNumber = 'UPI/' + Math.floor(100000000000 + Math.random() * 900000000000);
     const newTxn = {
       id: 'TXN-' + Math.floor(1000 + Math.random() * 9000),
-      title: 'Wallet Top-up (NetBanking/UPI)',
+      title: `Wallet Top-up (UPI: ${upiId})`,
       date: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       amount,
       type: 'credit',
       status: 'Successful',
+      upiId,
+      utr: utrNumber,
     };
 
     wallet.transactions = [newTxn, ...(wallet.transactions || [])];
@@ -80,9 +84,10 @@ export class WalletController {
 
     return res.json({
       success: true,
-      message: `Successfully loaded ₹${amount.toFixed(2)} to FG DRIVO Money`,
+      message: `Successfully loaded ₹${amount.toFixed(2)} to FG DRIVO Money via UPI (${upiId})`,
       newBalance: wallet.balance,
       transaction: newTxn,
+      utr: utrNumber,
     });
   }
 

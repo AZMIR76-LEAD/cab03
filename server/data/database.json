@@ -30,7 +30,8 @@
         "y": 62
       },
       "heading": 135,
-      "status": "available"
+      "status": "offline",
+      "isOnline": true
     },
     {
       "id": "DRV-5104",
@@ -95,7 +96,7 @@
   ],
   "rides": [],
   "wallet": {
-    "balance": 0,
+    "balance": 500,
     "currency": "₹",
     "cashbackEarned": 0,
     "paymentMethods": [
@@ -132,7 +133,18 @@
         "icon": "banknote"
       }
     ],
-    "transactions": []
+    "transactions": [
+      {
+        "id": "TXN-4420",
+        "title": "Wallet Top-up (UPI: arjun@okaxis)",
+        "date": "Today, 06:31 pm",
+        "amount": 500,
+        "type": "credit",
+        "status": "Successful",
+        "upiId": "arjun@okaxis",
+        "utr": "UPI/442977271617"
+      }
+    ]
   },
   "savedPlaces": [
     {

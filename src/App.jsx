@@ -249,34 +249,9 @@ export default function App() {
   };
 
   return (
-    <div
-      style={{
-        width: '100%',
-        minHeight: '100vh',
-        height: '100dvh',
-        backgroundColor: '#0F081D',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-      }}
-    >
+    <div className="fg-drivo-app-wrapper">
       {/* Native Edge-to-Edge Android Screen Container */}
-      <div
-        className="fg-drivo-android-viewport"
-        style={{
-          width: '100%',
-          maxWidth: '440px',
-          height: '100%',
-          maxHeight: '100dvh',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
-          overflow: 'hidden',
-          backgroundColor: '#FFFFFF',
-          boxShadow: '0 0 40px rgba(0, 0, 0, 0.45)',
-        }}
-      >
+      <div className="fg-drivo-android-viewport">
         {renderMobileScreen()}
       </div>
     </div>

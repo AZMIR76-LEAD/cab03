@@ -1,0 +1,104 @@
+/* ============================================================ */
+/* FU DRIVO CABIN — HIGH-CONTRAST DRIVER DESIGN SYSTEM         */
+/* ============================================================ */
+
+:root {
+  --cabin-bg-primary: #0F172A;
+  --cabin-bg-card: #1E293B;
+  --cabin-bg-light: #F8FAFC;
+  --cabin-surface-white: #FFFFFF;
+  
+  --cabin-accent-gold: #F5C400;
+  --cabin-accent-gold-hover: #EAB308;
+  --cabin-brand-indigo: #5427A8;
+  --cabin-brand-indigo-light: #EDE9FE;
+  
+  --cabin-success: #10B981;
+  --cabin-success-bg: #ECFDF5;
+  --cabin-danger: #EF4444;
+  --cabin-danger-bg: #FEF2F2;
+  --cabin-warning: #F59E0B;
+  --cabin-info: #3B82F6;
+  
+  --cabin-text-primary: #0F172A;
+  --cabin-text-secondary: #64748B;
+  --cabin-text-muted: #94A3B8;
+  --cabin-text-white: #FFFFFF;
+  
+  --cabin-border: #E2E8F0;
+  --cabin-border-dark: #334155;
+  
+  --cabin-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --cabin-shadow-md: 0 6px 20px rgba(15, 23, 42, 0.10);
+  --cabin-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.16);
+  --cabin-shadow-glow: 0 4px 20px rgba(245, 196, 0, 0.35);
+
+  --cabin-touch-target: 56px;
+  --cabin-radius-sm: 10px;
+  --cabin-radius-md: 16px;
+  --cabin-radius-lg: 24px;
+  --cabin-radius-full: 9999px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #driver-root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #0B0F19;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--cabin-text-primary);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Native Android Container for Cabin */
+.cabin-viewport {
+  width: 100%;
+  max-width: 440px;
+  height: 100%;
+  max-height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--cabin-surface-white);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.6);
+}
+
+/* Custom Scrollbars */
+.cabin-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.cabin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cabin-scroll::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+/* Pulse animation for active offer & GPS */
+@keyframes cabin-radar-pulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.08); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 0.9; }
+}
+
+.radar-pulse {
+  animation: cabin-radar-pulse 2s infinite ease-in-out;
+}
+
+/* Slide to online track */
+.slider-track {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}

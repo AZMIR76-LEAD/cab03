@@ -94,42 +94,6 @@ class SocketClient {
     }
   }
 
-  // Captain / Driver Fleet Socket Actions
-  joinDriver(driverId, coords) {
-    if (!this.socket) this.connect();
-    if (this.socket && this.socket.connected) {
-      this.socket.emit('driver:join', { driverId, coords });
-    } else {
-      this.socket?.once('connect', () => {
-        this.socket.emit('driver:join', { driverId, coords });
-      });
-    }
-  }
-
-  leaveDriver(driverId) {
-    if (this.socket && this.socket.connected) {
-      this.socket.emit('driver:leave', driverId);
-    }
-  }
-
-  emitDriverTelemetry(payload) {
-    if (this.socket && this.socket.connected) {
-      this.socket.emit('driver:telemetry', payload);
-    }
-  }
-
-  acceptTrip(payload) {
-    if (this.socket && this.socket.connected) {
-      this.socket.emit('driver:accept', payload);
-    }
-  }
-
-  driverArrived(payload) {
-    if (this.socket && this.socket.connected) {
-      this.socket.emit('driver:arrived', payload);
-    }
-  }
-
   on(event, callback) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
@@ -139,13 +103,6 @@ class SocketClient {
     // Auto-connect if listener registered
     if (!this.socket) {
       this.connect();
-    }
-
-    // Also register on underlying socket instance
-    if (this.socket) {
-      this.socket.on(event, (data) => {
-        this.notifyListeners(event, data);
-      });
     }
 
     // Return unbind function

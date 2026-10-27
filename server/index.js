@@ -29,6 +29,7 @@ import placesRoutes from './routes/places.js';
 import safetyRoutes from './routes/safety.js';
 import userRoutes from './routes/user.js';
 import driversRoutes from './routes/drivers.js';
+import driverRoutes from './routes/driver.js';
 import notificationsRoutes from './routes/notifications.js';
 import { db } from './db.js';
 
@@ -108,7 +109,7 @@ app.use('/api/saved-places', placesRoutes);
 app.use('/api/safety', safetyRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/drivers', driversRoutes);
-app.use('/api/driver', driversRoutes);
+app.use('/api/driver', driverRoutes);
 app.use('/api/notifications', notificationsRoutes);
 
 // 5. System Health Check
@@ -144,6 +145,12 @@ if (fs.existsSync(distPath)) {
   // SPA Route Fallback (Express 5 Compatible)
   app.use((req, res, next) => {
     if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/socket.io')) {
+      if (req.path.startsWith('/driver')) {
+        const driverIndexPath = path.join(distPath, 'driver/index.html');
+        if (fs.existsSync(driverIndexPath)) {
+          return res.sendFile(driverIndexPath);
+        }
+      }
       return res.sendFile(path.join(distPath, 'index.html'));
     }
     next();

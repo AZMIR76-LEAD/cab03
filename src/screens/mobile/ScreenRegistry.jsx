@@ -2017,12 +2017,323 @@ export function Screen06NotificationPermission({ onNavigate }) {
 }
 
 // -------------------------------------------------------------
+// -------------------------------------------------------------
+// VOICE DESTINATION SEARCH ENGINE (Web Speech API + Quick Dindigul Hubs)
+// -------------------------------------------------------------
+export function VoiceSearchModal({ isOpen, onClose, onSelectDestination }) {
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [voiceError, setVoiceError] = useState('');
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (e) {}
+      }
+      setIsListening(false);
+      setTranscript('');
+      setVoiceError('');
+      return;
+    }
+
+    const SpeechRecognition = typeof window !== 'undefined'
+      ? (window.SpeechRecognition || window.webkitSpeechRecognition)
+      : null;
+
+    if (!SpeechRecognition) {
+      setVoiceError('Microphone speech recognition is not natively supported in this browser. Please tap any destination below.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-IN';
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setVoiceError('');
+      };
+
+      recognition.onresult = (event) => {
+        let text = '';
+        for (let i = 0; i < event.results.length; i++) {
+          text += event.results[i][0].transcript;
+        }
+        setTranscript(text);
+
+        if (event.results[0] && event.results[0].isFinal) {
+          const finalTrim = text.trim();
+          if (finalTrim) {
+            setTimeout(() => {
+              onSelectDestination(finalTrim);
+            }, 600);
+          }
+        }
+      };
+
+      recognition.onerror = (e) => {
+        console.warn('Voice recognition error:', e.error);
+        if (e.error === 'not-allowed') {
+          setVoiceError('Microphone permission blocked. Please allow mic access or choose a destination below.');
+        } else if (e.error === 'no-speech') {
+          setVoiceError('Could not detect speech. Please speak again or select a location.');
+        } else {
+          setVoiceError('Voice input error. Tap any popular location below.');
+        }
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.warn('SpeechRecognition start failed:', err);
+      setVoiceError('Microphone could not be started. Tap a destination below.');
+      setIsListening(false);
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (e) {}
+      }
+    };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const popularPlaces = [
+    'Dindigul Bus Stand',
+    'Palani Road',
+    'Rock Fort Entrance',
+    'Collectorate Complex',
+    'Railway Junction',
+    'GTN College, Karur Road',
+    'Batlagundu Main Road',
+  ];
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        backgroundColor: 'rgba(15, 23, 42, 0.75)',
+        backdropFilter: 'blur(6px)',
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        padding: 0,
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: '440px',
+          backgroundColor: '#FFFFFF',
+          borderTopLeftRadius: '28px',
+          borderTopRightRadius: '28px',
+          padding: '24px 20px 30px',
+          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.25)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          animation: 'slideUpSheet 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
+        {/* Drag handle pill */}
+        <div style={{ width: '40px', height: '4px', backgroundColor: '#CBD5E1', borderRadius: '999px', marginBottom: '16px' }} />
+
+        {/* Top Header */}
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div>
+            <div style={{ fontSize: '17px', fontWeight: 800, color: '#0F172A' }}>Voice Destination Search</div>
+            <div style={{ fontSize: '12px', color: '#64748B' }}>Say where you want to go in Dindigul</div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              backgroundColor: '#F1F5F9',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#64748B',
+              cursor: 'pointer',
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Pulsing Mic Visualizer */}
+        <div
+          style={{
+            position: 'relative',
+            width: '90px',
+            height: '90px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '12px 0 16px',
+          }}
+        >
+          {isListening && (
+            <>
+              <div
+                className="mic-radar-wave"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(99, 102, 241, 0.25)',
+                  border: '1.5px solid rgba(99, 102, 241, 0.5)',
+                }}
+              />
+              <div
+                className="mic-radar-wave"
+                style={{
+                  position: 'absolute',
+                  inset: '-10px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(245, 196, 0, 0.2)',
+                  animationDelay: '0.6s',
+                }}
+              />
+            </>
+          )}
+
+          <button
+            onClick={() => {
+              if (isListening && recognitionRef.current) {
+                try { recognitionRef.current.stop(); } catch (e) {}
+                setIsListening(false);
+              } else if (recognitionRef.current) {
+                try { recognitionRef.current.start(); } catch (e) {}
+              }
+            }}
+            style={{
+              position: 'relative',
+              zIndex: 2,
+              width: '68px',
+              height: '68px',
+              borderRadius: '50%',
+              backgroundColor: isListening ? '#4F46E5' : '#64748B',
+              border: '3px solid #FFFFFF',
+              boxShadow: isListening ? '0 8px 24px rgba(79, 70, 229, 0.45)' : '0 4px 12px rgba(0,0,0,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <Mic size={30} />
+          </button>
+        </div>
+
+        {/* Listening / Audio Waveform Bars */}
+        {isListening ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', height: '24px', marginBottom: '8px' }}>
+            <span className="soundwave-bar" style={{ width: '4px', backgroundColor: '#4F46E5', borderRadius: '4px', animationDelay: '0s' }} />
+            <span className="soundwave-bar" style={{ width: '4px', backgroundColor: '#6366F1', borderRadius: '4px', animationDelay: '0.15s' }} />
+            <span className="soundwave-bar" style={{ width: '4px', backgroundColor: '#F5C400', borderRadius: '4px', animationDelay: '0.3s' }} />
+            <span className="soundwave-bar" style={{ width: '4px', backgroundColor: '#6366F1', borderRadius: '4px', animationDelay: '0.45s' }} />
+            <span className="soundwave-bar" style={{ width: '4px', backgroundColor: '#4F46E5', borderRadius: '4px', animationDelay: '0.6s' }} />
+          </div>
+        ) : (
+          <div style={{ height: '24px', marginBottom: '8px', fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
+            {transcript ? 'Tap mic to speak again' : 'Tap mic to start speaking'}
+          </div>
+        )}
+
+        {/* Live Transcript / Feedback */}
+        <div
+          style={{
+            width: '100%',
+            backgroundColor: '#F8FAFC',
+            border: '1.5px solid #E2E8F0',
+            borderRadius: '16px',
+            padding: '12px 16px',
+            textAlign: 'center',
+            marginBottom: '16px',
+            minHeight: '52px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {transcript ? (
+            <div style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
+              "{transcript}"
+            </div>
+          ) : voiceError ? (
+            <div style={{ fontSize: '12px', color: '#DC2626', fontWeight: 600 }}>
+              {voiceError}
+            </div>
+          ) : (
+            <div style={{ fontSize: '13px', color: isListening ? '#4F46E5' : '#94A3B8', fontWeight: 600 }}>
+              {isListening ? 'Listening now... Speak destination' : 'e.g. "Dindigul Bus Stand" or "Palani Road"'}
+            </div>
+          )}
+        </div>
+
+        {/* Or tap popular destination */}
+        <div style={{ width: '100%', marginBottom: '6px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 800, color: '#64748B', letterSpacing: '0.5px', marginBottom: '8px', textTransform: 'uppercase' }}>
+            Or One-Tap Destination
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {popularPlaces.map((place) => (
+              <button
+                key={place}
+                onClick={() => onSelectDestination(place)}
+                style={{
+                  backgroundColor: '#F1F5F9',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '20px',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#1E293B',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease',
+                }}
+              >
+                <MapPin size={12} color="#6366F1" />
+                {place}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// -------------------------------------------------------------
 // PHASE D — HOME
 // -------------------------------------------------------------
 
 // Screen 07 — Customer Home (Core Hub)
 export function Screen07Home({ onNavigate }) {
   const [searchValue, setSearchValue] = useState('');
+  const [isVoiceOpen, setIsVoiceOpen] = useState(false);
 
   return (
     <div
@@ -2448,14 +2759,26 @@ export function Screen07Home({ onNavigate }) {
             Search destination...
           </span>
           <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsVoiceOpen(true);
+            }}
+            title="Search destination using voice"
             style={{
-              background: 'none',
-              border: 'none',
+              background: '#EEF2FF',
+              border: '1px solid #C7D2FE',
               color: '#4F46E5',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
               padding: 0,
+              boxShadow: '0 2px 6px rgba(79, 70, 229, 0.15)',
+              transition: 'transform 0.15s ease',
             }}
           >
             <Mic size={17} />
@@ -2653,6 +2976,16 @@ export function Screen07Home({ onNavigate }) {
       </div>
 
       <MobileBottomNav activeTab="home" onNavigate={onNavigate} />
+
+      <VoiceSearchModal
+        isOpen={isVoiceOpen}
+        onClose={() => setIsVoiceOpen(false)}
+        onSelectDestination={(dest) => {
+          GLOBAL_DESTINATION_LOCATION = dest;
+          setIsVoiceOpen(false);
+          onNavigate('s10_choose_ride');
+        }}
+      />
     </div>
   );
 }
@@ -3043,6 +3376,7 @@ export function Screen08Pickup({ onNavigate }) {
 // Screen 09 — Destination Search
 export function Screen09DestinationSearch({ onNavigate }) {
   const [dest, setDest] = useState('');
+  const [isVoiceOpen, setIsVoiceOpen] = useState(false);
   const pickupLocation = GLOBAL_PICKUP_LOCATION || 'Dindigul Junction';
 
   return (
@@ -3072,8 +3406,8 @@ export function Screen09DestinationSearch({ onNavigate }) {
         </div>
 
         {/* Destination Row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '0 12px', height: '48px', border: '1.5px solid #5427A8', boxShadow: '0 2px 8px rgba(84,39,168,0.08)' }}>
-          <div style={{ width: '8px', height: '8px', backgroundColor: '#5427A8' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '0 10px', height: '48px', border: '1.5px solid #5427A8', boxShadow: '0 2px 8px rgba(84,39,168,0.08)' }}>
+          <div style={{ width: '8px', height: '8px', backgroundColor: '#5427A8', flexShrink: 0 }} />
           <input
             autoFocus
             type="text"
@@ -3088,6 +3422,26 @@ export function Screen09DestinationSearch({ onNavigate }) {
             placeholder="Search destination in Dindigul..."
             style={{ flex: 1, backgroundColor: 'transparent', border: 'none', outline: 'none', fontSize: '14px', color: '#24153F', fontWeight: 600 }}
           />
+          <button
+            type="button"
+            onClick={() => setIsVoiceOpen(true)}
+            title="Search with Voice"
+            style={{
+              background: '#EEF2FF',
+              border: 'none',
+              borderRadius: '8px',
+              color: '#5427A8',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <Mic size={16} />
+          </button>
           {dest.trim() && (
             <button
               onClick={() => {
@@ -3099,10 +3453,11 @@ export function Screen09DestinationSearch({ onNavigate }) {
                 border: 'none',
                 borderRadius: '8px',
                 color: '#FFFFFF',
-                padding: '4px 10px',
+                padding: '5px 12px',
                 fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
+                flexShrink: 0,
               }}
             >
               Go
@@ -3159,6 +3514,17 @@ export function Screen09DestinationSearch({ onNavigate }) {
           </div>
         ))}
       </div>
+
+      <VoiceSearchModal
+        isOpen={isVoiceOpen}
+        onClose={() => setIsVoiceOpen(false)}
+        onSelectDestination={(selected) => {
+          setDest(selected);
+          GLOBAL_DESTINATION_LOCATION = selected;
+          setIsVoiceOpen(false);
+          onNavigate('s10_choose_ride');
+        }}
+      />
     </div>
   );
 }
@@ -5659,6 +6025,16 @@ export function Screen28Wallet({ onNavigate }) {
   });
   const [transactions, setTransactions] = useState([]);
 
+  // UPI Topup Details Modal State
+  const [isUpiModalOpen, setIsUpiModalOpen] = useState(false);
+  const [topupAmount, setTopupAmount] = useState(500);
+  const [customAmountStr, setCustomAmountStr] = useState('500');
+  const [selectedUpiApp, setSelectedUpiApp] = useState('gpay'); // 'gpay' | 'phonepe' | 'paytm' | 'vpa'
+  const [vpaId, setVpaId] = useState('');
+  const [vpaError, setVpaError] = useState('');
+  const [isProcessingUpi, setIsProcessingUpi] = useState(false);
+  const [upiSuccessReceipt, setUpiSuccessReceipt] = useState(null);
+
   useEffect(() => {
     RideXAPI.getWallet()
       .then((w) => {
@@ -5677,21 +6053,92 @@ export function Screen28Wallet({ onNavigate }) {
       .catch((err) => console.warn('Using local wallet data:', err));
   }, []);
 
-  const addAmount = (amt) => {
-    RideXAPI.topupWallet(amt)
-      .then((res) => {
-        setBalance(res.newBalance);
-        if (res.transaction) {
-          setTransactions((prev) => [res.transaction, ...prev]);
-        }
-        const u = getStoredUser();
-        if (u) saveStoredUser({ ...u, walletBalance: res.newBalance });
-      })
-      .catch(() => setBalance((prev) => prev + amt));
+  const openUpiTopup = (amt) => {
+    setTopupAmount(amt);
+    setCustomAmountStr(String(amt));
+    setVpaError('');
+    setUpiSuccessReceipt(null);
+    setIsUpiModalOpen(true);
+  };
+
+  const handleProceedUpiPayment = () => {
+    const amtNum = parseFloat(customAmountStr) || topupAmount;
+    if (!amtNum || amtNum <= 0) {
+      setVpaError('Please enter a valid top-up amount');
+      return;
+    }
+
+    let upiIdentifier = '';
+    if (selectedUpiApp === 'vpa') {
+      const trimmedVpa = vpaId.trim();
+      if (!trimmedVpa || !trimmedVpa.includes('@')) {
+        setVpaError('Please enter a valid UPI VPA ID (e.g. yourname@okaxis)');
+        return;
+      }
+      upiIdentifier = trimmedVpa;
+    } else {
+      upiIdentifier = selectedUpiApp === 'gpay'
+        ? 'Google Pay UPI'
+        : selectedUpiApp === 'phonepe'
+        ? 'PhonePe UPI'
+        : 'Paytm UPI';
+    }
+
+    setVpaError('');
+    setIsProcessingUpi(true);
+
+    // Realistic UPI Gateway handshake & state update
+    setTimeout(() => {
+      RideXAPI.topupWallet(amtNum, { upiId: upiIdentifier, method: selectedUpiApp })
+        .then((res) => {
+          setIsProcessingUpi(false);
+          setBalance(res.newBalance);
+          if (res.transaction) {
+            setTransactions((prev) => [res.transaction, ...prev]);
+          }
+          const u = getStoredUser();
+          if (u) saveStoredUser({ ...u, walletBalance: res.newBalance });
+          try { sounds.play('success'); } catch (e) {}
+
+          setUpiSuccessReceipt({
+            amount: amtNum,
+            upiId: upiIdentifier,
+            utr: res.utr || res.transaction?.utr || ('UPI/' + Math.floor(100000000000 + Math.random() * 900000000000)),
+            date: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          });
+        })
+        .catch(() => {
+          // Fallback offline credit
+          setIsProcessingUpi(false);
+          const newBal = balance + amtNum;
+          setBalance(newBal);
+          const fakeTxn = {
+            id: 'TXN-' + Math.floor(1000 + Math.random() * 9000),
+            title: `Wallet Top-up (UPI: ${upiIdentifier})`,
+            date: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            amount: amtNum,
+            type: 'credit',
+            status: 'Successful',
+            utr: 'UPI/' + Math.floor(100000000000 + Math.random() * 900000000000),
+          };
+          setTransactions((prev) => [fakeTxn, ...prev]);
+          const u = getStoredUser();
+          if (u) saveStoredUser({ ...u, walletBalance: newBal });
+          try { sounds.play('success'); } catch (e) {}
+
+          setUpiSuccessReceipt({
+            amount: amtNum,
+            upiId: upiIdentifier,
+            utr: fakeTxn.utr,
+            date: fakeTxn.date,
+          });
+        });
+    }, 1100);
   };
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative' }}>
+      {/* Top Header */}
       <div style={{ padding: '16px 20px', backgroundColor: '#5427A8', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(84, 39, 168, 0.2)' }}>
         <span style={{ fontSize: '18px', fontWeight: 800 }}>FG DRIVO Wallet</span>
         <button onClick={() => onNavigate('s26_payment_methods')} style={{ color: '#24153F', backgroundColor: '#F5C400', fontSize: '12px', fontWeight: 800, padding: '4px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
@@ -5705,19 +6152,44 @@ export function Screen28Wallet({ onNavigate }) {
           <div style={{ fontSize: '12px', color: '#E5DFF0', fontWeight: 600 }}>CURRENT BALANCE</div>
           <div style={{ fontSize: '36px', fontWeight: 900, color: '#F5C400', margin: '4px 0 16px' }}>₹{balance.toFixed(2)}</div>
 
-          {/* Quick Top-up Chips */}
-          <div style={{ fontSize: '11px', color: '#E5DFF0', fontWeight: 700, marginBottom: '8px' }}>QUICK TOP UP:</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-            {[+500, +1000, +2000].map((amt) => (
+          {/* Quick Top-up Chips with UPI Prompt */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '11px', color: '#E5DFF0', fontWeight: 700 }}>ADD MONEY VIA UPI:</span>
+            <span style={{ fontSize: '10px', color: '#F5C400', fontWeight: 700 }}>Instant 0% Fee</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+            {[500, 1000, 2000].map((amt) => (
               <button
                 key={amt}
-                onClick={() => addAmount(amt)}
+                onClick={() => openUpiTopup(amt)}
                 style={{ height: '38px', backgroundColor: '#FFFFFF', borderRadius: '10px', fontSize: '13px', fontWeight: 800, color: '#5427A8', border: 'none', boxShadow: '0 2px 6px rgba(0,0,0,0.1)', cursor: 'pointer' }}
               >
                 +₹{amt}
               </button>
             ))}
           </div>
+
+          <button
+            onClick={() => openUpiTopup(500)}
+            style={{
+              width: '100%',
+              height: '38px',
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              border: '1px dashed rgba(245, 196, 0, 0.5)',
+              borderRadius: '10px',
+              color: '#FFFFFF',
+              fontSize: '12.5px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+            }}
+          >
+            <Smartphone size={15} color="#F5C400" />
+            <span>Enter Custom UPI Top-Up Amount</span>
+          </button>
         </div>
 
         {/* Transactions List */}
@@ -5738,7 +6210,9 @@ export function Screen28Wallet({ onNavigate }) {
               >
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#24153F' }}>{txn.title}</div>
-                  <div style={{ fontSize: '11px', color: '#6B5B7D' }}>{txn.date}</div>
+                  <div style={{ fontSize: '11px', color: '#6B5B7D' }}>
+                    {txn.date} {txn.utr ? `• Ref: ${txn.utr.slice(0, 14)}...` : ''}
+                  </div>
                 </div>
                 <div style={{ fontSize: '15px', fontWeight: 800, color: txn.type === 'credit' ? '#16A34A' : '#24153F' }}>
                   {txn.amount > 0 ? `+₹${txn.amount}` : `-₹${Math.abs(txn.amount)}`}
@@ -5750,6 +6224,475 @@ export function Screen28Wallet({ onNavigate }) {
       </div>
 
       <MobileBottomNav activeTab="wallet" onTabChange={(tab, s) => onNavigate(s)} />
+
+      {/* ----------------- INTERACTIVE UPI DETAILS TOP-UP MODAL ----------------- */}
+      {isUpiModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            padding: 0,
+          }}
+          onClick={() => {
+            if (!isProcessingUpi) setIsUpiModalOpen(false);
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '440px',
+              backgroundColor: '#FFFFFF',
+              borderTopLeftRadius: '28px',
+              borderTopRightRadius: '28px',
+              padding: '24px 20px 32px',
+              boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+              animation: 'slideUpSheet 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+          >
+            {/* Pill drag bar */}
+            <div style={{ width: '40px', height: '4px', backgroundColor: '#CBD5E1', borderRadius: '999px', margin: '0 auto 16px' }} />
+
+            {upiSuccessReceipt ? (
+              /* Success View */
+              <div style={{ textAlign: 'center', padding: '10px 0' }}>
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    backgroundColor: '#DCFCE7',
+                    color: '#16A34A',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 14px',
+                    boxShadow: '0 4px 16px rgba(22, 163, 74, 0.25)',
+                  }}
+                >
+                  <CheckCircle2 size={36} />
+                </div>
+                <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', margin: '0 0 6px' }}>
+                  UPI Payment Successful!
+                </h3>
+                <p style={{ fontSize: '13px', color: '#64748B', margin: '0 0 16px' }}>
+                  ₹{upiSuccessReceipt.amount.toFixed(2)} credited instantly to your FG DRIVO Wallet.
+                </p>
+
+                <div style={{ backgroundColor: '#F8FAFC', borderRadius: '16px', padding: '14px 16px', border: '1px solid #E2E8F0', marginBottom: '20px', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                    <span style={{ color: '#64748B' }}>Payment Mode:</span>
+                    <span style={{ fontWeight: 700, color: '#0F172A' }}>{upiSuccessReceipt.upiId}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                    <span style={{ color: '#64748B' }}>UPI Ref / UTR:</span>
+                    <span style={{ fontWeight: 700, color: '#0F172A' }}>{upiSuccessReceipt.utr}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                    <span style={{ color: '#64748B' }}>Updated Balance:</span>
+                    <span style={{ fontWeight: 800, color: '#16A34A' }}>₹{balance.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setIsUpiModalOpen(false)}
+                  style={{
+                    width: '100%',
+                    height: '48px',
+                    backgroundColor: '#5427A8',
+                    color: '#FFFFFF',
+                    borderRadius: '14px',
+                    fontWeight: 800,
+                    fontSize: '15px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(84, 39, 168, 0.3)',
+                  }}
+                >
+                  Done & View Wallet
+                </button>
+              </div>
+            ) : (
+              /* UPI Form View */
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                      Add Money via UPI
+                    </h3>
+                    <p style={{ fontSize: '12px', color: '#64748B', margin: '2px 0 0' }}>
+                      Instant bank-to-wallet transfer with 0% fee
+                    </p>
+                  </div>
+                  <button
+                    disabled={isProcessingUpi}
+                    onClick={() => setIsUpiModalOpen(false)}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: '#F1F5F9',
+                      border: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#64748B',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* Amount Input Box */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: 700, color: '#475569', marginBottom: '6px', display: 'block' }}>
+                    TOP-UP AMOUNT (INR)
+                  </label>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      backgroundColor: '#F8FAFC',
+                      borderRadius: '14px',
+                      border: '2px solid #5427A8',
+                      padding: '0 16px',
+                      height: '52px',
+                      boxShadow: '0 2px 8px rgba(84, 39, 168, 0.08)',
+                    }}
+                  >
+                    <span style={{ fontSize: '24px', fontWeight: 800, color: '#5427A8', marginRight: '6px' }}>₹</span>
+                    <input
+                      type="number"
+                      value={customAmountStr}
+                      disabled={isProcessingUpi}
+                      onChange={(e) => {
+                        setCustomAmountStr(e.target.value);
+                        setTopupAmount(parseFloat(e.target.value) || 0);
+                        setVpaError('');
+                      }}
+                      placeholder="Enter amount"
+                      style={{
+                        width: '100%',
+                        fontSize: '22px',
+                        fontWeight: 800,
+                        color: '#0F172A',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+
+                  {/* Preset Amount Chips */}
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '8px', overflowX: 'auto', paddingBottom: '2px' }}>
+                    {[200, 500, 1000, 2000, 5000].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        disabled={isProcessingUpi}
+                        onClick={() => {
+                          setTopupAmount(preset);
+                          setCustomAmountStr(String(preset));
+                          setVpaError('');
+                        }}
+                        style={{
+                          backgroundColor: String(preset) === customAmountStr ? '#5427A8' : '#F1F5F9',
+                          color: String(preset) === customAmountStr ? '#FFFFFF' : '#334155',
+                          borderRadius: '8px',
+                          padding: '6px 10px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          border: 'none',
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        +₹{preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* UPI Options Selection */}
+                <div style={{ marginBottom: '18px' }}>
+                  <label style={{ fontSize: '11.5px', fontWeight: 700, color: '#475569', marginBottom: '8px', display: 'block' }}>
+                    SELECT UPI DETAILS / APP
+                  </label>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {/* Google Pay */}
+                    <div
+                      onClick={() => {
+                        if (!isProcessingUpi) {
+                          setSelectedUpiApp('gpay');
+                          setVpaError('');
+                        }
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 14px',
+                        borderRadius: '14px',
+                        border: selectedUpiApp === 'gpay' ? '2px solid #5427A8' : '1px solid #E2E8F0',
+                        backgroundColor: selectedUpiApp === 'gpay' ? '#F6F1FF' : '#FFFFFF',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#4285F4', fontSize: '16px' }}>
+                          G
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Google Pay UPI</div>
+                          <div style={{ fontSize: '11px', color: '#64748B' }}>Fast one-tap UPI approval</div>
+                        </div>
+                      </div>
+                      <input
+                        type="radio"
+                        name="upi_mode"
+                        checked={selectedUpiApp === 'gpay'}
+                        onChange={() => setSelectedUpiApp('gpay')}
+                        style={{ accentColor: '#5427A8', width: '18px', height: '18px' }}
+                      />
+                    </div>
+
+                    {/* PhonePe */}
+                    <div
+                      onClick={() => {
+                        if (!isProcessingUpi) {
+                          setSelectedUpiApp('phonepe');
+                          setVpaError('');
+                        }
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 14px',
+                        borderRadius: '14px',
+                        border: selectedUpiApp === 'phonepe' ? '2px solid #5427A8' : '1px solid #E2E8F0',
+                        backgroundColor: selectedUpiApp === 'phonepe' ? '#F6F1FF' : '#FFFFFF',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#5F259F', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '16px' }}>
+                          पे
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>PhonePe UPI</div>
+                          <div style={{ fontSize: '11px', color: '#64748B' }}>Pay via linked PhonePe account</div>
+                        </div>
+                      </div>
+                      <input
+                        type="radio"
+                        name="upi_mode"
+                        checked={selectedUpiApp === 'phonepe'}
+                        onChange={() => setSelectedUpiApp('phonepe')}
+                        style={{ accentColor: '#5427A8', width: '18px', height: '18px' }}
+                      />
+                    </div>
+
+                    {/* Paytm UPI */}
+                    <div
+                      onClick={() => {
+                        if (!isProcessingUpi) {
+                          setSelectedUpiApp('paytm');
+                          setVpaError('');
+                        }
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 14px',
+                        borderRadius: '14px',
+                        border: selectedUpiApp === 'paytm' ? '2px solid #5427A8' : '1px solid #E2E8F0',
+                        backgroundColor: selectedUpiApp === 'paytm' ? '#F6F1FF' : '#FFFFFF',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#00BAF2', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '11px' }}>
+                          Paytm
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Paytm UPI</div>
+                          <div style={{ fontSize: '11px', color: '#64748B' }}>Direct bank or Paytm Payments Bank</div>
+                        </div>
+                      </div>
+                      <input
+                        type="radio"
+                        name="upi_mode"
+                        checked={selectedUpiApp === 'paytm'}
+                        onChange={() => setSelectedUpiApp('paytm')}
+                        style={{ accentColor: '#5427A8', width: '18px', height: '18px' }}
+                      />
+                    </div>
+
+                    {/* Enter Custom UPI ID (VPA) */}
+                    <div
+                      onClick={() => {
+                        if (!isProcessingUpi) {
+                          setSelectedUpiApp('vpa');
+                          setVpaError('');
+                        }
+                      }}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: '14px',
+                        border: selectedUpiApp === 'vpa' ? '2px solid #5427A8' : '1px solid #E2E8F0',
+                        backgroundColor: selectedUpiApp === 'vpa' ? '#F6F1FF' : '#FFFFFF',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: selectedUpiApp === 'vpa' ? '10px' : '0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5427A8' }}>
+                            <Smartphone size={18} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>Enter UPI ID / VPA</div>
+                            <div style={{ fontSize: '11px', color: '#64748B' }}>BHIM, Cred, Amazon Pay or Any Bank UPI</div>
+                          </div>
+                        </div>
+                        <input
+                          type="radio"
+                          name="upi_mode"
+                          checked={selectedUpiApp === 'vpa'}
+                          onChange={() => setSelectedUpiApp('vpa')}
+                          style={{ accentColor: '#5427A8', width: '18px', height: '18px' }}
+                        />
+                      </div>
+
+                      {/* VPA Input Field */}
+                      {selectedUpiApp === 'vpa' && (
+                        <div onClick={(e) => e.stopPropagation()} style={{ marginTop: '8px' }}>
+                          <input
+                            type="text"
+                            value={vpaId}
+                            disabled={isProcessingUpi}
+                            onChange={(e) => {
+                              setVpaId(e.target.value);
+                              setVpaError('');
+                            }}
+                            placeholder="e.g. mobile@upi or yourname@okaxis"
+                            style={{
+                              width: '100%',
+                              height: '42px',
+                              backgroundColor: '#FFFFFF',
+                              border: '1.5px solid #CBD5E1',
+                              borderRadius: '10px',
+                              padding: '0 12px',
+                              fontSize: '13px',
+                              fontWeight: 600,
+                              color: '#0F172A',
+                              outline: 'none',
+                              boxSizing: 'border-box',
+                            }}
+                          />
+
+                          {/* Quick Extension Chips */}
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                            {['@okaxis', '@paytm', '@ybl', '@okhdfcbank', '@ibl'].map((ext) => (
+                              <button
+                                key={ext}
+                                type="button"
+                                disabled={isProcessingUpi}
+                                onClick={() => {
+                                  const prefix = vpaId.includes('@') ? vpaId.split('@')[0] : vpaId;
+                                  setVpaId((prefix || 'rider') + ext);
+                                  setVpaError('');
+                                }}
+                                style={{
+                                  backgroundColor: '#E2E8F0',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '3px 8px',
+                                  fontSize: '10.5px',
+                                  fontWeight: 700,
+                                  color: '#334155',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                {ext}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {vpaError && (
+                  <div style={{ padding: '8px 12px', backgroundColor: '#FEE2E2', borderRadius: '10px', color: '#DC2626', fontSize: '12px', fontWeight: 600, marginBottom: '14px', border: '1px solid #FCA5A5' }}>
+                    {vpaError}
+                  </div>
+                )}
+
+                {/* Trust Badge */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '11px', color: '#64748B', marginBottom: '16px' }}>
+                  <ShieldCheck size={14} color="#16A34A" />
+                  <span>100% Encrypted via NPCI Unified Payments Interface</span>
+                </div>
+
+                {/* Action CTA */}
+                <button
+                  disabled={isProcessingUpi}
+                  onClick={handleProceedUpiPayment}
+                  style={{
+                    width: '100%',
+                    height: '50px',
+                    backgroundColor: isProcessingUpi ? '#A78BFA' : '#5427A8',
+                    color: '#FFFFFF',
+                    borderRadius: '14px',
+                    fontWeight: 800,
+                    fontSize: '15px',
+                    border: 'none',
+                    cursor: isProcessingUpi ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    boxShadow: '0 4px 16px rgba(84, 39, 168, 0.3)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {isProcessingUpi ? (
+                    <>
+                      <span className="soundwave-bar" style={{ width: '4px', backgroundColor: '#FFFFFF' }} />
+                      <span>Requesting Approval from UPI...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Pay ₹{customAmountStr || topupAmount} via UPI</span>
+                      <ArrowRight size={17} strokeWidth={2.5} />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

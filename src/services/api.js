@@ -100,9 +100,9 @@ export const RideXAPI = {
 
   // Wallet
   getWallet: () => request('/wallet'),
-  topupWallet: (amount) => request('/wallet/topup', {
+  topupWallet: (amount, extra = {}) => request('/wallet/topup', {
     method: 'POST',
-    body: JSON.stringify({ amount }),
+    body: JSON.stringify({ amount, ...extra }),
   }),
   addCard: (cardData) => request('/wallet/add-card', {
     method: 'POST',
@@ -136,40 +136,5 @@ export const RideXAPI = {
   getNotifications: () => request('/notifications'),
   markNotificationsRead: () => request('/notifications/mark-read', {
     method: 'POST',
-  }),
-
-  // Captain / Driver Fleet API
-  authDriver: (data) => request('/driver/auth', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  toggleDriverOnline: (driverId, isOnline, coords) => request('/driver/toggle-online', {
-    method: 'POST',
-    body: JSON.stringify({ driverId, isOnline, coords }),
-  }),
-  updateDriverLocation: (driverId, coords, heading, speed) => request('/driver/location', {
-    method: 'POST',
-    body: JSON.stringify({ driverId, coords, heading, speed }),
-  }),
-  getDriverActiveTrip: () => request('/driver/active-trip'),
-  acceptTrip: (driverId, rideId) => request('/driver/trip/accept', {
-    method: 'POST',
-    body: JSON.stringify({ driverId, rideId }),
-  }),
-  rejectTrip: (driverId, rideId) => request('/driver/trip/reject', {
-    method: 'POST',
-    body: JSON.stringify({ driverId, rideId }),
-  }),
-  arrivedAtPickup: (driverId, rideId) => request('/driver/trip/arrived', {
-    method: 'POST',
-    body: JSON.stringify({ driverId, rideId }),
-  }),
-  startTripWithOtp: (driverId, rideId, otp) => request('/driver/trip/start', {
-    method: 'POST',
-    body: JSON.stringify({ driverId, rideId, otp }),
-  }),
-  completeTrip: (driverId, rideId) => request('/driver/trip/complete', {
-    method: 'POST',
-    body: JSON.stringify({ driverId, rideId }),
   }),
 };
