@@ -422,6 +422,43 @@ class DatabaseManager {
     return null;
   }
 
+  async findUserByEmail(email) {
+    if (!email) return null;
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (this.pgPool && this.isPostgresConnected) {
+      try {
+        const res = await this.pgPool.query(
+          `SELECT * FROM users WHERE LOWER(email) = $1 LIMIT 1`,
+          [cleanEmail]
+        );
+        if (res.rows.length > 0) {
+          const row = res.rows[0];
+          return {
+            id: row.id,
+            phone: row.phone,
+            name: row.name || 'Passenger',
+            greetingName: row.greeting_name || row.name?.split(' ')[0] || 'Passenger',
+            email: row.email,
+            rating: parseFloat(row.rating) || 5.0,
+            walletBalance: parseFloat(row.wallet_balance) || 0.0,
+            totalRides: row.total_rides || 0,
+            avatar: row.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+          };
+        }
+        return null;
+      } catch (err) {
+        console.warn('[PostgreSQL Engine] findUserByEmail error:', err.message);
+      }
+    }
+
+    const localUser = this.data.user;
+    if (localUser && localUser.email && localUser.email.toLowerCase() === cleanEmail) {
+      return localUser;
+    }
+    return null;
+  }
+
   async createUser({ phone, name, email }) {
     const cleanPhone = phone.trim();
     const cleanName = (name || '').trim();

@@ -358,19 +358,76 @@ export function Screen03Login({ onNavigate }) {
   const [socialCountryCode, setSocialCountryCode] = useState('+91');
   const [socialName, setSocialName] = useState('');
   const [socialEmail, setSocialEmail] = useState('');
+  const [socialAvatar, setSocialAvatar] = useState('');
+  const [isOAuthVerified, setIsOAuthVerified] = useState(false);
   const [socialError, setSocialError] = useState('');
   const [socialLoading, setSocialLoading] = useState(false);
+  const [socialBtnLoading, setSocialBtnLoading] = useState(null); // 'google' | 'apple' | null
 
-  const openSocialAuth = (provider) => {
-    setSocialModal(provider);
-    setSocialPhone('');
+  const openSocialAuth = async (provider) => {
+    setSocialBtnLoading(provider);
     setSocialError('');
-    if (provider === 'google') {
-      setSocialName(name && name.trim() ? name.trim() : 'Google User');
-      setSocialEmail(email && email.trim() ? email.trim() : 'passenger.google@gmail.com');
+    setSocialPhone('');
+
+    let oauthProfile = null;
+    try {
+      if (provider === 'google') {
+        oauthProfile = await FirebaseAuthService.signInWithGoogle();
+      } else if (provider === 'apple') {
+        oauthProfile = await FirebaseAuthService.signInWithApple();
+      }
+    } catch (err) {
+      console.warn(`[Firebase ${provider} Auth] OAuth prompt notice:`, err.code || err.message);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setSocialBtnLoading(null);
+        return;
+      }
+    }
+
+    if (oauthProfile && oauthProfile.email) {
+      setIsOAuthVerified(true);
+      const resolvedName = oauthProfile.name || (provider === 'google' ? 'Google User' : 'Apple User');
+      setSocialName(resolvedName);
+      setSocialEmail(oauthProfile.email);
+      setSocialAvatar(oauthProfile.photoUrl || '');
+
+      // Check if user already exists in backend with mobile number linked
+      try {
+        const socialRes = await RideXAPI.socialLogin({
+          email: oauthProfile.email,
+          name: resolvedName,
+          provider,
+          avatar: oauthProfile.photoUrl,
+        });
+
+        if (socialRes && socialRes.isPhoneLinked && socialRes.token && socialRes.user) {
+          saveStoredUser(socialRes.user);
+          try {
+            localStorage.setItem('fg_auth_token', socialRes.token);
+          } catch (e) {}
+          setSocialBtnLoading(null);
+          onNavigate('s07_home');
+          return;
+        }
+      } catch (e) {
+        console.warn('[Social Auth] Backend verification error:', e.message);
+      }
+
+      setSocialBtnLoading(null);
+      setSocialModal(provider);
     } else {
-      setSocialName(name && name.trim() ? name.trim() : 'Apple User');
-      setSocialEmail(email && email.trim() ? email.trim() : 'passenger.apple@privaterelay.appleid.com');
+      // Fallback to in-app Google / Apple verification modal
+      setIsOAuthVerified(false);
+      setSocialAvatar('');
+      if (provider === 'google') {
+        setSocialName(name && name.trim() ? name.trim() : 'Google User');
+        setSocialEmail(email && email.trim() ? email.trim() : 'passenger.google@gmail.com');
+      } else {
+        setSocialName(name && name.trim() ? name.trim() : 'Apple User');
+        setSocialEmail(email && email.trim() ? email.trim() : 'passenger.apple@privaterelay.appleid.com');
+      }
+      setSocialBtnLoading(null);
+      setSocialModal(provider);
     }
   };
 
@@ -1137,10 +1194,11 @@ export function Screen03Login({ onNavigate }) {
           <button
             type="button"
             onClick={() => openSocialAuth('google')}
+            disabled={socialBtnLoading !== null}
             style={{
               height: '44px',
-              backgroundColor: '#F8FAFC',
-              border: '1px solid #E2E8F0',
+              backgroundColor: socialBtnLoading === 'google' ? '#EFF6FF' : '#F8FAFC',
+              border: socialBtnLoading === 'google' ? '1.5px solid #3B82F6' : '1px solid #E2E8F0',
               borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
@@ -1149,26 +1207,36 @@ export function Screen03Login({ onNavigate }) {
               fontSize: '13px',
               fontWeight: 600,
               color: '#1E293B',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s',
+              cursor: socialBtnLoading ? 'default' : 'pointer',
+              transition: 'all 0.2s',
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
-              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" />
-              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
-              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
-            </svg>
-            <span>Google</span>
+            {socialBtnLoading === 'google' ? (
+              <>
+                <div style={{ width: '16px', height: '16px', border: '2px solid #3B82F6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                <span style={{ color: '#2563EB', fontWeight: 700 }}>Verifying...</span>
+              </>
+            ) : (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" />
+                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
+                </svg>
+                <span>Google</span>
+              </>
+            )}
           </button>
 
           <button
             type="button"
             onClick={() => openSocialAuth('apple')}
+            disabled={socialBtnLoading !== null}
             style={{
               height: '44px',
-              backgroundColor: '#F8FAFC',
-              border: '1px solid #E2E8F0',
+              backgroundColor: socialBtnLoading === 'apple' ? '#F1F5F9' : '#F8FAFC',
+              border: socialBtnLoading === 'apple' ? '1.5px solid #0F172A' : '1px solid #E2E8F0',
               borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
@@ -1177,14 +1245,23 @@ export function Screen03Login({ onNavigate }) {
               fontSize: '13px',
               fontWeight: 600,
               color: '#1E293B',
-              cursor: 'pointer',
-              transition: 'background-color 0.2s',
+              cursor: socialBtnLoading ? 'default' : 'pointer',
+              transition: 'all 0.2s',
             }}
           >
-            <svg width="17" height="17" viewBox="0 0 170 170" fill="#000000">
-              <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.59-7.71-11.71-14.01-6.19-9.46-11.08-20.2-14.67-32.22-3.59-12.02-5.39-23.2-5.39-33.56 0-14.58 3.64-26.68 10.92-36.3 7.28-9.62 16.4-14.51 27.36-14.68 4.79 0 10.22 1.25 16.3 3.76 6.08 2.51 10.15 3.82 12.22 3.93 1.96 0 6.13-1.37 12.51-4.1 6.38-2.73 11.97-4.01 16.78-3.85 12.63.65 22.84 5.34 30.64 14.07-11.1 6.74-16.54 16.03-16.32 27.87.22 9.35 3.86 17.18 10.93 23.49 7.07 6.31 15.55 9.89 25.44 10.74-2.18 6.53-4.96 13.52-8.34 20.97zM119.22 33.15c0-7.29 2.67-14.15 8.01-20.59 5.34-6.43 11.92-10.36 19.74-11.78.22 1.3.33 2.5.33 3.59 0 7.18-2.83 14.2-8.49 21.05-5.66 6.86-12.41 10.78-20.26 11.77-.22-1.3-.33-2.65-.33-4.04z" />
-            </svg>
-            <span>Apple</span>
+            {socialBtnLoading === 'apple' ? (
+              <>
+                <div style={{ width: '16px', height: '16px', border: '2px solid #0F172A', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                <span style={{ color: '#0F172A', fontWeight: 700 }}>Verifying...</span>
+              </>
+            ) : (
+              <>
+                <svg width="17" height="17" viewBox="0 0 170 170" fill="#000000">
+                  <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.59-7.71-11.71-14.01-6.19-9.46-11.08-20.2-14.67-32.22-3.59-12.02-5.39-23.2-5.39-33.56 0-14.58 3.64-26.68 10.92-36.3 7.28-9.62 16.4-14.51 27.36-14.68 4.79 0 10.22 1.25 16.3 3.76 6.08 2.51 10.15 3.82 12.22 3.93 1.96 0 6.13-1.37 12.51-4.1 6.38-2.73 11.97-4.01 16.78-3.85 12.63.65 22.84 5.34 30.64 14.07-11.1 6.74-16.54 16.03-16.32 27.87.22 9.35 3.86 17.18 10.93 23.49 7.07 6.31 15.55 9.89 25.44 10.74-2.18 6.53-4.96 13.52-8.34 20.97zM119.22 33.15c0-7.29 2.67-14.15 8.01-20.59 5.34-6.43 11.92-10.36 19.74-11.78.22 1.3.33 2.5.33 3.59 0 7.18-2.83 14.2-8.49 21.05-5.66 6.86-12.41 10.78-20.26 11.77-.22-1.3-.33-2.65-.33-4.04z" />
+                </svg>
+                <span>Apple</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -1250,8 +1327,8 @@ export function Screen03Login({ onNavigate }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div
                   style={{
-                    width: '38px',
-                    height: '38px',
+                    width: '40px',
+                    height: '40px',
                     borderRadius: '12px',
                     backgroundColor: '#F8FAFC',
                     border: '1px solid #E2E8F0',
@@ -1261,24 +1338,24 @@ export function Screen03Login({ onNavigate }) {
                   }}
                 >
                   {socialModal === 'google' ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24">
+                    <svg width="22" height="22" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" />
                       <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" />
                       <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" />
                       <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
                     </svg>
                   ) : (
-                    <svg width="19" height="19" viewBox="0 0 170 170" fill="#000000">
+                    <svg width="20" height="20" viewBox="0 0 170 170" fill="#000000">
                       <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.69-3.04-7.59-7.71-11.71-14.01-6.19-9.46-11.08-20.2-14.67-32.22-3.59-12.02-5.39-23.2-5.39-33.56 0-14.58 3.64-26.68 10.92-36.3 7.28-9.62 16.4-14.51 27.36-14.68 4.79 0 10.22 1.25 16.3 3.76 6.08 2.51 10.15 3.82 12.22 3.93 1.96 0 6.13-1.37 12.51-4.1 6.38-2.73 11.97-4.01 16.78-3.85 12.63.65 22.84 5.34 30.64 14.07-11.1 6.74-16.54 16.03-16.32 27.87.22 9.35 3.86 17.18 10.93 23.49 7.07 6.31 15.55 9.89 25.44 10.74-2.18 6.53-4.96 13.52-8.34 20.97zM119.22 33.15c0-7.29 2.67-14.15 8.01-20.59 5.34-6.43 11.92-10.36 19.74-11.78.22 1.3.33 2.5.33 3.59 0 7.18-2.83 14.2-8.49 21.05-5.66 6.86-12.41 10.78-20.26 11.77-.22-1.3-.33-2.65-.33-4.04z" />
                     </svg>
                   )}
                 </div>
                 <div>
                   <h3 style={{ fontSize: '16.5px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
-                    {socialModal === 'google' ? 'Google Account Link' : 'Apple Account Link'}
+                    {socialModal === 'google' ? 'Google Verification' : 'Apple ID Verification'}
                   </h3>
-                  <p style={{ fontSize: '11.5px', color: '#64748B', margin: 0 }}>
-                    Enter mobile number to complete verification
+                  <p style={{ fontSize: '11.5px', color: isOAuthVerified ? '#16A34A' : '#64748B', fontWeight: isOAuthVerified ? 700 : 500, margin: 0 }}>
+                    {isOAuthVerified ? '✓ Identity Verified Successfully' : 'Link mobile number to complete setup'}
                   </p>
                 </div>
               </div>
@@ -1291,29 +1368,109 @@ export function Screen03Login({ onNavigate }) {
               </button>
             </div>
 
-            {/* Email Verification Link Sent Notice */}
-            <div
-              style={{
-                backgroundColor: '#EFF6FF',
-                border: '1px solid #BFDBFE',
-                borderRadius: '12px',
-                padding: '12px 14px',
-                marginBottom: '14px',
-                display: 'flex',
-                gap: '10px',
-                alignItems: 'flex-start',
-              }}
-            >
-              <Mail size={18} color="#2563EB" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <div style={{ fontSize: '12px', color: '#1E40AF', lineHeight: 1.45 }}>
-                <span style={{ fontWeight: 700 }}>Account link sent to your mail:</span>
-                <br />
-                <span style={{ fontWeight: 600 }}>{socialEmail}</span>
-                <div style={{ marginTop: '3px', fontSize: '11px', color: '#3B82F6' }}>
-                  A verification confirmation has been dispatched to your email address.
+            {/* Verified Account Card OR Email Notice */}
+            {isOAuthVerified ? (
+              <div
+                style={{
+                  backgroundColor: '#F0FDF4',
+                  border: '1.5px solid #86EFAC',
+                  borderRadius: '14px',
+                  padding: '12px 14px',
+                  marginBottom: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                }}
+              >
+                {socialAvatar ? (
+                  <img
+                    src={socialAvatar}
+                    alt=""
+                    style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #22C55E' }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '50%',
+                      backgroundColor: '#DCFCE7',
+                      color: '#15803D',
+                      fontWeight: 800,
+                      fontSize: '18px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '2px solid #22C55E',
+                    }}
+                  >
+                    {(socialName && socialName[0]) || 'U'}
+                  </div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontWeight: 800, fontSize: '13.5px', color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {socialName}
+                    </span>
+                    <span style={{ backgroundColor: '#DCFCE7', color: '#15803D', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <CheckCircle2 size={11} strokeWidth={3} /> VERIFIED
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#166534', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {socialEmail}
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div
+                style={{
+                  backgroundColor: '#EFF6FF',
+                  border: '1px solid #BFDBFE',
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  marginBottom: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}
+              >
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <Mail size={18} color="#2563EB" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div style={{ fontSize: '12px', color: '#1E40AF', lineHeight: 1.45 }}>
+                    <span style={{ fontWeight: 700 }}>Account link sent to your mail:</span>
+                    <br />
+                    <span style={{ fontWeight: 600 }}>{socialEmail}</span>
+                    <div style={{ marginTop: '3px', fontSize: '11px', color: '#3B82F6' }}>
+                      A verification confirmation has been dispatched to your email address.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Option to retry popup authentication */}
+                <button
+                  type="button"
+                  onClick={() => openSocialAuth(socialModal)}
+                  disabled={socialBtnLoading !== null}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    border: '1.5px solid #2563EB',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    color: '#2563EB',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Zap size={14} />
+                  <span>Authenticate with {socialModal === 'google' ? 'Google' : 'Apple'} Popup</span>
+                </button>
+              </div>
+            )}
 
             {/* Mandatory Mobile Notice */}
             <div
@@ -1392,7 +1549,7 @@ export function Screen03Login({ onNavigate }) {
               </div>
             </div>
 
-            {/* Full Name Field */}
+            {/* Full Name Field (Editable if not verified) */}
             <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
                 Full Name
@@ -1479,7 +1636,7 @@ export function Screen03Login({ onNavigate }) {
                   boxShadow: '0 4px 14px rgba(245, 196, 0, 0.4)',
                 }}
               >
-                {socialLoading ? 'Sending OTP...' : 'Send SMS OTP'}
+                {socialLoading ? 'Sending OTP...' : (isOAuthVerified ? 'Link & Send OTP' : 'Send SMS OTP')}
               </button>
             </div>
           </div>

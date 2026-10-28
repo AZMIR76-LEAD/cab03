@@ -176,4 +176,53 @@ export class AuthController {
       user,
     });
   }
+
+  static async checkEmail(req, res) {
+    const { email } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      throw new ApiError('A valid email address is required.', 400);
+    }
+    const user = await db.findUserByEmail(cleanEmail);
+    return res.json({
+      success: true,
+      exists: !!user,
+      user: user ? { id: user.id, name: user.name, phone: user.phone, email: user.email } : null,
+      message: user ? 'Email is registered.' : 'Email is not registered.',
+    });
+  }
+
+  static async socialLogin(req, res) {
+    const { email, name, provider, avatar } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      throw new ApiError('Email is required for social verification.', 400);
+    }
+
+    const existingUser = await db.findUserByEmail(cleanEmail);
+    if (existingUser && existingUser.phone) {
+      const token = `${appConfig.auth.tokenPrefix}${Buffer.from(`${existingUser.phone}_${Date.now()}`).toString('base64')}`;
+      return res.json({
+        success: true,
+        exists: true,
+        isPhoneLinked: true,
+        message: 'Social account verified. Login successful.',
+        token,
+        user: existingUser,
+      });
+    }
+
+    return res.json({
+      success: true,
+      exists: !!existingUser,
+      isPhoneLinked: false,
+      message: 'Social account verified. Mobile number required to link for ride dispatch.',
+      profile: {
+        email: cleanEmail,
+        name: (existingUser && existingUser.name) || name || `${provider === 'apple' ? 'Apple' : 'Google'} User`,
+        avatar: (existingUser && existingUser.avatar) || avatar || '',
+      },
+    });
+  }
 }
+

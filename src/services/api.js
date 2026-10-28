@@ -50,6 +50,16 @@ export const RideXAPI = {
     body: JSON.stringify({ phone }),
   }),
 
+  checkEmail: (email) => request('/auth/check-email', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  }),
+
+  socialLogin: (socialData) => request('/auth/social-login', {
+    method: 'POST',
+    body: JSON.stringify(socialData),
+  }),
+
   sendOtp: (phone, mode = 'login') => request('/auth/send-otp', {
     method: 'POST',
     body: JSON.stringify({ phone, mode }),

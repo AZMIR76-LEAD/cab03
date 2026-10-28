@@ -5,7 +5,10 @@ import { initializeApp, getApps } from 'firebase/app';
 import {
   getAuth,
   RecaptchaVerifier,
-  signInWithPhoneNumber
+  signInWithPhoneNumber,
+  GoogleAuthProvider,
+  OAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -117,6 +120,59 @@ export class FirebaseAuthService {
     const idToken = await result.user.getIdToken();
     return {
       user: result.user,
+      idToken,
+    };
+  }
+
+  /**
+   * Real Google Authentication & Identity Verification via Firebase
+   * @returns {Promise<{provider: string, uid: string, name: string, email: string, photoUrl: string, idToken: string}>}
+   */
+  static async signInWithGoogle() {
+    const auth = this.getAuth();
+    if (!auth) {
+      throw new Error('Firebase credentials not configured.');
+    }
+    const provider = new GoogleAuthProvider();
+    provider.addScope('profile');
+    provider.addScope('email');
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const idToken = await user.getIdToken();
+    return {
+      provider: 'google',
+      uid: user.uid,
+      name: user.displayName || 'Google User',
+      email: user.email || '',
+      photoUrl: user.photoURL || '',
+      idToken,
+    };
+  }
+
+  /**
+   * Real Apple Authentication & Identity Verification via Firebase
+   * @returns {Promise<{provider: string, uid: string, name: string, email: string, photoUrl: string, idToken: string}>}
+   */
+  static async signInWithApple() {
+    const auth = this.getAuth();
+    if (!auth) {
+      throw new Error('Firebase credentials not configured.');
+    }
+    const provider = new OAuthProvider('apple.com');
+    provider.addScope('email');
+    provider.addScope('name');
+
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const idToken = await user.getIdToken();
+    return {
+      provider: 'apple',
+      uid: user.uid,
+      name: user.displayName || 'Apple User',
+      email: user.email || '',
+      photoUrl: user.photoURL || '',
       idToken,
     };
   }
