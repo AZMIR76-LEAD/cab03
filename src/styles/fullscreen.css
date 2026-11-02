@@ -1,0 +1,191 @@
+/* ============================================================ */
+/* FU DRIVO UNIVERSAL FULL-SCREEN RESPONSIVE ENGINE              */
+/* Optimized for all mobile phones (iOS, Android, Foldables)     */
+/* ============================================================ */
+
+/* 1. Global Viewport & Reset */
+:root {
+  --app-height: 100dvh;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: -webkit-fill-available;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #070B12;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+#root, #driver-root {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 2. Customer App Edge-to-Edge Responsive Container */
+.fg-drivo-app-wrapper {
+  width: 100%;
+  height: 100%;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #0F081D;
+  margin: 0;
+  padding: 0;
+}
+
+.fg-drivo-android-viewport {
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background-color: #FFFFFF;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+  margin: 0 auto;
+}
+
+/* 3. Driver Companion (Cabin) Viewport */
+.cabin-viewport {
+  width: 100%;
+  max-width: 480px;
+  height: 100%;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background-color: #FFFFFF;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.6);
+}
+
+/* 4. TRUE 100% FULL-SCREEN ON ALL PHONES & MOBILE BROWSERS */
+/* Applies to all devices under 768px or standalone/PWA mode */
+@media (max-width: 768px), (display-mode: standalone), (display-mode: fullscreen) {
+  html, body {
+    background-color: #FFFFFF !important;
+  }
+
+  .fg-drivo-app-wrapper {
+    background-color: #FFFFFF !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+  }
+
+  .fg-drivo-android-viewport,
+  .cabin-viewport {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-width: 100vw !important;
+    height: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* 5. Safe Area Insets for Modern Phones (Notches, Island, Home Indicator) */
+.safe-area-top {
+  padding-top: max(var(--safe-top), 12px) !important;
+}
+
+.safe-area-bottom {
+  padding-bottom: max(var(--safe-bottom), 12px) !important;
+}
+
+.safe-area-all {
+  padding-top: max(var(--safe-top), 8px);
+  padding-bottom: max(var(--safe-bottom), 8px);
+  padding-left: max(var(--safe-left), 8px);
+  padding-right: max(var(--safe-right), 8px);
+}
+
+/* Fixed Bottom Navigation Bars on all Phones */
+.fg-bottom-nav,
+.cabin-bottom-nav {
+  padding-bottom: max(var(--safe-bottom), 8px) !important;
+}
+
+/* 6. Adaptive Responsive Breakpoints for Different Phone Screen Sizes */
+
+/* A. Ultra-compact phones (iPhone SE, older Androids: <= 360px) */
+@media (max-width: 360px) {
+  :root {
+    font-size: 13.5px;
+  }
+  
+  .fg-drivo-android-viewport,
+  .cabin-viewport {
+    padding: 0;
+  }
+
+  /* Compact button paddings so text never wraps awkwardly */
+  button {
+    font-size: 13.5px !important;
+  }
+
+  h1 {
+    font-size: 1.25rem !important;
+  }
+
+  h2 {
+    font-size: 1.1rem !important;
+  }
+}
+
+/* B. Standard modern phones (361px - 414px: iPhone 12/13/14/15/16, Galaxy S series) */
+@media (min-width: 361px) and (max-width: 414px) {
+  :root {
+    font-size: 14.5px;
+  }
+}
+
+/* C. Large flagship phones (415px - 768px: Pro Max, Plus, Galaxy Ultra, Pixel Pro) */
+@media (min-width: 415px) and (max-width: 768px) {
+  :root {
+    font-size: 15.5px;
+  }
+}
+
+/* 7. Ergonomic Touch Target Optimization */
+button, a, input, select {
+  min-height: 44px;
+}
+
+/* Scrollable sub-containers inside full-screen view */
+.fullscreen-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+

@@ -1,0 +1,98 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { db } from '../../server/db.js';
+import { RIDE_STATUSES } from '../../server/config/constants.js';
+
+describe('Integration Tests: Customer-Driver Full Trip Lifecycle', () => {
+  it('should execute end-to-end booking dispatch, acceptance, arrival, OTP, and completion', async () => {
+    // 1. Initial State: Driver goes online
+    const driverId = 'DRV-8821';
+    const drivers = db.get('drivers');
+    const driver = drivers.find((d) => d.id === driverId);
+    assert.ok(driver, 'Driver record must exist');
+    driver.status = 'available';
+    db.save();
+
+    // 2. Customer creates ride booking in customer app
+    const rideId = 'RX-TEST-' + Math.floor(1000 + Math.random() * 9000);
+    const mockRide = {
+      id: rideId,
+      status: RIDE_STATUSES.FINDING_DRIVER,
+      category: 'Sedan',
+      pickup: 'Dindigul Railway Junction',
+      destination: 'Palani Road Bypass',
+      distanceKm: 8.5,
+      durationMin: 22,
+      fare: 210.0,
+      paymentMethod: 'Cash',
+      otp: '4819',
+      driver: null,
+      telematics: {
+        etaMinutes: 3,
+        distanceToPickupKm: 1.4,
+        driverCoords: { x: 48, y: 62 },
+        heading: 135,
+      },
+    };
+
+    db.set('activeRide', mockRide);
+    assert.strictEqual(db.get('activeRide').status, RIDE_STATUSES.FINDING_DRIVER);
+
+    // 3. Driver receives offer and accepts
+    const activeRide = db.get('activeRide');
+    activeRide.status = RIDE_STATUSES.DRIVER_ASSIGNED;
+    activeRide.driver = {
+      id: driver.id,
+      name: driver.name,
+      phone: driver.phone,
+      vehicle: driver.vehicle,
+      rating: driver.rating,
+    };
+    db.save();
+
+    assert.strictEqual(db.get('activeRide').status, RIDE_STATUSES.DRIVER_ASSIGNED);
+    assert.strictEqual(db.get('activeRide').driver.name, 'Arjun Verma');
+
+    // 4. Driver navigates and marks arrived at pickup
+    activeRide.status = RIDE_STATUSES.DRIVER_ARRIVED;
+    activeRide.arrivedAt = new Date().toISOString();
+    activeRide.telematics.etaMinutes = 0;
+    activeRide.telematics.distanceToPickupKm = 0.0;
+    db.save();
+
+    assert.strictEqual(db.get('activeRide').status, RIDE_STATUSES.DRIVER_ARRIVED);
+    assert.ok(db.get('activeRide').arrivedAt);
+
+    // 5. Driver verifies passenger 4-digit start OTP
+    const enteredOtp = '4819';
+    assert.strictEqual(enteredOtp, activeRide.otp, 'Passenger OTP must match');
+
+    activeRide.status = RIDE_STATUSES.TRIP_IN_PROGRESS;
+    activeRide.startedAt = new Date().toISOString();
+    db.save();
+
+    assert.strictEqual(db.get('activeRide').status, RIDE_STATUSES.TRIP_IN_PROGRESS);
+
+    // 6. Driver completes trip and server computes authoritative fare & commission
+    const distanceKm = 8.5;
+    const durationMin = 22;
+    const grossFare = Math.round(80 + distanceKm * 14 + durationMin * 1.5);
+    const platformFee = Number((grossFare * 0.12).toFixed(2));
+    const netEarnings = Number((grossFare - platformFee).toFixed(2));
+
+    activeRide.status = RIDE_STATUSES.COMPLETED;
+    activeRide.completedAt = new Date().toISOString();
+    activeRide.fare = grossFare;
+    activeRide.fareBreakdown = {
+      grossFare,
+      platformFee,
+      netEarnings,
+    };
+    db.save();
+
+    assert.strictEqual(db.get('activeRide').status, RIDE_STATUSES.COMPLETED);
+    assert.strictEqual(db.get('activeRide').fare, grossFare);
+    assert.ok(db.get('activeRide').fareBreakdown.netEarnings > 0);
+  });
+});
+

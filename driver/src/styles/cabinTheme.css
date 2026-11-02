@@ -2,6 +2,8 @@
 /* FU DRIVO CABIN — HIGH-CONTRAST DRIVER DESIGN SYSTEM         */
 /* ============================================================ */
 
+@import '/src/styles/fullscreen.css';
+
 :root {
   --cabin-bg-primary: #0F172A;
   --cabin-bg-card: #1E293B;

@@ -10,7 +10,47 @@
     "totalRides": 0,
     "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
   },
-  "activeRide": null,
+  "activeRide": {
+    "id": "RX-TEST-3578",
+    "status": "completed",
+    "category": "Sedan",
+    "pickup": "Dindigul Railway Junction",
+    "destination": "Palani Road Bypass",
+    "distanceKm": 8.5,
+    "durationMin": 22,
+    "fare": 232,
+    "paymentMethod": "Cash",
+    "otp": "4819",
+    "driver": {
+      "id": "DRV-8821",
+      "name": "Arjun Verma",
+      "phone": "+91 98112 34567",
+      "vehicle": {
+        "model": "Honda City • Midnight Black",
+        "category": "sedan",
+        "licensePlate": "TN 57 CE 4819",
+        "color": "Midnight Black"
+      },
+      "rating": 4.92
+    },
+    "telematics": {
+      "etaMinutes": 0,
+      "distanceToPickupKm": 0,
+      "driverCoords": {
+        "x": 48,
+        "y": 62
+      },
+      "heading": 135
+    },
+    "arrivedAt": "2026-11-02T12:53:49.091Z",
+    "startedAt": "2026-11-02T12:53:49.094Z",
+    "completedAt": "2026-11-02T12:53:49.095Z",
+    "fareBreakdown": {
+      "grossFare": 232,
+      "platformFee": 27.84,
+      "netEarnings": 204.16
+    }
+  },
   "drivers": [
     {
       "id": "DRV-8821",
@@ -30,7 +70,7 @@
         "y": 62
       },
       "heading": 135,
-      "status": "offline",
+      "status": "available",
       "isOnline": true
     },
     {

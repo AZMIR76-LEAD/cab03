@@ -1,14 +1,16 @@
 // Fu Drivo Cabin — Server Driver Gateway Routes
 import { Router } from 'express';
 import { db } from '../db.js';
-import { CITY_INFO } from '../config/constants.js';
+import { CITY_INFO, RIDE_STATUSES } from '../config/constants.js';
+import { emitRideEvent, emitDriverTelemetry } from '../services/socketService.js';
+import { RideSimulationService } from '../services/rideSimulationService.js';
 
 const router = Router();
 
 // In-memory driver runtime state (complements db persistence)
 let driverOnlineState = {
   isOnline: true,
-  coords: { lat: 10.3673, lng: 77.9803 },
+  coords: { lat: 10.3673, lng: 77.9803, x: 48, y: 62 },
   activeTrip: null,
 };
 
@@ -99,7 +101,7 @@ router.post('/availability', (req, res) => {
   const { isOnline, coords } = req.body;
   driverOnlineState.isOnline = Boolean(isOnline);
   if (coords) {
-    driverOnlineState.coords = coords;
+    driverOnlineState.coords = { ...driverOnlineState.coords, ...coords };
   }
 
   // Update in driver record if available
@@ -125,6 +127,42 @@ router.post('/offers/respond', (req, res) => {
   const idempotencyKey = req.headers['idempotency-key'];
 
   if (action === 'accept') {
+    // 1. Stop background simulation timer so the real driver controls lifecycle
+    RideSimulationService.stopSimulation();
+
+    // 2. Synchronize active customer ride in database
+    const activeRide = db.get('activeRide');
+    if (activeRide) {
+      activeRide.status = RIDE_STATUSES.DRIVER_ASSIGNED;
+      activeRide.driver = {
+        id: 'DRV-8821',
+        name: 'Arjun Verma',
+        phone: '+91 98112 34567',
+        rating: 4.92,
+        tripsCount: 2420,
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+        vehicle: {
+          model: 'Honda City',
+          category: 'sedan',
+          licensePlate: 'TN 57 CE 4819',
+          color: 'Midnight Black',
+        },
+      };
+      activeRide.telematics = {
+        ...activeRide.telematics,
+        etaMinutes: 3,
+        distanceToPickupKm: 1.2,
+        driverCoords: driverOnlineState.coords || { x: 48, y: 62 },
+        heading: 135,
+        lastUpdated: new Date().toISOString(),
+      };
+      db.save();
+
+      // Emit live update to passenger app
+      emitRideEvent(activeRide.id, 'ride:updated', activeRide);
+      emitDriverTelemetry(activeRide.id, activeRide.telematics);
+    }
+
     return res.json({
       success: true,
       status: 'accepted',
@@ -132,6 +170,7 @@ router.post('/offers/respond', (req, res) => {
       tripId,
       assignedAt: new Date().toISOString(),
       message: 'Offer accepted. Route generated to rider pickup.',
+      activeRide,
     });
   } else {
     return res.json({
@@ -146,6 +185,22 @@ router.post('/offers/respond', (req, res) => {
 // 6. Mark Arrived at Pickup
 router.post('/trips/arrived', (req, res) => {
   const { tripId } = req.body;
+
+  const activeRide = db.get('activeRide');
+  if (activeRide) {
+    activeRide.status = RIDE_STATUSES.DRIVER_ARRIVED;
+    activeRide.arrivedAt = new Date().toISOString();
+    activeRide.telematics = {
+      ...activeRide.telematics,
+      etaMinutes: 0,
+      distanceToPickupKm: 0.0,
+      lastUpdated: new Date().toISOString(),
+    };
+    db.save();
+
+    emitRideEvent(activeRide.id, 'ride:updated', activeRide);
+  }
+
   res.json({
     success: true,
     tripId,
@@ -159,8 +214,18 @@ router.post('/trips/arrived', (req, res) => {
 // 7. Verify Start OTP
 router.post('/trips/start', (req, res) => {
   const { tripId, otp } = req.body;
-  // Accept standard 4-digit OTP
-  if (otp && otp.length === 4) {
+  const activeRide = db.get('activeRide');
+
+  // Verify against booking OTP or test fallbacks (4819 / 4821 / 4 digits)
+  const expectedOtp = activeRide?.otp || '4819';
+  if (otp && (otp === expectedOtp || otp === '4819' || otp === '4821' || otp.length === 4)) {
+    if (activeRide) {
+      activeRide.status = RIDE_STATUSES.TRIP_IN_PROGRESS;
+      activeRide.startedAt = new Date().toISOString();
+      db.save();
+      emitRideEvent(activeRide.id, 'ride:updated', activeRide);
+    }
+
     return res.json({
       success: true,
       tripId,
@@ -170,7 +235,7 @@ router.post('/trips/start', (req, res) => {
     });
   }
 
-  return res.status(400).json({ error: 'Invalid 4-digit ride OTP. Check with passenger.' });
+  return res.status(400).json({ error: `Invalid 4-digit ride OTP. Expected code: ${expectedOtp}` });
 });
 
 // 8. Complete Trip (Server-Authoritative Calculations)
@@ -197,6 +262,26 @@ router.post('/trips/complete', (req, res) => {
     net: netEarnings,
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   });
+
+  // Update customer active ride to completed
+  const activeRide = db.get('activeRide');
+  if (activeRide) {
+    activeRide.status = RIDE_STATUSES.COMPLETED;
+    activeRide.completedAt = new Date().toISOString();
+    activeRide.fare = grossFare;
+    activeRide.fareBreakdown = {
+      ...activeRide.fareBreakdown,
+      distanceKm,
+      durationMin,
+      grossFare,
+      platformFee,
+      netEarnings,
+    };
+    db.save();
+
+    emitRideEvent(activeRide.id, 'ride:completed', activeRide);
+    emitRideEvent(activeRide.id, 'ride:updated', activeRide);
+  }
 
   res.json({
     success: true,

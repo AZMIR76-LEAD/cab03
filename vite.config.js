@@ -4,6 +4,9 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    preserveSymlinks: true,
+  },
   server: {
     port: 3000,
     open: false,
@@ -27,4 +30,3 @@ export default defineConfig({
     }
   }
 });
-

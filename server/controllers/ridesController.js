@@ -4,6 +4,7 @@ import { VEHICLE_PRICING, RIDE_STATUSES } from '../config/constants.js';
 import { calculateFare, getAllFareEstimates } from '../services/pricingService.js';
 import { RideSimulationService } from '../services/rideSimulationService.js';
 import { DispatchAlgorithmService } from '../services/dispatchAlgorithmService.js';
+import { broadcastRideOffer } from '../services/socketService.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
 export class RidesController {
@@ -78,6 +79,18 @@ export class RidesController {
     };
 
     db.set('activeRide', newRide);
+
+    // Broadcast ride offer to connected driver partners
+    broadcastRideOffer({
+      offerId: 'OFFER-' + Math.floor(1000 + Math.random() * 9000),
+      tripId: rideId,
+      pickupArea: pickup,
+      pickupDistanceKm: 1.2,
+      pickupEtaMins: 3,
+      destinationArea: destination,
+      estimatedEarnings: Math.round(fareDetails.total * 0.88),
+      timeoutSeconds: 15,
+    });
 
     // Kick off autonomous background ride lifecycle simulation
     RideSimulationService.startSimulation(rideId);

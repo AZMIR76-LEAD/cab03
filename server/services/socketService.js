@@ -1,5 +1,6 @@
 // FG DRIVO Real-time Telematics & Socket.IO Gateway Engine
 import { Server } from 'socket.io';
+import { db } from '../db.js';
 
 let ioInstance = null;
 
@@ -30,6 +31,27 @@ export function initSocketServer(httpServer) {
       }
     });
 
+    // Driver companion registration
+    socket.on('driver:register', (data) => {
+      socket.join('drivers');
+      console.log(`\x1b[32m[Socket.IO]\x1b[0m Driver ${data?.driverId || socket.id} registered in dispatch pool.`);
+    });
+
+    // Driver live telematics forwarding to passenger
+    socket.on('driver:telemetry', (data) => {
+      const activeRide = db.get('activeRide');
+      if (activeRide && data?.coords) {
+        activeRide.telematics = {
+          ...activeRide.telematics,
+          driverCoords: data.coords,
+          heading: data.coords.heading || 90,
+          speed: data.coords.speed || 35,
+          lastUpdated: new Date().toISOString(),
+        };
+        emitDriverTelemetry(activeRide.id, activeRide.telematics);
+      }
+    });
+
     socket.on('disconnect', (reason) => {
       console.log(`\x1b[36m[Socket.IO]\x1b[0m Client disconnected: ${socket.id} (${reason})`);
     });
@@ -54,4 +76,10 @@ export function emitRideEvent(rideId, eventName, data) {
 export function emitDriverTelemetry(rideId, telemetry) {
   if (!ioInstance) return;
   emitRideEvent(rideId, 'driver:telematics', telemetry);
+}
+
+export function broadcastRideOffer(offerData) {
+  if (!ioInstance) return;
+  ioInstance.to('drivers').emit('ride:offer_broadcast', offerData);
+  ioInstance.emit('ride:offer_broadcast', offerData);
 }
