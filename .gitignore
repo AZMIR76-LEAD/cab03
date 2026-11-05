@@ -38,3 +38,6 @@ lerna-debug.log*
 *.sln
 *.sw?
 Thumbs.db
+
+*.tmp*
+*.tmp.*

@@ -1,11 +1,20 @@
 // FG DRIVO Authentication Controller
+import crypto from 'crypto';
 import { db } from '../db.js';
 import { appConfig } from '../config/appConfig.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { SMSService } from '../services/smsService.js';
 
-// In-memory verification cache with TTL: phone -> { code, expiresAt }
+// In-memory verification cache with TTL: phone -> { code, expiresAt, attempts, lastSentAt }
 const otpStore = new Map();
+
+function generateSignedToken(userId, phone) {
+  const secret = process.env.JWT_SECRET || process.env.AUTH_SECRET || 'fg_drivo_secure_hmac_secret_2026';
+  const timestamp = Date.now();
+  const payload = `${userId || 'u'}:${phone}:${timestamp}`;
+  const signature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+  return `${appConfig.auth.tokenPrefix}${Buffer.from(`${payload}:${signature}`).toString('base64url')}`;
+}
 
 export class AuthController {
   static async checkPhone(req, res) {
@@ -18,16 +27,22 @@ export class AuthController {
     return res.json({
       success: true,
       exists: !!user,
-      user: user ? { id: user.id, name: user.name, phone: user.phone } : null,
       message: user ? 'Mobile number is registered.' : 'Mobile number is not registered.',
     });
   }
 
   static async sendOtp(req, res) {
-    const { phone, provider: requestedProvider, webhookUrl, mode } = req.body;
+    const { phone, provider: requestedProvider, mode } = req.body;
     const cleanPhone = (phone || '').trim();
     const authMode = (mode || 'login').toLowerCase();
     const provider = (requestedProvider || process.env.SMS_GATEWAY_PROVIDER || 'fast2sms').toLowerCase();
+
+    // Check rate limit / flooding (minimum 30s interval between requests)
+    const existingEntry = otpStore.get(cleanPhone);
+    if (existingEntry && existingEntry.lastSentAt && Date.now() - existingEntry.lastSentAt < 30000) {
+      const waitSeconds = Math.ceil((30000 - (Date.now() - existingEntry.lastSentAt)) / 1000);
+      throw new ApiError(`Please wait ${waitSeconds} seconds before requesting a new OTP.`, 429);
+    }
 
     // Check database to separate Login vs Sign Up
     const existingUser = await db.findUserByPhone(cleanPhone);
@@ -40,37 +55,41 @@ export class AuthController {
       throw new ApiError('No account found with this mobile number! Please Sign Up first.', 404);
     }
 
-    // Always generate a fresh, truly random 6-digit OTP code for every single phone number!
-    const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Always generate a fresh, cryptographically strong random 6-digit OTP
+    const randomOtp = crypto.randomInt(100000, 999999).toString();
     const code = randomOtp;
-
     const expiresAt = Date.now() + appConfig.auth.otpExpiryMinutes * 60 * 1000;
+    const now = Date.now();
 
     // Store in-memory by formatted phone and 10-digit phone
     const rawDigits = cleanPhone.replace(/[^0-9]/g, '');
     const tenDigits = rawDigits.slice(-10);
-    otpStore.set(cleanPhone, { code, expiresAt });
-    if (tenDigits) otpStore.set(tenDigits, { code, expiresAt });
+    const storeEntry = { code, expiresAt, attempts: 0, lastSentAt: now };
+    otpStore.set(cleanPhone, storeEntry);
+    if (tenDigits) otpStore.set(tenDigits, storeEntry);
 
     const maskedPhone = cleanPhone.replace(/(\d{2})\d{4}(\d{4})/, '$1••••$2');
 
-    // Dispatch via SMS Gateway / n8n Webhook
-    const dispatchResult = await SMSService.sendOtp({ phone: cleanPhone, code, provider, webhookUrl });
+    // Prevent SSRF: Only use server-configured SMS webhook environment variable
+    const serverWebhookUrl = process.env.N8N_WEBHOOK_URL || process.env.SMS_WEBHOOK_URL || null;
 
-    // If n8n or external gateway generated a specific OTP, sync it
+    // Dispatch via SMS Gateway / n8n Webhook
+    const dispatchResult = await SMSService.sendOtp({ phone: cleanPhone, code, provider, webhookUrl: serverWebhookUrl });
+
+    // If external gateway generated a specific OTP, sync it
     const activeCode = dispatchResult.code || code;
     if (activeCode !== code) {
-      otpStore.set(cleanPhone, { code: activeCode, expiresAt });
-      if (tenDigits) otpStore.set(tenDigits, { code: activeCode, expiresAt });
+      storeEntry.code = activeCode;
+      otpStore.set(cleanPhone, storeEntry);
+      if (tenDigits) otpStore.set(tenDigits, storeEntry);
     }
 
+    // Never transmit the plain OTP code over the wire in HTTP response body
     return res.json({
       success: true,
       message: dispatchResult.error
         ? `SMS/n8n Gateway: ${dispatchResult.error}`
         : 'Verification OTP dispatched successfully.',
-      code: activeCode,
-      demoCode: activeCode,
       maskedPhone,
       expiresInSeconds: appConfig.auth.otpExpiryMinutes * 60,
       provider: dispatchResult.provider || provider,
@@ -89,17 +108,35 @@ export class AuthController {
 
     const cached = otpStore.get(cleanPhone) || otpStore.get(phone) || (tenDigits ? otpStore.get(tenDigits) : null);
 
-    // Master testing code (529481) always valid for app testing and Google Play review
-    const isDemoMatch = cleanOtp === appConfig.auth.demoOtp;
+    // Brute-force protection: Lock out after 5 consecutive failed attempts
+    if (cached && cached.attempts >= 5) {
+      otpStore.delete(cleanPhone);
+      otpStore.delete(phone);
+      if (tenDigits) otpStore.delete(tenDigits);
+      throw new ApiError('Too many failed verification attempts. This OTP has been invalidated for security. Please request a new OTP.', 429);
+    }
+
+    // Master testing code (529481) strictly disabled in production
+    const isProd = process.env.NODE_ENV === 'production';
+    const isDemoMatch = !isProd && cleanOtp === appConfig.auth.demoOtp;
     const isStoreMatch = cached && cached.code === cleanOtp && cached.expiresAt > Date.now();
 
     const isValid = isDemoMatch || isStoreMatch;
 
     if (!isValid) {
+      if (cached) {
+        cached.attempts = (cached.attempts || 0) + 1;
+        if (cached.attempts >= 5) {
+          otpStore.delete(cleanPhone);
+          otpStore.delete(phone);
+          if (tenDigits) otpStore.delete(tenDigits);
+          throw new ApiError('Too many failed verification attempts. Please request a new OTP.', 429);
+        }
+      }
       throw new ApiError('Invalid or expired verification OTP. Please try again.', 400);
     }
 
-    // Clear used OTP
+    // Clear used OTP immediately
     otpStore.delete(cleanPhone);
     otpStore.delete(phone);
     if (tenDigits) otpStore.delete(tenDigits);
@@ -167,7 +204,7 @@ export class AuthController {
       });
     }
 
-    const token = `${appConfig.auth.tokenPrefix}${Buffer.from(`${cleanPhone}_${Date.now()}`).toString('base64')}`;
+    const token = generateSignedToken(user.id, cleanPhone);
 
     return res.json({
       success: true,
@@ -187,7 +224,6 @@ export class AuthController {
     return res.json({
       success: true,
       exists: !!user,
-      user: user ? { id: user.id, name: user.name, phone: user.phone, email: user.email } : null,
       message: user ? 'Email is registered.' : 'Email is not registered.',
     });
   }
@@ -201,7 +237,7 @@ export class AuthController {
 
     const existingUser = await db.findUserByEmail(cleanEmail);
     if (existingUser && existingUser.phone) {
-      const token = `${appConfig.auth.tokenPrefix}${Buffer.from(`${existingUser.phone}_${Date.now()}`).toString('base64')}`;
+      const token = generateSignedToken(existingUser.id, existingUser.phone);
       return res.json({
         success: true,
         exists: true,
@@ -225,4 +261,3 @@ export class AuthController {
     });
   }
 }
-

@@ -11,7 +11,7 @@
     "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
   },
   "activeRide": {
-    "id": "RX-TEST-3578",
+    "id": "RX-TEST-7829",
     "status": "completed",
     "category": "Sedan",
     "pickup": "Dindigul Railway Junction",
@@ -42,9 +42,9 @@
       },
       "heading": 135
     },
-    "arrivedAt": "2026-11-02T12:53:49.091Z",
-    "startedAt": "2026-11-02T12:53:49.094Z",
-    "completedAt": "2026-11-02T12:53:49.095Z",
+    "arrivedAt": "2026-11-05T14:22:22.207Z",
+    "startedAt": "2026-11-05T14:22:22.209Z",
+    "completedAt": "2026-11-05T14:22:22.212Z",
     "fareBreakdown": {
       "grossFare": 232,
       "platformFee": 27.84,

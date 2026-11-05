@@ -1,0 +1,22 @@
+{
+  "short_name": "FG Driver",
+  "name": "FG DRIVO Driver Partner",
+  "description": "Official Standalone Driver Companion App for FG DRIVO Mobility Network",
+  "icons": [
+    {
+      "src": "/fg-logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/fg-logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/driver/",
+  "background_color": "#F5F5FA",
+  "theme_color": "#4B478C",
+  "display": "standalone",
+  "orientation": "portrait"
+}

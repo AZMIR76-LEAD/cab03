@@ -1,30 +1,1401 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Fu Drivo Driver" />
-    <meta name="format-detection" content="telephone=no" />
-    <title>Fu Drivo Cabin — Driver Partner App</title>
-    <meta name="description" content="Official Driver Companion App for Fu Drivo Mobility Network" />
-    <meta name="theme-color" content="#0F172A" />
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4B478C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FG DRIVO Driver">
+<title>FG DRIVO | Drivers</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>var LF=window.L;</script>
+<style>
+html,body,#app{touch-action:manipulation;-webkit-user-select:none;user-select:none}input,select{-webkit-user-select:text;user-select:text}
 
-    <!-- Google Fonts: Inter & Outfit -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <div id="driver-root"></div>
-    <script type="module" src="/driver/src/main.jsx"></script>
-  </body>
-</html>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,"Noto Sans Tamil","Latha","Nirmala UI",sans-serif}
+:root{--p:#5427a8;--y:#f5c400;--ink:#24153f;--bg:#f6f3fb;--red:#e0262d;--g:#1fa463}
+html,body{height:100%;background:#e9e3f5;color:var(--ink)}
+#app{position:relative;max-width:430px;height:100%;margin:0 auto;background:var(--bg);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 40px rgba(60,30,90,.2)}
+.logo{font-size:26px;font-weight:900;color:var(--p)}.logo span{color:var(--y)}
+header{background:#fff;height:62px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 18px rgba(60,30,90,.10);z-index:5}
+.pill{font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;background:#eee;color:#666}.pill.on{background:#e3f6ec;color:var(--g)}
+main{flex:1;overflow-y:auto;padding:16px 16px 90px}
+.tab{display:none}.tab.show{display:block}
+.card{background:#fff;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(60,30,90,.08)}
+h3{font-size:15px;margin-bottom:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.stat{background:#fff;border-radius:16px;padding:14px 8px;text-align:center;box-shadow:0 4px 16px rgba(60,30,90,.08)}
+.stat b{display:block;font-size:20px;color:var(--p)}.stat small{font-size:11px;color:#7a6c94}
+.go{width:150px;height:150px;border-radius:50%;margin:8px auto 14px;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;font-size:20px;border:6px solid #fff;background:var(--p);color:#fff;box-shadow:0 0 0 8px rgba(84,39,168,.15),0 10px 30px rgba(84,39,168,.35);cursor:pointer;line-height:1.2}
+.go.on{background:var(--g);box-shadow:0 0 0 8px rgba(31,164,99,.18),0 10px 30px rgba(31,164,99,.35);animation:pu 1.8s infinite}
+@keyframes pu{50%{box-shadow:0 0 0 18px rgba(31,164,99,.08),0 10px 30px rgba(31,164,99,.35)}}
+.map{height:150px;border-radius:18px;margin-bottom:14px;position:relative;overflow:hidden;background:linear-gradient(#ece6f7 1px,transparent 1px) 0 0/34px 34px,linear-gradient(90deg,#ece6f7 1px,transparent 1px) 0 0/34px 34px,#f9f7fd;box-shadow:0 4px 16px rgba(60,30,90,.08)}
+.map i{position:absolute;left:46%;top:44%;font-style:normal;font-size:30px}
+.map u{position:absolute;left:36%;top:30%;width:60px;height:60px;border-radius:50%;background:rgba(245,196,0,.25);animation:pu 2s infinite}
+.btn{width:100%;border:0;border-radius:14px;padding:15px;font-size:16px;font-weight:800;background:var(--y);color:var(--ink);cursor:pointer}
+.btn:active{transform:scale(.98)}.btn.alt{background:var(--p);color:#fff}.btn.red{background:#fdeaeb;color:var(--red)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.btns{display:flex;gap:10px;margin-top:14px}.btns .btn{flex:1}
+input{width:100%;padding:14px;border:2px solid #e3dcf1;border-radius:12px;font-size:16px;margin-bottom:12px;outline:0}input:focus{border-color:var(--p)}
+.route{position:relative;padding-left:22px;margin:6px 0}.route div{margin:8px 0;font-size:14px}
+.route div::before{content:"";position:absolute;left:0;width:10px;height:10px;border-radius:50%;margin-top:3px;background:var(--g)}
+.route div+div::before{background:var(--red)}.route small{display:block;color:#7a6c94;font-size:11px}
+.fare{font-size:30px;font-weight:900;color:var(--p)}
+.bar{height:6px;background:#eee;border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--red);width:100%}
+#sheet{position:absolute;left:0;right:0;bottom:64px;background:#fff;border-radius:24px 24px 0 0;padding:18px;box-shadow:0 -10px 40px rgba(36,21,63,.25);transform:translateY(120%);transition:.35s;z-index:8}
+#sheet.up{transform:none}
+nav{position:absolute;bottom:0;left:0;right:0;height:64px;background:#fff;display:flex;box-shadow:0 -3px 18px rgba(60,30,90,.10);z-index:9}
+nav button{flex:1;border:0;background:none;font-size:11px;font-weight:700;color:#8b7da6;cursor:pointer}nav button b{display:block;font-size:20px}
+nav button.act{color:var(--p)}nav button.act b{filter:none}
+.chart{display:flex;align-items:flex-end;gap:8px;height:120px;margin-top:10px}
+.chart div{flex:1;background:linear-gradient(var(--y),#ffd84d);border-radius:8px 8px 0 0;position:relative;min-height:6px}
+.chart div span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:#7a6c94}
+.li{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #f0ebf8;font-size:14px}.li:last-child{border:0}.li small{display:block;color:#7a6c94;font-size:11px}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:5px 10px;border-radius:14px;background:#e3f6ec;color:var(--g);margin:3px 4px 0 0}
+.av{width:64px;height:64px;border-radius:50%;background:var(--p);color:var(--y);font-weight:900;font-size:24px;display:flex;align-items:center;justify-content:center}
+.pf{display:flex;align-items:center;border:2px solid #e3dcf1;border-radius:12px;margin-bottom:12px}.pf:focus-within{border-color:var(--p)}.pf span{padding:0 12px;font-weight:700;white-space:nowrap;border-right:2px solid #e3dcf1;line-height:26px}.pf input{border:0;margin:0}#er{font-size:12px;color:var(--red);margin:-6px 0 12px}
+.mob{font-size:21px;font-weight:700;letter-spacing:1.5px;background:#faf8fe;border-radius:14px;padding:16px}.mob:focus{box-shadow:0 0 0 4px rgba(84,39,168,.12)}.mob.bad{border-color:var(--red);background:#fff6f6}.lb{display:block;font-size:12px;font-weight:700;color:#7a6c94;margin-bottom:6px}#er{min-height:16px}
+.tag{text-align:center;color:#7a6c94;margin:6px 0 40px;font-size:14px}
+.hide{display:none!important}
+#reg,#frm{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column}#reg{z-index:15}#frm{z-index:16}
+.rh{height:62px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;box-shadow:0 3px 18px rgba(60,30,90,.10);position:relative;flex:none}
+.rh b{position:absolute;left:50%;transform:translateX(-50%);font-size:17px;white-space:nowrap}.rh .logo{font-size:19px}.rh span{font-size:22px;font-weight:900}.rh b.bk{left:16px;transform:none;font-size:24px;cursor:pointer}
+.rb,.fb{flex:1;overflow-y:auto;padding:16px}
+.steps{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.stp{background:#fff;border:1px solid #e8e2f3;border-radius:14px;padding:14px;position:relative;color:#9a8fb3}.stp small{font-size:12px;letter-spacing:.5px}.stp b{display:block;font-size:19px;margin-top:6px}
+.stp.act{background:#fff9e3;border-color:#f5d84a;color:#7a6c94}.stp.act b{color:var(--ink)}.stp i{position:absolute;right:12px;top:22px;font-style:normal;font-size:20px}
+.bn{background:#f2f0f6;border-radius:12px;padding:14px;text-align:center;font-size:14px;margin-bottom:22px}.sl{font-size:12px;letter-spacing:.5px;color:#9a8fb3;margin-bottom:12px}
+.it{background:#fff;border:1px solid #ece6f5;border-radius:14px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer}
+.it>div{flex:1;font-size:17px}.it small{display:block;font-size:12px;color:#7a6c94;margin-top:3px}.it em{font-style:normal;font-size:24px;color:#555}
+.ck{width:30px;height:30px;border-radius:50%;background:#ececec;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px}.ck.ok{background:var(--g)}
+.rf{flex:none;display:flex;gap:12px;padding:16px 16px 22px;background:#fff;border-radius:24px 24px 0 0;box-shadow:0 -6px 24px rgba(36,21,63,.08)}.rf .btn{flex:1}
+.btn.rs{background:#fbe9ea;color:var(--red)}.btn.sb{background:#9a9a9a;color:#fff;cursor:not-allowed}.btn.sb.on{background:var(--y);color:var(--ink);cursor:pointer}
+select{width:100%;padding:14px;border:2px solid #e3dcf1;border-radius:12px;font-size:16px;background:#fff;margin-bottom:4px}
+.fb input,.fb select{margin-bottom:4px}.er{color:var(--red);font-size:12px;min-height:18px;margin-bottom:8px}.fb .lb{margin-top:6px}
+.up{display:flex;align-items:center;justify-content:center;height:130px;border:2px dashed #cfc3e8;border-radius:14px;background:#faf8fe center/cover no-repeat;color:var(--p);font-weight:700;cursor:pointer;margin-bottom:4px;text-shadow:0 0 6px #fff}
+.scr{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;background:#fff;overflow-y:auto}
+.hero{background:linear-gradient(165deg,#241052 0%,#5427a8 62%,#7e52d6 100%);color:#fff;position:relative;overflow:hidden}
+.hero::before,.hero::after{content:"";position:absolute;border-radius:50%;pointer-events:none}
+.hero::before{width:300px;height:300px;top:-90px;right:-100px;background:radial-gradient(circle,rgba(245,196,0,.35),transparent 70%)}
+.hero::after{width:260px;height:260px;bottom:-90px;left:-90px;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 70%)}
+.scr.hero{position:absolute}
+.locg{position:absolute;inset:0;z-index:5;background:rgba(20,8,50,.74);display:flex;align-items:flex-end;backdrop-filter:blur(3px)}
+.lc{background:#fff;width:100%;border-radius:28px 28px 0 0;padding:28px 24px 34px;text-align:center;color:var(--ink)}
+.lc h3{font-size:22px;margin-bottom:8px}.lc p{color:#7a6c94;line-height:1.5;margin-bottom:16px;font-size:14px}.lc .btn{margin-top:6px}
+.lic{width:84px;height:84px;border-radius:50%;background:#f3eefb;display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 16px;box-shadow:0 0 0 10px rgba(84,39,168,.08)}
+#loc-e{color:var(--red);font-size:13px;line-height:1.45;margin-bottom:8px}
+.lchip{margin-top:14px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;position:relative;z-index:1}
+.lgc{background:#fff;border-radius:22px;padding:14px 28px;display:inline-block;box-shadow:0 14px 40px rgba(20,8,50,.45),0 0 0 4px rgba(245,196,0,.55);position:relative;z-index:1}.lgc .logo{font-size:38px}
+.w-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;position:relative;z-index:1}
+.w-wrap h1{font-size:28px;font-weight:900;margin:12px 0 8px}.w-tag{color:var(--y);font-weight:700;letter-spacing:.5px;position:relative;z-index:1}
+.car{font-size:60px;margin-top:26px;animation:fl 3s ease-in-out infinite;position:relative;z-index:1}@keyframes fl{50%{transform:translateY(-8px)}}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:24px}.chips span{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);padding:8px 13px;border-radius:20px;font-size:12px;font-weight:700}
+.bot{padding:20px 22px 30px;position:relative;z-index:2}
+.ah{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 30px 56px}
+.sh{background:#fff;border-radius:28px 28px 0 0;margin-top:-28px;box-shadow:0 -10px 40px rgba(36,21,63,.2)}.sh .btn.out{margin-top:12px}.nt{text-align:center;color:#7a6c94;font-size:13px;margin-top:14px}
+.btn.out{background:#fff;color:var(--p);border:2px solid var(--p)}
+.tb{display:flex;align-items:center;gap:14px;padding:18px 18px 0}.bk{width:40px;height:40px;border-radius:50%;background:#f3eefb;color:var(--p);font-size:20px;font-weight:900;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.pg{flex:1;display:flex;flex-direction:column;padding:26px 24px 30px}.pg h2{font-size:27px;margin-bottom:8px}.pg p{color:#7a6c94;margin-bottom:28px;line-height:1.5}
+.lo{display:flex;align-items:center;gap:14px;border:2px solid #e8e2f3;border-radius:18px;padding:16px;margin-bottom:14px;cursor:pointer;background:#fff;transition:.2s}
+.lo.sel{border-color:var(--p);background:#f5f0ff;box-shadow:0 8px 24px rgba(84,39,168,.18)}
+.lo .ic{width:52px;height:52px;border-radius:50%;background:#efe9fb;color:var(--p);font-weight:900;font-size:24px;display:flex;align-items:center;justify-content:center}.lo.sel .ic{background:var(--p);color:var(--y)}
+.lo b{font-size:20px;display:block}.lo small{color:#7a6c94}
+.lo em{margin-left:auto;font-style:normal;width:26px;height:26px;border-radius:50%;border:2px solid #d8cfec;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}.lo.sel em{background:var(--y);border-color:var(--y);color:var(--ink)}
+.otpi{text-align:center;letter-spacing:20px;font-size:30px;font-weight:900;padding-left:30px}
+.lnk{color:var(--p);font-weight:700;text-align:center;margin-top:14px;cursor:pointer;font-size:14px}.hint{display:block;text-align:center;color:#9a8fb3;margin-top:18px}
+#home{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg)}
+
+/* ---- premium home ---- */
+header{background:linear-gradient(135deg,#241052,#5427a8);box-shadow:0 6px 24px rgba(36,16,82,.35)}header .logo{color:#fff}header .pill{background:rgba(255,255,255,.18);color:#fff}header .pill.on{background:#1fa463;color:#fff}
+.card,.stat{border-radius:22px;box-shadow:0 8px 28px rgba(60,30,90,.10)}
+.hcard{background:linear-gradient(150deg,#241052,#5427a8 65%,#7e52d6);color:#fff;border-radius:26px;padding:18px;margin-bottom:14px;position:relative;overflow:hidden;box-shadow:0 14px 34px rgba(84,39,168,.35)}
+.hcard::after{content:"";position:absolute;right:-50px;top:-60px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(245,196,0,.4),transparent 70%)}
+.hcard small{opacity:.8;font-size:12px;display:block}.hcard b{font-size:21px;display:block;margin:2px 0}.rp{background:#f5c400;color:#24153f;font-weight:900;border-radius:20px;padding:7px 13px;font-size:14px;position:relative;z-index:1}
+.bar2{height:8px;background:rgba(255,255,255,.2);border-radius:8px;overflow:hidden;margin-top:6px}.bar2 i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f5c400,#ffe27a);border-radius:8px;transition:.6s}.hcard .goal{margin-top:14px;position:relative;z-index:1}
+#mw{position:relative;margin-bottom:14px}#rmap{height:300px;border-radius:24px;box-shadow:0 10px 30px rgba(60,30,90,.18);position:relative;z-index:0;isolation:isolate;background:#e9e3f5}
+.me{width:22px;height:22px;border-radius:50%;background:#5427a8;border:4px solid #fff;box-shadow:0 0 0 8px rgba(84,39,168,.25),0 4px 12px rgba(0,0,0,.3)}
+.qa{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.qa button{border:0;background:#fff;border-radius:18px;padding:12px 4px;font-weight:800;font-size:12px;color:#5427a8;box-shadow:0 6px 20px rgba(60,30,90,.09);cursor:pointer}.qa button b{display:block;font-size:22px}
+.rsum{display:flex;align-items:center;gap:18px}.rsum .big{font-size:52px;font-weight:900;color:#5427a8;line-height:1}.rsum .big small{font-size:24px;color:#f5c400}.rsum small{display:block;color:#7a6c94;font-size:12px}
+.st{color:#f5a800;letter-spacing:2px}.rb2{display:flex;align-items:center;gap:10px;font-size:12px;margin:7px 0;color:#7a6c94}.rb2>div{flex:1;height:8px;background:#eee;border-radius:8px;overflow:hidden}.rb2 i{display:block;height:100%;background:#f5c400}
+.rv{padding:13px 0;border-bottom:1px solid #f0ebf8}.rv:last-child{border:0}.rv p{margin:6px 0;font-size:14px;line-height:1.45}.rv small{color:#7a6c94;font-size:11px}
+nav button b{font-size:19px}
+#mx{position:absolute;top:12px;right:12px;z-index:5;width:40px;height:40px;border:0;border-radius:12px;background:#fff;color:#5427a8;font-size:20px;font-weight:900;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}
+#mw.full{position:absolute;inset:0;z-index:30;margin:0}#mw.full #rmap{height:100%;border-radius:0;box-shadow:none}
+
+/* ===== DRIVER DASHBOARD UI ===== */
+.driver-status-card {
+  background: linear-gradient(135deg, #241052, #5427a8);
+  color: #fff;
+  border-radius: 22px;
+  padding: 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 22px rgba(84,39,168,.2);
+}
+
+.driver-status-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.driver-status-card h3 {
+  margin: 0 0 5px;
+  font-size: 17px;
+}
+
+.driver-status-card p {
+  color: #e4dafa;
+  font-size: 12px;
+}
+
+.driver-status-btn {
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  background: #f5c400;
+  color: #24153f;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.driver-status-btn.online {
+  background: #1fa463;
+  color: #fff;
+}
+
+.booking-ui-card {
+  background: #fff;
+  border-radius: 22px;
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 24px rgba(60,30,90,.10);
+}
+
+.booking-ui-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.booking-ui-heading h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.booking-ui-badge {
+  background: #fff4c2;
+  color: #725500;
+  border-radius: 20px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.booking-ui-customer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.booking-ui-avatar {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #eee5ff;
+  color: #5427a8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.booking-ui-customer strong {
+  display: block;
+  font-size: 14px;
+}
+
+.booking-ui-customer small {
+  display: block;
+  margin-top: 4px;
+  color: #7a6c94;
+  font-size: 12px;
+}
+
+.booking-ui-route {
+  background: #f8f5fd;
+  padding: 14px;
+  border-radius: 15px;
+  margin-bottom: 14px;
+}
+
+.booking-ui-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.booking-ui-point + .booking-ui-point {
+  margin-top: 14px;
+}
+
+.booking-ui-dot {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  margin-top: 3px;
+  background: #1fa463;
+}
+
+.booking-ui-point.drop .booking-ui-dot {
+  background: #e0262d;
+}
+
+.booking-ui-point small {
+  display: block;
+  color: #7a6c94;
+  margin-top: 3px;
+}
+
+.booking-ui-fare {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0 14px;
+}
+
+.booking-ui-fare small {
+  color: #7a6c94;
+  font-size: 12px;
+}
+
+.booking-ui-fare strong {
+  font-size: 26px;
+  color: #5427a8;
+}
+
+.booking-ui-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.booking-ui-actions button {
+  flex: 1;
+  border: 0;
+  border-radius: 13px;
+  padding: 13px 8px;
+  font-weight: 900;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.booking-ui-reject {
+  background: #fdeaeb;
+  color: #e0262d;
+}
+
+.booking-ui-accept {
+  background: #f5c400;
+  color: #24153f;
+}
+
+.booking-ui-empty {
+  text-align: center;
+  padding: 24px 12px;
+  background: #faf8fe;
+  border: 1px dashed #d8c9f2;
+  border-radius: 16px;
+}
+
+.booking-ui-empty .empty-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.booking-ui-empty strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.booking-ui-empty p {
+  color: #7a6c94;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.booking-ui-message {
+  display: none;
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 12px;
+  background: #e3f6ec;
+  color: #167447;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.booking-ui-message.show {
+  display: block;
+}
+
+/* v9: fix bottom sheet (was inheriting the upload-box ".up" style) + demo tag */
+#sheet.up{display:block;height:auto;max-height:78%;overflow-y:auto;border:0;align-items:initial;justify-content:initial;color:var(--ink);font-weight:400;text-shadow:none;cursor:default;margin:0;background:#fff;border-radius:24px 24px 0 0}
+#sheet .row,#sheet .route,#sheet .btns{width:100%}#sheet .btns .btn{padding:13px 8px;font-size:15px;min-width:0}
+#sheet .row>*{min-width:0}
+.dmb{position:absolute;top:10px;right:10px;border:1.5px dashed #e0b400;background:#fff9e0;color:#7a5a00;font-size:11px;font-weight:800;padding:5px 10px;border-radius:14px;cursor:pointer;opacity:.9}.dmb:active{transform:scale(.96)}
+
+/* ===== side menu (drawer) ===== */
+.hl{display:flex;align-items:center;gap:10px}
+.hb{width:40px;height:40px;border:0;border-radius:12px;background:rgba(255,255,255,.18);color:#fff;font-size:22px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;flex:none}
+.hb u{position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:var(--red);border:2px solid #3b1a80;text-decoration:none}
+header .logo{font-size:22px}
+.dw{position:absolute;inset:0;z-index:40;visibility:hidden;transition:visibility .3s}
+.dw.open{visibility:visible}
+.dwb{position:absolute;inset:0;background:rgba(36,21,63,.55);opacity:0;transition:opacity .3s}
+.dw.open .dwb{opacity:1}
+.dwp{position:absolute;top:0;bottom:0;left:0;width:84%;max-width:340px;background:#fff;transform:translateX(-102%);transition:transform .3s;display:flex;flex-direction:column;overflow-y:auto;box-shadow:12px 0 40px rgba(36,21,63,.3);border-radius:0 24px 24px 0}
+.dw.open .dwp{transform:none}
+.dwh{background:linear-gradient(150deg,#241052,#5427a8 65%,#7e52d6);color:#fff;padding:26px 20px 18px;border-radius:0 0 26px 0;flex:none}
+.dwt{display:flex;justify-content:space-between;align-items:flex-start}
+.dwa{width:68px;height:68px;border-radius:50%;background:var(--y);color:var(--p);font-weight:900;font-size:26px;display:flex;align-items:center;justify-content:center;border:3px solid rgba(255,255,255,.85);background-size:cover;background-position:center}
+.dwl{font-size:17px;font-weight:900;color:#fff}.dwl span{color:var(--y)}
+.dwn{font-size:20px;font-weight:900;margin-top:12px}
+.dwph{font-size:13px;opacity:.75;margin-top:2px}
+.dwc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.dwc div{background:rgba(255,255,255,.14);border-radius:14px;padding:9px 12px}
+.dwc small{display:block;font-size:11px;opacity:.7}.dwc b{font-size:14px}
+.dwm{flex:1;padding:12px 0}
+.dmi{display:flex;align-items:center;gap:14px;padding:11px 20px;font-size:15px;font-weight:700;cursor:pointer;margin:0 10px;border-radius:14px;color:var(--ink)}
+.dmi:active{background:#f1ebfb}
+.dmi.act{background:#f1ebfb;color:var(--p)}
+.dmi i{width:36px;height:36px;border-radius:11px;background:#f1ebfb;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:18px;flex:none}
+.dmi.act i{background:var(--p)}
+.dmi .bd{margin-left:auto;min-width:24px;height:24px;padding:0 6px;border-radius:12px;background:var(--red);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center}
+.dmi .ch{margin-left:auto;color:#8b7da6;transition:.25s}.dmi.ex .ch{transform:rotate(180deg)}
+.dsub{display:none;margin:0 10px 4px 70px}.dsub.show{display:block}
+.dsub div{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:12px;background:#faf8fe;font-size:14px;font-weight:700;cursor:pointer}
+.dsub b{color:var(--p)}
+.dmi.dlo{color:var(--red)}.dmi.dlo i{background:#fdeaeb}
+.dwv{text-align:center;font-size:11px;color:#8b7da6;padding:10px 0 18px;flex:none}
+.mo{position:absolute;inset:0;z-index:45;background:rgba(36,21,63,.55);display:none;align-items:flex-end}
+.mo.show{display:flex}
+.mo>div{background:#fff;width:100%;max-height:80%;overflow-y:auto;border-radius:24px 24px 0 0;padding:18px 18px 22px}
+.mo h3{font-size:17px;margin-bottom:12px}
+.nti{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f0ebf8;font-size:14px}.nti:last-child{border:0}
+.nti i{font-style:normal;font-size:20px}.nti small{display:block;color:#7a6c94;font-size:11px;margin-top:2px}
+.fq{padding:12px 0;border-bottom:1px solid #f0ebf8}.fq:last-child{border:0}.fq b{font-size:14px;display:block;margin-bottom:4px}.fq span{font-size:13px;color:#5d4f78}
+
+#payv .dtl{margin:2px 16px 0;background:#fff;border-radius:18px;padding:14px;box-shadow:0 6px 20px rgba(60,30,90,.1)}
+#payv .dtl h3{font-size:14px;margin:0 0 10px;color:#7a6c94}
+#payv .dtl input{margin-bottom:10px}
+#payv .dtl small{display:block;color:#7a6c94;font-size:11px}
+#payv .cr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#payv .uc{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+#payv .uc span{background:#f1ebfb;color:var(--p);font-size:12px;font-weight:700;padding:6px 10px;border-radius:14px;cursor:pointer}
+#payv .perr{color:var(--red);font-size:12px;font-weight:700;min-height:16px;margin-top:6px}
+
+
+/* FG DRIVO brand refresh: clearer hierarchy, warmer contrast, and consistent controls */
+:root{--p:#4b478c;--y:#d7ad36;--ink:#211f3b;--bg:#f5f5fa;--red:#cf3f49;--g:#16875d}
+html,body{background:#e8e8f0;color:var(--ink)}
+#app{background:var(--bg);box-shadow:0 18px 60px rgba(29,25,62,.18)}
+.logo{display:block!important;width:106px;height:44px;font-size:0!important;color:transparent!important;background:#fff url("fg-logo.png") center/contain no-repeat;border-radius:8px;flex:none}
+.logo span{display:none}
+.lgc{width:min(100%,340px);padding:10px 14px;border-radius:18px;box-shadow:0 18px 48px rgba(18,12,45,.25)}
+.lgc .logo{width:100%;height:122px;border-radius:10px}
+.tb .logo{width:96px;height:40px}
+.rh .logo{width:88px;height:36px}
+header{height:68px;padding:0 14px;background:#fff!important;box-shadow:0 4px 20px rgba(31,28,62,.08)!important;border-bottom:1px solid #e9e8f0}
+header .logo{width:96px;height:40px}
+header .pill{background:#f0eff5!important;color:#615d78!important;border:1px solid #e4e2ec}
+header .pill.on{background:#e4f4eb!important;color:#16875d!important;border-color:#c8e9d8}
+main{padding:16px 16px 92px;background:linear-gradient(180deg,#f7f7fb,#f2f2f8)}
+.card,.stat,.booking-ui-card{border:1px solid #ebeaf2;border-radius:20px;box-shadow:0 5px 18px rgba(35,32,67,.06)}
+.hcard{border-radius:24px;background:linear-gradient(135deg,#37356e,#514d96 65%,#6f6ba9);box-shadow:0 14px 30px rgba(61,57,128,.22)}
+.stats{gap:8px}.stat{padding:13px 7px}.stat b{font-size:19px;color:#4b478c}.stat small{color:#716d86}
+#rmap{border-radius:22px;box-shadow:0 8px 22px rgba(33,31,59,.13);border:1px solid #e5e3ef}
+.qa{gap:9px}.qa button{border:1px solid #ebeaf2;border-radius:16px;color:#4b478c;box-shadow:0 4px 14px rgba(35,32,67,.05)}
+.qa button b{color:#4b478c}
+.btn{min-height:50px;border-radius:14px;background:linear-gradient(135deg,#e2bd54,#d2a52b);color:#28243e;box-shadow:0 5px 12px rgba(174,133,28,.12);transition:transform .16s,box-shadow .16s}
+.btn:active{transform:translateY(1px) scale(.99);box-shadow:none}
+.btn.alt{background:#4b478c;color:#fff;box-shadow:0 5px 14px rgba(75,71,140,.2)}
+.btn.out{background:#fff;color:#4b478c;border:1px solid #d9d7e7;box-shadow:none}
+.btn.red{background:#fff0f1;color:#c13b45;border:1px solid #f5d7da;box-shadow:none}
+.go{width:138px;height:138px;background:#4b478c;border:5px solid #fff;box-shadow:0 0 0 6px rgba(75,71,140,.12),0 10px 24px rgba(75,71,140,.25)}
+.go.on{background:#16875d;box-shadow:0 0 0 6px rgba(22,135,93,.12),0 10px 24px rgba(22,135,93,.22)}
+nav{height:72px;border-top:1px solid #ecebf2;box-shadow:0 -5px 20px rgba(31,28,62,.06)}nav button{font-size:11px;color:#77738a}nav button.act{color:#4b478c}nav button b{font-size:21px}
+#sheet{border-radius:24px 24px 0 0;box-shadow:0 -8px 32px rgba(31,28,62,.16)}
+input,select{border-color:#dfdeea;background:#fff}input:focus,select:focus{border-color:#5c58a0;box-shadow:0 0 0 3px rgba(75,71,140,.1)}
+.hero{background:radial-gradient(ellipse at 50% 8%,#716eaa 0,#504c91 42%,#27264f 100%)}
+.hero::before{background:radial-gradient(circle,rgba(215,173,54,.26),transparent 70%)}
+.hero::after{background:radial-gradient(circle,rgba(255,255,255,.12),transparent 70%)}
+.car{width:132px;height:82px;margin:24px auto 12px;font-size:0;animation:fl 3s ease-in-out infinite;display:flex;align-items:center;justify-content:center}
+.car svg{width:100%;height:100%;filter:drop-shadow(0 9px 12px rgba(5,5,20,.22))}
+.w-wrap h1{font-size:26px;letter-spacing:-.3px}.w-tag{color:#f0d171}.chips span{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2)}
+.bot.sh{padding:20px 22px 28px;box-shadow:0 -8px 30px rgba(25,21,57,.12)}
+#s-auth .bot .nt{margin:10px 0 0;font-size:12px}
+#s-auth .bot .nt:last-child{margin-top:8px}
+.lc{box-shadow:0 -8px 32px rgba(31,28,62,.16)}.lic{color:#4b478c}
+.dwh{background:linear-gradient(145deg,#343267,#514d96 70%,#6c68a7)}
+.dwl{display:block;width:108px;height:46px;font-size:0!important;background:#fff url("fg-logo.png") center/contain no-repeat;border-radius:9px}
+.dwl span{display:none}
+.dmi.act{background:#f0eff8;color:#4b478c}.dmi.act i{background:#4b478c;color:#fff}
+#mx{color:#4b478c;border:1px solid #eceaf2}
+:focus-visible{outline:3px solid rgba(75,71,140,.42);outline-offset:2px}.qa svg,nav svg{display:block;width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.qa button b{font-size:0}nav button b{height:24px;margin-bottom:3px}nav button b svg{margin:auto}
+@media(max-width:360px){.lgc .logo{height:104px}.stats{gap:6px}.stat{padding:11px 4px}.stat b{font-size:17px}header{padding:0 10px}header .logo{width:82px;height:36px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+@media(max-width:480px){html,body{height:100dvh;height:-webkit-fill-available;margin:0;padding:0;overflow:hidden}#app{max-width:100%!important;width:100%!important;height:100dvh!important;height:-webkit-fill-available!important;border-radius:0!important;box-shadow:none!important;padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}nav{padding-bottom:env(safe-area-inset-bottom,0);height:calc(64px + env(safe-area-inset-bottom,0))}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<section class="scr hero" id="s-welcome">
+ <div class="w-wrap">
+  <div class="lgc"><div class="logo">FG <span>DRIVO</span></div></div>
+  <div class="car"><svg viewBox="0 0 180 92" role="img" aria-label="Car" xmlns="http://www.w3.org/2000/svg"><path d="M27 58 39 32c3-7 9-11 17-12l60-5c10-1 19 4 25 12l17 23 9 4v22H13V61z" fill="#fff"/><path d="m47 34-8 19h45V22l-27 2c-4 0-8 4-10 10Zm45-13v32h54l-14-19c-4-7-10-11-18-12z" fill="#4b478c"/><path d="M18 57h145v12H18z" fill="#d7ad36"/><circle cx="48" cy="76" r="13" fill="#211f3b"/><circle cx="48" cy="76" r="6" fill="#d9d9e3"/><circle cx="137" cy="76" r="13" fill="#211f3b"/><circle cx="137" cy="76" r="6" fill="#d9d9e3"/><path d="M18 58h-7v9h7m148-9h6v9h-6" fill="#fff"/></svg></div>
+  <h1 data-t>Welcome to FG DRIVO</h1>
+  <div class="w-tag" data-t>Drive. Earn. Grow.</div>
+  <div class="chips"><span data-t>Fair Earnings</span><span data-t>Instant Payouts</span><span data-t>24x7 Support</span></div>
+ </div>
+ <div class="bot"><button class="btn" id="b-start" data-t>Get Started</button></div>
+</section>
+
+<section class="scr hide" id="s-lang">
+ <div class="tb"><div class="logo" style="font-size:22px">FG <span>DRIVO</span></div></div>
+ <div class="pg">
+  <h2 data-t>Select Language</h2><p data-t>Choose the language you are comfortable with</p>
+  <div class="lo sel" data-l="en"><span class="ic">A</span><div><b>English</b><small>English</small></div><em>&#10003;</em></div>
+  <div class="lo" data-l="ta"><span class="ic">&#2949;</span><div><b>&#2980;&#2990;&#3007;&#2996;&#3021;</b><small>Tamil</small></div><em>&#10003;</em></div>
+  <div style="flex:1"></div><button class="btn" id="b-lang" data-t>Continue</button>
+ </div>
+</section>
+
+<section class="scr hide" id="s-auth">
+ <div class="hero ah"><div class="lgc"><div class="logo">FG <span>DRIVO</span></div></div><div class="car"><svg viewBox="0 0 180 92" role="img" aria-label="Car" xmlns="http://www.w3.org/2000/svg"><path d="M27 58 39 32c3-7 9-11 17-12l60-5c10-1 19 4 25 12l17 23 9 4v22H13V61z" fill="#fff"/><path d="m47 34-8 19h45V22l-27 2c-4 0-8 4-10 10Zm45-13v32h54l-14-19c-4-7-10-11-18-12z" fill="#4b478c"/><path d="M18 57h145v12H18z" fill="#d7ad36"/><circle cx="48" cy="76" r="13" fill="#211f3b"/><circle cx="48" cy="76" r="6" fill="#d9d9e3"/><circle cx="137" cy="76" r="13" fill="#211f3b"/><circle cx="137" cy="76" r="6" fill="#d9d9e3"/><path d="M18 58h-7v9h7m148-9h6v9h-6" fill="#fff"/></svg></div>
+  <div class="w-tag" style="margin-top:14px" data-t>Drivers App</div><div style="opacity:.85;margin-top:6px;font-size:14px" data-t>Drive. Earn. Grow.</div><div class="lchip hide" id="lchip"></div></div>
+ <div class="bot sh">
+  <button class="btn" id="b-login" data-t>LOGIN</button>
+  <button class="btn out" id="b-reg" data-t>REGISTER</button>
+  <button class="btn out" id="demo-btn" data-t>Try Demo</button>
+  <p class="nt" data-t>Temporary demo; sample rides and earnings</p>
+  <p class="nt" data-t>New to FG DRIVO? Register to become a driver</p>
+ </div>
+ <div class="locg" id="locg"><div class="lc"><div class="lic">&#128205;</div><h3 data-t>Allow Location Access</h3>
+  <p data-t>FG DRIVO needs your location to find nearby rides and confirm your service area.</p>
+  <div id="loc-e"></div><button class="btn" id="loc-b" data-t>Allow Location</button><button class="btn out" id="demo-loc" data-t>Try Demo</button><div class="lnk" id="loc-sk" data-t>Skip for now</div></div></div>
+ <div class="locg hide" id="lp" style="z-index:6"><div class="lc"><div class="lic">&#128205;</div><h3 data-t>Allow FG DRIVO to access this device's location?</h3><p data-t>Used to find nearby rides and confirm your service area.</p>
+  <button class="btn" id="lp1" data-t>While using the app</button><button class="btn out" id="lp2" data-t>Only this time</button><button class="btn red" id="lp3" data-t>Don't allow</button></div></div>
+</section>
+
+<section class="scr hide" id="s-phone">
+ <div class="tb"><div class="bk" id="p-bk">&larr;</div><div class="logo" style="font-size:22px">FG <span>DRIVO</span></div></div>
+ <div class="pg">
+  <h2 id="p-h"></h2><p id="p-s"></p>
+  <label class="lb" data-t>Mobile number</label>
+  <input id="ph" class="mob" value="+91 " inputmode="numeric" maxlength="14" autocomplete="tel">
+  <div id="er"></div><div class="lnk hide" id="p-lk"></div>
+  <div style="flex:1"></div><button class="btn" id="p-go" data-t>Send OTP</button>
+ </div>
+</section>
+
+<section class="scr hide" id="s-otp">
+ <div class="tb"><div class="bk" id="o-bk">&larr;</div><div class="logo" style="font-size:22px">FG <span>DRIVO</span></div></div>
+ <div class="pg">
+  <h2 data-t>Verify OTP</h2><p id="o-s"></p>
+  <input id="otp" class="mob otpi" inputmode="numeric" maxlength="4" placeholder="&bull; &bull; &bull; &bull;">
+  <div id="oer"></div><div class="lnk" id="o-rs"></div>
+  
+  <div style="flex:1"></div><button class="btn" id="o-go" data-t>Verify</button>
+ </div>
+</section>
+
+<div id="reg" class="hide"><div class="rh"><div class="logo">FG <span>DRIVO</span></div><b data-t>Driver Registration</b><span></span></div><div class="rb" id="rb"></div><div class="rf" id="rf"></div></div>
+<div id="frm" class="hide"></div>
+
+<div id="home" class="hide">
+<header><div class="hl"><button class="hb" id="hb" aria-label="Menu">&#9776;<u id="hbd"></u></button><div class="logo">FG <span>DRIVO</span></div></div><div class="pill" id="pill">OFFLINE</div><div class="gp" id="gpill"><span id="gpt">🎯 ₹0 / ₹2,000</span><i><b id="gpb"></b></i></div></header>
+<main>
+ <section class="tab show" id="t-home">
+  <div class="hcard"><div class="row"><div><small data-t>Welcome back</small><b id="hgn"></b><small id="hgc"></small></div><div class="rp" id="hrp">&#9733; --</div></div></div>
+  <div class="stats"><div class="stat"><b id="sE">&#8377;0</b><small data-t>Today</small></div><div class="stat"><b id="sT">0</b><small data-t>Trips</small></div><div class="stat"><b id="sR">4.8&#9733;</b><small data-t>Rating</small></div></div>
+  <div id="mw"><div id="rmap"></div><button id="mx" title="Full screen">&#10530;</button></div>
+  <div class="qa"><button id="q-loc" aria-label="My location"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></b><span data-t>My location</span></button><button id="q-sup" aria-label="Support"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.8a15 15 0 0 0 4.7 4.7L15 13l5 2v4a2 2 0 0 1-2.2 2C9.6 20.2 3.8 14.4 3 6.2A2 2 0 0 1 5 4Z"/></svg></b><span data-t>Support</span></button><button id="q-sos" aria-label="SOS"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 22 20H2L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg></b><span>SOS</span></button></div>
+  <div class="card" style="text-align:center;position:relative"><div class="go" id="go"></div><div id="msg" style="font-size:13px;color:#7a6c94"></div></div>
+  <div id="rtH" hidden></div>
+ </section>
+ <section class="tab" id="t-earn">
+  <div class="card"><small style="color:#7a6c94" data-t>This week</small><div class="fare" id="wk">&#8377;0</div><div class="chart" id="ch"></div><div style="height:16px"></div></div>
+  <div class="card"><h3 data-t>Payouts</h3>
+   <div class="li"><span><span data-t>Next payout</span><small data-t>Every Monday to bank</small></span><b>&#8377;6,480</b></div>
+   <div class="li"><span><span data-t>Cash collected</span><small data-t>This week</small></span><b>&#8377;3,120</b></div></div>
+ </section>
+ <section class="tab" id="t-trips"><div class="card"><h3 data-t>Trip history</h3><div id="hist"></div></div></section>
+  <section class="tab" id="t-me">
+  <div class="card row" style="justify-content:flex-start;gap:14px"><div class="av" id="pa"></div><div><b style="font-size:18px" id="pn"></b><br><small style="color:#7a6c94" id="pc"></small></div><button class="eb" id="pedit">✏️ <span data-t>Edit</span></button></div>
+  <div id="rtbody"></div>
+  <div class="card"><h3 data-t>Vehicle</h3><div class="li"><span id="pvt"></span><b id="pvn"></b></div>
+   <span class="chip">&#10003; <i data-t>Licence</i></span><span class="chip">&#10003; <i data-t>RC Book</i></span><span class="chip">&#10003; <i data-t>Insurance</i></span><span class="chip">&#10003; <i data-t>Aadhaar</i></span></div>
+  <div class="card"><div class="li"><span data-t>Support</span><b>1800-FG-DRIVO</b></div><div class="li" id="langrow" style="cursor:pointer"><span data-t>Language</span><b id="lv">English</b></div></div>
+  <button class="btn red" id="out" data-t>Logout</button>
+ </section>
+</main>
+<div id="sheet"></div>
+<nav id="nav"><button class="act" data-t2="home"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></b><span data-t>Home</span></button><button data-t2="earn"><b><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15 8.5c-.7-.7-1.7-1-3-1-1.6 0-2.7.8-2.7 2s1.1 1.8 2.7 2.2 2.7 1 2.7 2.2-1.1 2.1-2.8 2.1c-1.3 0-2.4-.4-3.2-1.2M12 5.8v12.4"/></svg></b><span data-t>Earnings</span></button><button data-t2="trips"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h-3v17h14V4h-3M9 3h6v4H9zM8 11h8M8 15h8M8 18h5"/></svg></b><span data-t>Trips</span></button><button data-t2="me"><b><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></b><span data-t>Profile</span></button></nav>
+</div>
+
+</div>
+<script>
+var $=function(i){return document.getElementById(i)},L="en",
+S={on:false,earn:0,n:0,trip:null,tm:null,ask:null,mode:"",ph:"",sub:0,me:null,r:null},D={},T={},
+/* Numbers registered by the company (demo). In production this list comes from the company server. */
+CO={"9876543210":{n:"Murugan K",c:"Dindigul",vt:"Sedan",vn:"TN 57 AZ 4821",vd:"FG DRIVO fleet",y:2024},
+    "8765432109":{n:"Karthik R",c:"Madurai",vt:"Premium",vn:"TN 58 BC 7712",vd:"Independent driver",y:2023},
+    "7896541230":{n:"Selvam P",c:"Palani",vt:"SUV",vn:"TN 57 CD 3390",vd:"FG DRIVO fleet",y:2025},
+    "6789012345":{n:"Anand S",c:"Kodaikanal",vt:"Mini",vn:"TN 57 EF 1208",vd:"Other vendor",y:2024}},
+TA={
+"Welcome to FG DRIVO":"FG DRIVO-வுக்கு வரவேற்கிறோம்","Drive. Earn. Grow.":"ஓட்டுங்கள். சம்பாதியுங்கள். வளருங்கள்.","Fair Earnings":"நியாயமான வருமானம்","Instant Payouts":"உடனடி பணப்பட்டுவாடா","24x7 Support":"24x7 உதவி","Get Started":"தொடங்கலாம்",
+"Select Language":"மொழியைத் தேர்ந்தெடுக்கவும்","Choose the language you are comfortable with":"உங்களுக்கு வசதியான மொழியைத் தேர்ந்தெடுக்கவும்","Continue":"தொடரவும்",
+"Try Demo":"டெமோவை முயற்சிக்கவும்","Temporary demo; sample rides and earnings":"தற்காலிக டெமோ; மாதிரி பயணங்கள் மற்றும் வருமானம்","Drivers App":"ஓட்டுநர் செயலி","LOGIN":"உள்நுழை","REGISTER":"பதிவு செய்","New to FG DRIVO? Register to become a driver":"FG DRIVO-வில் புதியவரா? ஓட்டுநராகப் பதிவு செய்யுங்கள்",
+"Login":"உள்நுழைவு","Register":"பதிவு","Enter your contact number":"உங்கள் தொடர்பு எண்ணை உள்ளிடவும்","Verify your number to start your registration":"பதிவைத் தொடங்க உங்கள் எண்ணைச் சரிபார்க்கவும்",
+"Mobile number":"மொபைல் எண்","Send OTP":"OTP அனுப்பு","Invalid number":"தவறான எண்","Enter your 10-digit mobile number":"உங்கள் 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்",
+"This number is not registered with FG DRIVO. Please contact your company or register as a new driver.":"இந்த எண் FG DRIVO-வில் பதிவு செய்யப்படவில்லை. உங்கள் நிறுவனத்தைத் தொடர்பு கொள்ளவும் அல்லது புதிய ஓட்டுநராகப் பதிவு செய்யவும்.",
+"This number is already registered. Please login.":"இந்த எண் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது. உள்நுழையவும்.","Register as a new driver":"புதிய ஓட்டுநராகப் பதிவு செய்","Go to Login":"உள்நுழைவுக்குச் செல்",
+"Verify OTP":"OTP சரிபார்ப்பு","Enter the 4-digit OTP sent to +91 {n}":"+91 {n} எண்ணுக்கு அனுப்பிய 4 இலக்க OTP-ஐ உள்ளிடவும்","Verify":"சரிபார்","Resend OTP":"OTP மீண்டும் அனுப்பு","Resend OTP in {n}s":"{n} விநாடியில் OTP மீண்டும் அனுப்பலாம்","Enter the 4-digit OTP":"4 இலக்க OTP-ஐ உள்ளிடவும்","Demo: any 4 digits will work":"டெமோ: ஏதேனும் 4 இலக்கங்களை உள்ளிடலாம்",
+"Driver Registration":"ஓட்டுநர் பதிவு","STEP 1":"படி 1","STEP 2":"படி 2","Application":"விண்ணப்பம்","Onboarding":"இணைப்பு","Please complete the pending details to join with FG DRIVO":"FG DRIVO-வுடன் இணைய நிலுவையிலுள்ள விவரங்களை நிரப்பவும்",
+"DETAILS PENDING":"நிலுவையிலுள்ள விவரங்கள்","ALL DETAILS COMPLETED":"அனைத்து விவரங்களும் முடிந்தன","Profile Photo":"சுயவிவரப் புகைப்படம்","Profile Details":"சுயவிவர விவரங்கள்","Aadhaar":"ஆதார்","Driving License":"ஓட்டுநர் உரிமம்","Local Address":"உள்ளூர் முகவரி","City & Vendor Details":"நகரம் & நிறுவன விவரங்கள்",
+"Reset":"மீட்டமை","Submit Application":"விண்ணப்பத்தைச் சமர்ப்பி","Clear all details?":"அனைத்து விவரங்களையும் அழிக்கவா?","Application submitted! Our team will verify your documents in 24-48 hours.":"விண்ணப்பம் சமர்ப்பிக்கப்பட்டது! எங்கள் குழு 24-48 மணி நேரத்தில் உங்கள் ஆவணங்களைச் சரிபார்க்கும்.",
+"Verification is in progress. You can start in demo mode now.":"சரிபார்ப்பு நடைபெறுகிறது. இப்போது டெமோ முறையில் தொடங்கலாம்.","Start Driving":"ஓட்டத் தொடங்கு","Uploaded":"பதிவேற்றப்பட்டது",
+"Your photo (clear face, no sunglasses)":"உங்கள் புகைப்படம் (முகம் தெளிவாகத் தெரிய வேண்டும், கூலிங் கிளாஸ் வேண்டாம்)","Full name (as on licence)":"முழு பெயர் (உரிமத்தில் உள்ளபடி)","Date of birth":"பிறந்த தேதி","Gender":"பாலினம்","Male":"ஆண்","Female":"பெண்","Other":"மற்றவை","Emergency contact (+91)":"அவசர தொடர்பு எண் (+91)",
+"Aadhaar number":"ஆதார் எண்","Aadhaar front":"ஆதார் முன்பக்கம்","Aadhaar back":"ஆதார் பின்பக்கம்","Licence number":"உரிம எண்","Valid till":"செல்லுபடியாகும் தேதி","Licence photo":"உரிமப் புகைப்படம்",
+"House no. & street":"வீட்டு எண் & தெரு","Area / landmark":"பகுதி / அடையாளம்","City":"நகரம்","Pincode":"அஞ்சல் குறியீடு","State":"மாநிலம்","Tamil Nadu":"தமிழ்நாடு","Kerala":"கேரளா","Karnataka":"கர்நாடகா","Andhra Pradesh":"ஆந்திரப் பிரதேசம்","Puducherry":"புதுச்சேரி",
+"Operating city":"பணிபுரியும் நகரம்","Vehicle type":"வாகன வகை","Vehicle number":"வாகன எண்","Vendor":"நிறுவனம்","Independent driver":"தனி ஓட்டுநர்","FG DRIVO fleet":"FG DRIVO வாகனக் குழு","Other vendor":"பிற நிறுவனம்",
+"Mini":"மினி","SUV":"எஸ்யூவி","Premium":"பிரீமியம்","Sedan":"செடான்","Select":"தேர்ந்தெடு","Save":"சேமி","Tap to upload":"பதிவேற்றத் தட்டவும்","Change photo":"புகைப்படத்தை மாற்று","Required":"தேவையானது","Please upload":"தயவுசெய்து பதிவேற்றவும்","Invalid":"தவறானது",
+"Enter your full name":"உங்கள் முழு பெயரை உள்ளிடவும்","Enter 12-digit Aadhaar number":"12 இலக்க ஆதார் எண்ணை உள்ளிடவும்","Enter valid number (e.g. TN57 20240001234)":"சரியான எண்ணை உள்ளிடவும் (எ.கா. TN57 20240001234)","Enter valid 6-digit pincode":"சரியான 6 இலக்க அஞ்சல் குறியீட்டை உள்ளிடவும்","Enter valid number (e.g. TN 57 AZ 4821)":"சரியான எண்ணை உள்ளிடவும் (எ.கா. TN 57 AZ 4821)",
+"ONLINE":"ஆன்லைன்","OFFLINE":"ஆஃப்லைன்","Today":"இன்று","Trips":"பயணங்கள்","Rating":"மதிப்பீடு","GO<br>ONLINE":"ஆன்லைன்<br>செல்","Tap to stop":"நிறுத்தத் தட்டவும்","Tap to start receiving ride requests":"சவாரி கோரிக்கைகளைப் பெறத் தட்டவும்","Looking for rides near you...":"அருகிலுள்ள சவாரிகளைத் தேடுகிறது...",
+"New ride request":"புதிய சவாரி கோரிக்கை","Pickup \u00B7 {n} km away":"ஏற்றும் இடம் \u00B7 {n} கி.மீ தொலைவில்","Drop \u00B7 {n} km":"இறக்கும் இடம் \u00B7 {n} கி.மீ","Cash \u00B7 Est. {n} min":"பணம் \u00B7 தோராயமாக {n} நிமிடம்","Decline":"நிராகரி","Accept":"ஏற்றுக்கொள்","s":"வி","km":"கி.மீ",
+"Navigate to pickup":"ஏற்றும் இடத்திற்குச் செல்லுங்கள்","I have arrived":"வந்துவிட்டேன்","Waiting for customer":"பயணிக்காகக் காத்திருக்கிறது","Enter OTP":"OTP உள்ளிடு","Enter customer OTP":"பயணியின் OTP-ஐ உள்ளிடவும்","4-digit OTP":"4 இலக்க OTP","Start Trip":"பயணத்தைத் தொடங்கு","Trip in progress":"பயணம் நடைபெறுகிறது","Complete Trip":"பயணத்தை முடி","Trip completed":"பயணம் முடிந்தது","Collect cash from customer":"பயணியிடம் பணம் பெறவும்","Done":"முடிந்தது","Trip":"பயணம்","Rahul S.":"ராகுல் எஸ்.",
+"This week":"இந்த வாரம்","Payouts":"பணப்பட்டுவாடா","Next payout":"அடுத்த பட்டுவாடா","Every Monday to bank":"ஒவ்வொரு திங்களும் வங்கிக் கணக்கில்","Cash collected":"பெற்ற ரொக்கம்","Trip history":"பயண வரலாறு",
+"Mon":"திங்","Tue":"செவ்","Wed":"புத","Thu":"வியா","Fri":"வெள்","Sat":"சனி","Sun":"ஞாயி","Yesterday":"நேற்று","Home":"முகப்பு","Earnings":"வருமானம்","Profile":"சுயவிவரம்",
+"Allow Location Access":"இருப்பிட அணுகலை அனுமதிக்கவும்","FG DRIVO needs your location to find nearby rides and confirm your service area.":"அருகிலுள்ள சவாரிகளைக் கண்டறியவும், உங்கள் சேவைப் பகுதியை உறுதிப்படுத்தவும் FG DRIVO-க்கு உங்கள் இருப்பிடம் தேவை.","Allow Location":"இருப்பிடத்தை அனுமதி","Try again":"மீண்டும் முயற்சி","Getting your location...":"இருப்பிடத்தைப் பெறுகிறது...","Location on":"இருப்பிடம் ஆன்",
+"Location permission denied. Please allow location in your browser or phone settings and tap Try again.":"இருப்பிட அனுமதி மறுக்கப்பட்டது. உலாவி அல்லது போன் செட்டிங்ஸில் இருப்பிடத்தை அனுமதித்து, மீண்டும் முயற்சி என்பதைத் தட்டவும்.","Could not get your location. Please turn on GPS and try again.":"இருப்பிடத்தைப் பெற முடியவில்லை. GPS-ஐ ஆன் செய்து மீண்டும் முயற்சிக்கவும்.",
+"Vehicle":"வாகனம்","Support":"உதவி","Language":"மொழி","Logout":"வெளியேறு","Licence":"உரிமம்","RC Book":"ஆர்சி புக்","Insurance":"காப்பீடு","Driver since {n}":"{n} முதல் ஓட்டுநர்",
+"Dindigul":"திண்டுக்கல்","Chinnalapatti":"சின்னாளபட்டி","Madurai":"மதுரை","Palani":"பழனி","Kodaikanal":"கொடைக்கானல்","Dindigul Bus Stand":"திண்டுக்கல் பேருந்து நிலையம்","Dindigul Rock Fort":"திண்டுக்கல் மலைக்கோட்டை","Madurai Airport":"மதுரை விமான நிலையம்","Dindigul Railway Stn":"திண்டுக்கல் ரயில் நிலையம்","Palani Murugan Temple":"பழனி முருகன் கோயில்","Kodaikanal Lake":"கொடைக்கானல் ஏரி","Chinnalapatti Handloom":"சின்னாளபட்டி கைத்தறி","Madurai Meenakshi Temple":"மதுரை மீனாட்சி அம்மன் கோயில்"},
+R=[["Dindigul Bus Stand","Chinnalapatti",14,320],["Dindigul Rock Fort","Madurai Airport",62,1450],["Dindigul Railway Stn","Palani Murugan Temple",58,1320],["Dindigul","Kodaikanal Lake",92,2350],["Chinnalapatti Handloom","Dindigul Bus Stand",15,340],["Madurai Meenakshi Temple","Dindigul",64,1480]],
+H=[{a:"Dindigul",b:"Palani",w:"Yesterday",km:58,f:1320},{a:"Madurai",b:"Dindigul",w:"Yesterday",km:64,f:1480},{a:"Dindigul",b:"Chinnalapatti",w:"Mon",km:14,f:320},{a:"Dindigul",b:"Kodaikanal",w:"Sun",km:92,f:2350}],
+W=[["Mon",1800],["Tue",2400],["Wed",1200],["Thu",3100],["Fri",2650],["Sat",3900],["Sun",3500]],
+ST=[["Navigate to pickup","I have arrived"],["Waiting for customer","Enter OTP"],["Start trip","Start Trip"],["Trip in progress","Complete Trip"]];
+function t(k,v){var r=(L=="ta"&&TA[k])||k;return v==null?r:r.replace("{n}",v)}
+function inr(n){return "\u20B9"+n.toLocaleString("en-IN")}
+function qa(s){return [].slice.call(document.querySelectorAll(s))}
+function applyLang(){qa("[data-t]").forEach(function(e){if(!e.dataset.en)e.dataset.en=e.innerHTML;e.innerHTML=t(e.dataset.en)});$("lv").textContent=L=="ta"?"\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD":"English";document.documentElement.lang=L}
+function refresh(){applyLang();stats();hist();chart();prof();txt();if(!$("reg").classList.contains("hide"))drawReg()}
+function go(id){qa(".scr").forEach(function(s){s.classList.add("hide")});if(id)$(id).classList.remove("hide");if(id=="s-auth")locGate()}
+/* ---------- location (asked first on the login / register page) ---------- */
+function locGate(){var on=!!(S.loc&&S.loc.lat),sk=!!(S.loc&&S.loc.na);$("locg").classList.toggle("hide",on||sk);$("lchip").classList.toggle("hide",!(on||sk));$("lchip").textContent="\uD83D\uDCCD "+t(on?"Location on":"Location off")}
+function lbtn(k,off){var b=$("loc-b");b.dataset.en=k;b.innerHTML=t(k);b.disabled=!!off}
+function reqLoc(w){$("lp").classList.add("hide");$("loc-e").textContent="";
+ if(!navigator.geolocation){S.loc={na:1};return locGate()}
+ lbtn("Getting your location...",1);
+ navigator.geolocation.getCurrentPosition(function(p){S.loc={lat:p.coords.latitude,lng:p.coords.longitude};lbtn("Allow Location");locGate();if(w)watchLoc()},
+  function(e){$("loc-e").textContent=t(!window.isSecureContext?"Location needs a secure link (https or localhost). Please open the app with https.":e.code==1?"Location permission denied. Please allow location in your browser or phone settings and tap Try again.":"Could not get your location. Please turn on GPS and try again.");lbtn("Try again")},
+  {enableHighAccuracy:true,timeout:15000,maximumAge:60000})}
+$("loc-b").onclick=function(){reqLoc(true)};
+$("lp1").onclick=function(){reqLoc(true)};$("lp2").onclick=function(){reqLoc(false)};
+$("lp3").onclick=function(){$("lp").classList.add("hide");$("loc-e").textContent=t("Location denied. You can allow it anytime with Try again.");lbtn("Try again")};
+$("lp").onclick=function(e){if(e.target==this)this.classList.add("hide")};
+/* ---------- welcome / language / auth ---------- */
+$("b-start").onclick=function(){go("s-lang")};
+qa(".lo").forEach(function(o){o.onclick=function(){qa(".lo").forEach(function(x){x.classList.remove("sel")});o.classList.add("sel");L=o.dataset.l;refresh()}});
+$("b-lang").onclick=function(){go("s-auth")};
+function startDemo(){window.DEMO_MODE=true;S.demo=1;S.ph="9876543210";S.me=CO[S.ph];S.st="approved";S.loc={lat:10.3673,lng:77.9803};S.on=false;S.trip=null;enter()}$("b-login").onclick=function(){openPhone("login")};$("b-reg").onclick=function(){openPhone("reg")};$("demo-btn").onclick=startDemo;$("demo-loc").onclick=startDemo;
+$("p-bk").onclick=function(){go("s-auth")};$("o-bk").onclick=function(){clearInterval(S.rt);go("s-phone")};
+/* ---------- contact number + OTP ---------- */
+function dg(){var v=$("ph").value,r=v.indexOf("+91 ")==0?v.slice(4):("+91 ".indexOf(v)==0?"":v);return r.replace(/\D/g,"").slice(0,10)}
+function chk(d){return d.length>0&&!/^[6-9]/.test(d)}
+function openPhone(m){S.mode=m;S.chkd=0;$("p-h").textContent=t(m=="login"?"Login":"Register");$("p-s").textContent=t(m=="login"?"Enter your contact number":"Verify your number to start your registration");
+ $("ph").value="+91 ";$("ph").className="mob";$("er").textContent="";$("p-lk").classList.add("hide");go("s-phone")}
+function perr(k){$("er").style.color="#e0262d";$("er").textContent=t(k);$("ph").className="mob bad"}
+function lk(m){var e=$("p-lk");e.textContent=t(m=="reg"?"Register as a new driver":"Go to Login");e.onclick=function(){openPhone(m)};e.classList.remove("hide")}
+$("ph").oninput=function(){var d=dg(),b=chk(d);this.value="+91 "+d;this.className="mob"+(b?" bad":"");$("p-lk").classList.add("hide");$("er").style.color="#e0262d";$("er").textContent=b?t("Invalid number"):""};
+$("ph").onfocus=$("ph").onclick=function(){var x=this;setTimeout(function(){var n=x.value.length;if(x.selectionStart<4)x.setSelectionRange(n,n)},0)};
+$("ph").onkeydown=function(e){if(e.key=="Backspace"&&this.selectionEnd<=4)e.preventDefault()};
+$("p-go").onclick=function(){var d=dg();
+ if(d.length<10||chk(d))return perr(chk(d)?"Invalid number":"Enter your 10-digit mobile number");if(S.chkd!=d)return api("GET","/api/driver/"+d,null,function(r){S.srv=r.driver||lget(d);S.fromLocal=!r.driver&&!!lget(d);S.chkd=d;$("p-go").onclick()});
+ if(S.mode=="login"&&!(CO[d]||S.srv)){perr("This number is not registered with FG DRIVO. Please contact your company or register as a new driver.");return lk("reg")}
+ if(S.mode=="reg"&&(CO[d]||S.srv)){perr("This number is already registered. Please login.");return lk("login")}
+ S.ph=d;$("o-s").textContent=t("Enter the 4-digit OTP sent to +91 {n}",d);$("otp").value="";$("oer").textContent="";go("s-otp");timer()};
+function timer(){var n=30,e=$("o-rs");clearInterval(S.rt);e.onclick=null;e.style.opacity=.6;e.textContent=t("Resend OTP in {n}s",n);
+ S.rt=setInterval(function(){n--;if(n<=0){clearInterval(S.rt);e.style.opacity=1;e.textContent=t("Resend OTP");e.onclick=timer}else e.textContent=t("Resend OTP in {n}s",n)},1000)}
+$("otp").oninput=function(){this.value=this.value.replace(/\D/g,"");$("oer").textContent=""};
+$("o-go").onclick=function(){if($("otp").value.length<4){$("oer").style.color="#e0262d";$("oer").textContent=t("Enter the 4-digit OTP");return}
+ clearInterval(S.rt);
+ afterOtp()};
+function enter(){go(null);$("reg").classList.add("hide");$("home").classList.remove("hide");prof();stats();txt()}
+/* ---------- registration (shown only after number verification) ---------- */
+var IT=[
+["photo","Profile Photo",[{k:"p",l:"Your photo (clear face, no sunglasses)",t:"file",cap:1}]],
+["prof","Profile Details",[{k:"name",l:"Full name (as on licence)",t:"text",v:/^[\p{L} .]{3,}$/u,m:"Enter your full name"},{k:"dob",l:"Date of birth",t:"date"},{k:"gen",l:"Gender",t:"select",o:["Male","Female","Other"]},{k:"emg",l:"Emergency contact (+91)",t:"text",max:10,v:/^[6-9]\d{9}$/,m:"Invalid number"}]],
+["aad","Aadhaar",[{k:"no",l:"Aadhaar number",t:"text",max:12,v:/^[2-9]\d{11}$/,m:"Enter 12-digit Aadhaar number"},{k:"f",l:"Aadhaar front",t:"file"},{k:"b",l:"Aadhaar back",t:"file"}]],
+["dl","Driving License",[{k:"no",l:"Licence number",t:"text",up:1,v:/^[A-Z]{2}[ -]?\d{2}[ -]?\d{4}[ -]?\d{7}$/,m:"Enter valid number (e.g. TN57 20240001234)"},{k:"exp",l:"Valid till",t:"date"},{k:"img",l:"Licence photo",t:"file"}]],
+["addr","Local Address",[{k:"a1",l:"House no. & street",t:"text",v:/.{4,}/},{k:"a2",l:"Area / landmark",t:"text",v:/.{3,}/},{k:"city",l:"City",t:"text",v:/.{2,}/},{k:"pin",l:"Pincode",t:"text",max:6,v:/^[1-9]\d{5}$/,m:"Enter valid 6-digit pincode"},{k:"st",l:"State",t:"select",o:["Tamil Nadu","Kerala","Karnataka","Andhra Pradesh","Puducherry"]}]],
+["city","City & Vendor Details",[{k:"c",l:"Operating city",t:"select",o:["Dindigul","Chinnalapatti","Madurai","Palani","Kodaikanal"]},{k:"vt",l:"Vehicle type",t:"select",o:["Mini","SUV","Premium","Sedan"]},{k:"vn",l:"Vehicle number",t:"text",up:1,v:/^[A-Z]{2}[ -]?\d{2}[ -]?[A-Z]{1,3}[ -]?\d{4}$/,m:"Enter valid number (e.g. TN 57 AZ 4821)"},{k:"vd",l:"Vendor",t:"select",o:["Independent driver","FG DRIVO fleet","Other vendor"]}]]];
+function done(){return IT.every(function(x){return D[x[0]]})}
+function sum(id,o){return id=="photo"?t("Uploaded"):id=="prof"?o.name:id=="aad"?"XXXX XXXX "+o.no.slice(-4):id=="dl"||id=="rc"||id=="ins"?o.no:id=="bank"?"XXXXXX"+o.ac.slice(-4):id=="addr"?o.city+" - "+o.pin:t(o.c)+" \u00B7 "+o.vn}
+function drawReg(){var a=done(),b=S.sub;
+ $("rb").innerHTML='<div class="steps"><div class="stp'+(b?'':' act')+'"><small>'+t("STEP 1")+'</small><b>'+t("Application")+(b?' \u2705':'')+'</b></div><div class="stp'+(b?' act':'')+'"><small>'+t("STEP 2")+'</small><b>'+t("Onboarding")+'</b>'+(b?'':'<i>\uD83D\uDD12</i>')+'</div></div>'+
+ (b?'<div class="bn">'+"Registration complete! Onboarding is unlocked. Tap Start Driving."+'</div><div class="card" style="text-align:center"><div style="font-size:46px">\uD83C\uDF89</div><h3>'+t("Welcome to FG DRIVO")+'</h3><small style="color:#7a6c94">'+"You are all set. Go online to start taking rides."+'</small></div>'
+ :'<div class="bn">'+t("Please complete the pending details to join with FG DRIVO")+'</div><div class="sl">'+t(a?"ALL DETAILS COMPLETED":"DETAILS PENDING")+'</div>'+IT.map(function(x,i){var d=D[x[0]];return '<div class="it" data-i="'+i+'"><span class="ck'+(d?' ok':'')+'">\u2713</span><div>'+t(x[1])+(d?'<small>'+sum(x[0],d)+'</small>':'')+'</div><em>\u203A</em></div>'}).join(''));
+ $("rf").innerHTML=b?(S.st=="approved"?'<button class="btn" id="sd">'+t("Start Driving")+'</button>':'<button class="btn" id="ck">Check approval status</button>'):'<button class="btn rs" id="rs">'+t("Reset")+'</button><button class="btn sb'+(a?' on':'')+'" id="sb">'+t("Submit Application")+'</button>'}
+$("rb").onclick=function(e){var r=e.target.closest(".it");if(r)openF(+r.dataset.i)};
+$("rf").onclick=function(e){var i=e.target.id;if(i=="rs"){if(confirm(t("Clear all details?"))){D={};var _l=ldb();delete _l[S.ph];lsave(_l);drawReg();api("POST","/api/driver/"+S.ph+"/reset",{},function(){})}}else if(i=="sb"&&done()){submitApp()}else if(i=="sd")start();else if(i=="ck")refreshSt()};
+function start(){S.me=meOf(D,S.srv);enter()}
+function openF(i){var x=IT[i],id=x[0],d=D[id]||{},h='<div class="rh"><b class="bk" id="bk">\u2190</b><b>'+t(x[1])+'</b><span></span></div><div class="fb">';T={};
+ x[2].forEach(function(f){var v=d[f.k]||"";if(f.t=="file")T[f.k]=v;h+='<label class="lb" for="f_'+f.k+'">'+t(f.l)+'</label>';
+  if(f.t=="select")h+='<select id="f_'+f.k+'"><option value="">'+t("Select")+'</option>'+f.o.map(function(o){return '<option value="'+o+'"'+(o==v?' selected':'')+'>'+t(o)+'</option>'}).join('')+'</select>';
+  else if(f.t=="file")h+='<label class="up" id="f_'+f.k+'"'+(v?' style="background-image:url('+v+')"':'')+'><input type="file" accept="image/*"'+(f.cap?' capture="user"':'')+' hidden><span>'+(v?t("Change photo"):'\uD83D\uDCF7 '+t("Tap to upload"))+'</span></label>';
+  else h+='<input id="f_'+f.k+'" type="'+(f.t=="date"?"date":"text")+'" value="'+v+'"'+(f.max?' maxlength="'+f.max+'" inputmode="numeric"':'')+'>';
+  h+='<div class="er" id="e_'+f.k+'"></div>'});
+ $("frm").innerHTML=h+'<div class="er" id="sv-e"></div></div><div class="rf"><button class="btn alt" id="sv">'+t("Save")+'</button></div>';$("frm").classList.remove("hide");
+ x[2].forEach(function(f){var el=$("f_"+f.k);
+  if(f.max)el.oninput=function(){this.value=this.value.replace(/\D/g,"")};
+  if(f.up)el.oninput=function(){this.value=this.value.toUpperCase()};
+  if(f.t=="file")el.querySelector("input").onchange=function(){var fl=this.files[0];if(!fl)return;shrink(fl,function(u){T[f.k]=u;el.style.backgroundImage="url("+u+")";el.querySelector("span").textContent=t("Change photo")})}});
+ $("bk").onclick=function(){$("frm").classList.add("hide")};
+ $("sv").onclick=function(){var o={},ok=true;x[2].forEach(function(f){var v=f.t=="file"?T[f.k]:$("f_"+f.k).value.trim(),m="";
+  if(!v)m=f.t=="file"?"Please upload":"Required";else if(f.v&&!f.v.test(v))m=f.m||"Invalid";else if(f.x)m=f.x(v)||"";
+  $("e_"+f.k).textContent=m?t(m):"";if(m)ok=false;o[f.k]=v});
+  if(ok){var sp=split(id,o);lsec(id,sp);D[id]=o;$("frm").classList.add("hide");drawReg();api("POST","/api/driver/"+S.ph+"/section",{id:id,data:sp},function(){pushLoc()})}}}
+/* ---------- driver home ---------- */
+function stats(){$("sE").textContent=inr(S.earn);$("sT").textContent=S.n;$("wk").textContent=inr(S.earn+18550)}
+function hist(){$("hist").innerHTML=H.map(function(h){return '<div class="li"><span>'+t(h.a)+' \u2192 '+t(h.b)+'<small>'+t(h.w)+' \u00B7 '+h.km+' '+t("km")+'</small></span><b>'+inr(h.f)+'</b></div>'}).join("")}
+function chart(){var m=4200;$("ch").innerHTML=W.map(function(d){return '<div style="height:'+d[1]/m*100+'%"><span>'+t(d[0])+'</span></div>'}).join("")}
+function prof(){var m=S.me;if(!m)return;$("pn").textContent=m.n;$("pa").textContent=m.ph?"":m.n.split(/\s+/).map(function(w){return w[0]}).join("").slice(0,2).toUpperCase();
+ $("pa").style.background=m.ph?"url("+m.ph+") center/cover":"";$("pc").textContent=t(m.c)+" \u00B7 "+t("Driver since {n}",m.y);$("pvt").innerHTML=t(m.vt)+"<small>"+t(m.vd)+"</small>";$("pvn").textContent=m.vn}
+function sheet(h){$("sheet").innerHTML=h;$("sheet").className=h?"up":""}
+function txt(){var v=S.on;$("go").innerHTML=v?t("ONLINE")+"<br><small style='font-size:12px'>"+t("Tap to stop")+"</small>":t("GO<br>ONLINE");$("pill").textContent=t(v?"ONLINE":"OFFLINE");$("msg").textContent=t(v?"Looking for rides near you...":"Tap to start receiving ride requests")}
+function online(v){S.on=v;$("go").className="go"+(v?" on":"");$("pill").className="pill"+(v?" on":"");txt();clearTimeout(S.ask);clearInterval(S.pl);pushLoc();if(v&&!S.trip)startPoll()}
+function req(){if(!S.on||S.trip)return;var r=S.offer,n=15;S.r=r;
+ sheet('<div class="row"><b>'+t("New ride request")+'</b><b id="cd">15'+t("s")+'</b></div><div class="bar" style="margin:8px 0"><i id="br"></i></div><div class="route"><div>'+t(r[0])+'<small>'+t("Pickup \u00B7 {n} km away",S.rd||1.2)+'</small></div><div>'+t(r[1])+'<small>'+t("Drop \u00B7 {n} km",r[2])+'</small></div></div><div class="row"><div class="fare">'+inr(r[3])+'</div><small style="color:#7a6c94">'+t("Cash \u00B7 Est. {n} min",Math.round(r[2]*1.6))+'</small></div><div class="btns"><button class="btn red" id="no">'+t("Decline")+'</button><button class="btn" id="yes">'+t("Accept")+'</button></div>');
+ $("no").onclick=function(){api("POST","/api/ride/"+S.rid+"/decline",{ph:S.ph},function(){});clearInterval(S.tm);sheet("");online(true)};$("yes").onclick=function(){clearInterval(S.tm);trip(0)};
+ clearInterval(S.tm);S.tm=setInterval(function(){n--;$("cd").textContent=n+t("s");$("br").style.width=n/15*100+"%";if(n<=0){clearInterval(S.tm);sheet("");online(true)}},1000)}
+function trip(i){var r=S.r;S.trip=1;
+ if(i==2){sheet('<b>'+t("Enter customer OTP")+'</b><input id="o" placeholder="'+t("4-digit OTP")+'" inputmode="numeric" maxlength="4" style="margin-top:10px"><button class="btn" id="ok">'+t("Start Trip")+'</button>');$("ok").onclick=function(){if($("o").value.length==4)api("POST","/api/ride/"+S.rid+"/start",{ph:S.ph,otp:$("o").value},function(r){if(r.ok)trip(3);else $("o").style.borderColor="#e0262d"});else $("o").style.borderColor="#e0262d"};return}
+ if(i==4){S.earn+=r[3];S.n++;H.unshift({a:r[0],b:r[1],w:"Today",km:r[2],f:r[3]});S.trip=null;stats();hist();
+  sheet('<div style="text-align:center"><div style="font-size:42px">\u2705</div><b>'+t("Trip completed")+'</b><div class="fare">'+inr(r[3])+'</div><small style="color:#7a6c94">'+t("Collect cash from customer")+'</small><button class="btn" id="dn" style="margin-top:14px">'+t("Done")+'</button></div>');$("dn").onclick=function(){sheet("");online(true)};return}
+ var s=ST[i];sheet('<div class="row"><b>'+t(s[0])+'</b><span class="pill on">'+t("Trip")+'</span></div><div class="route"><div>'+t(r[0])+'</div><div>'+t(r[1])+'</div></div><div class="row"><b>'+(S.rn||t("Rahul S."))+'</b><span>&#128222; &#9733; 4.9</span></div><div class="btns"><button class="btn alt" id="nx">'+t(s[1])+'</button></div>');$("nx").onclick=function(){trip(i+1)}}
+$("go").onclick=function(){if(!S.trip){if(!S.on&&!(S.loc&&S.loc.lat))return alert("Please allow location to go online");online(!S.on)}};
+$("langrow").onclick=function(){L=L=="ta"?"en":"ta";qa(".lo").forEach(function(o){o.classList.toggle("sel",o.dataset.l==L)});refresh()};
+$("out").onclick=function(){online(false);sheet("");S.me=null;S.trip=null;S.demo=0;window.DEMO_MODE=false;$("home").classList.add("hide");go("s-auth")};
+$("nav").onclick=function(e){var b=e.target.closest("button");if(!b)return;qa("#nav button").forEach(function(x){x.className=x==b?"act":""});qa(".tab").forEach(function(x){x.className="tab"});$("t-"+b.dataset.t2).className="tab show"};
+/* ---------- backend + fixes ---------- */
+function api(m,u,b,cb){if(location.protocol=="file:")return setTimeout(function(){cb({err:1})},0);fetch(u,{method:m,headers:{"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined}).then(function(r){return r.json()}).then(cb,function(){cb({err:1})})}
+function shrink(f,cb){var r=new FileReader();r.onload=function(){var i=new Image();i.onload=function(){var k=Math.min(1,900/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=i.width*k;c.height=i.height*k;c.getContext("2d").drawImage(i,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",.8))};i.src=r.result};r.readAsDataURL(f)}
+function saveSec(id,o){api("POST","/api/driver/"+S.ph+"/section",{id:id,data:o},function(r){if(r.err||r.error)alert(r.error||"Could not reach server. Details are not saved yet.");else pushLoc()})}
+function submitApp(){S.sub=1;S.st="submitted";drawReg();api("POST","/api/driver/"+S.ph+"/submit",{},function(r){if(r&&r.err){S.sub=0;S.st="draft";drawReg();alert("Could not submit your application. Please check your connection and try again.");return}if(r&&r.driver){S.srv=r.driver;S.st=r.driver.status||"submitted"}else S.st=(r&&r.status)||"submitted";lset("status",S.st);drawReg()})}
+function refreshSt(){api("GET","/api/driver/"+S.ph,null,function(r){if(r.driver){S.srv=r.driver;S.st=r.driver.status}drawReg()})}
+function meOf(d,s){return{n:d.prof.name.trim(),c:d.city.c,vt:d.city.vt,vn:d.city.vn,vd:d.city.vd,y:new Date((s&&s.created)||Date.now()).getFullYear(),ph:d.photo.p,ok:1}}
+function resync(s){var d0=s.D||{};for(var id in d0)api("POST","/api/driver/"+S.ph+"/section",{id:id,data:d0[id]},function(){});if(s.status&&s.status!="draft")api("POST","/api/driver/"+S.ph+"/submit",{},function(){})}
+function afterOtp(){var s=S.srv;pushLoc();S.st=s?s.status:"";
+ var l=lget(S.ph);if(S.fromLocal&&s)resync(s);
+ if(S.mode=="login"&&l&&l.status=="approved"&&l.D&&l.D.prof&&l.D.city&&l.D.photo){D=merge(l.D);S.me=meOf(D,l);S.st="approved";return enter()}
+ if(S.mode=="login"&&CO[S.ph]){S.me=CO[S.ph];return enter()}
+ if(S.mode=="login"&&s&&s.status=="approved"){D=merge(s.D);S.me=meOf(D,s);return enter()}
+ D=merge((s&&s.D)||{});S.sub=s&&s.status!="draft"?1:0;go(null);$("reg").classList.remove("hide");drawReg()}
+var VD=[[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]],
+VP=[[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
+function vh(n){var c=0;n.split("").reverse().forEach(function(d,i){c=VD[c][VP[i%8][+d]]});return c==0}
+function today(){return new Date(new Date().toDateString())}
+IT[1][2][1].x=function(v){var a=(Date.now()-new Date(v))/31557600000;return a<18?"Driver must be 18 or older":a>75?"Enter a valid date of birth":""};
+IT[1][2][3].x=function(v){return v==S.ph?"Emergency contact must be a different number":""};
+IT[2][2][0].x=function(v){return vh(v)?"":"Invalid Aadhaar number"};
+IT[3][2][1].x=function(v){return new Date(v)<today()?"Licence has expired":""};
+IT.push(["rc","RC Book",[{k:"no",l:"RC number",t:"text",up:1,v:/^[A-Z]{2}[ -]?\d{2}[ -]?[A-Z]{1,3}[ -]?\d{4}$/,m:"Enter valid number (e.g. TN 57 AZ 4821)"},{k:"img",l:"RC photo",t:"file"}]],
+["ins","Insurance",[{k:"no",l:"Policy number",t:"text",v:/^.{6,}$/,m:"Enter valid policy number"},{k:"exp",l:"Valid till",t:"date",x:function(v){return new Date(v)<today()?"Insurance has expired":""}},{k:"img",l:"Insurance photo",t:"file"}]],
+["bank","Bank Details",[{k:"nm",l:"Account holder name",t:"text",v:/^[\p{L} .]{3,}$/u,m:"Enter name as on bank account"},{k:"ac",l:"Account number",t:"text",max:18,v:/^\d{9,18}$/,m:"Enter 9 to 18 digit account number"},{k:"ifsc",l:"IFSC code",t:"text",up:1,v:/^[A-Z]{4}0[A-Z0-9]{6}$/,m:"Enter valid IFSC (e.g. SBIN0001234)"}]]);
+var _p=prof;prof=function(){_p();var ok=S.me&&S.me.ok!==0;qa(".chip").forEach(function(c){c.style.display=ok?"":"none"})};
+$("loc-sk").onclick=function(){S.loc={na:1};locGate()};
+
+/* ---------- live location + real rides ---------- */
+function pushLoc(){if(S.ph&&S.loc&&S.loc.lat)api("POST","/api/driver/"+S.ph+"/location",{lat:S.loc.lat,lng:S.loc.lng,online:S.on},function(){})}
+function watchLoc(){if(S.wid||!navigator.geolocation)return;S.wid=navigator.geolocation.watchPosition(function(p){S.loc={lat:p.coords.latitude,lng:p.coords.longitude};var n=Date.now();if(n-(S.lp||0)>4000){S.lp=n;pushLoc()}},function(){},{enableHighAccuracy:true,maximumAge:5000})}
+function startPoll(){clearInterval(S.pl);S.pl=setInterval(function(){api("GET","/api/driver/"+S.ph+"/ride",null,function(r){var x=r.ride;if(x&&x.status=="offered"&&!S.trip&&!$("sheet").classList.contains("up")){S.offer=[x.pickup,x.drop,x.km,x.fare];S.rid=x.id;S.rn=x.rn;S.rd=x.pd;S.cp=x.cp;S.pk=[x.plat,x.plng];S.dk=[x.dlat,x.dlng];req()}})},3000)}
+var _t=trip;trip=function(i){var a={0:"accept",1:"arrived",4:"complete"}[i];if(a&&S.rid)api("POST","/api/ride/"+S.rid+"/"+a,{ph:S.ph},function(){});if(i==4){var f=S.rid;S.rid=null}_t(i)};
+var _d=drawReg;drawReg=function(){_d();$("rb").insertAdjacentHTML("beforeend",'<div class="nt">\uD83D\uDCCD '+(S.loc&&S.loc.lat?"Live location saved":"Location is off")+'</div>')};
+if(S.loc&&S.loc.lat)watchLoc();
+
+/* photos stay on this device, never sent to the server */
+function split(id,o){var x=IT.filter(function(i){return i[0]==id})[0],c={};for(var k in o)c[k]=o[k];x[2].forEach(function(f){if(f.t=="file"&&/^data:/.test(o[f.k])){try{localStorage.setItem("fgp_"+S.ph+"_"+id+"_"+f.k,o[f.k])}catch(e){}c[f.k]="on-device"}});return c}
+function merge(d){IT.forEach(function(x){var o=d[x[0]];if(!o)return;x[2].forEach(function(f){if(f.t=="file"&&o[f.k]=="on-device")o[f.k]=localStorage.getItem("fgp_"+S.ph+"_"+x[0]+"_"+f.k)||""})});return d}
+
+/* works without the server: details are kept on this device first, the server copy is best-effort */
+function ldb(){try{return JSON.parse(localStorage.fgdb||"{}")}catch(e){return{}}}
+function lsave(d){try{localStorage.fgdb=JSON.stringify(d)}catch(e){}}
+function lget(ph){return ldb()[ph]||null}
+function lsec(id,o){var d=ldb(),r=d[S.ph]||(d[S.ph]={status:"draft",created:Date.now(),D:{}});r.D[id]=o;lsave(d)}
+function lset(k,v){var d=ldb();if(d[S.ph]){d[S.ph][k]=v;lsave(d)}}
+
+/* no double-tap / double-click popups */
+["dblclick","contextmenu"].forEach(function(n){document.addEventListener(n,function(e){e.preventDefault();e.stopImmediatePropagation()},true)});
+
+/* ---------- premium: real map, ratings, goal ---------- */
+var MP,MK,HZ=[];
+function mapMsg(m){var e=$("rmap");e.innerHTML='<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#7a6c94;font-weight:700;text-align:center;padding:20px">'+m+'<button class="btn alt" id="mrt" style="width:auto;padding:10px 22px">Retry</button></div>';$("mrt").onclick=function(){MP=null;e.innerHTML="";mapInit()}}
+function mkBase(M,attr){
+ var P=[["https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",17,"Tiles &copy; Esri"],
+  ["https://tile.openstreetmap.org/{z}/{x}/{y}.png",19,"&copy; OpenStreetMap"],
+  ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",18,"Tiles &copy; Esri"]],i=0,cur=null,er=0;
+ function use(){if(cur)M.removeLayer(cur);er=0;cur=LF.tileLayer(P[i][0],{maxNativeZoom:P[i][1],maxZoom:19,attribution:attr?P[i][2]:""}).addTo(M);
+  cur.on("tileerror",function(){if(++er>=3&&i<P.length-1){i++;use()}})}
+ use()}
+function mapLib(cb){if(window.LF)return cb();var l=document.createElement("link");l.rel="stylesheet";l.href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";document.head.appendChild(l);var sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";sc.onload=function(){var x=window.L;window.LF=x&&x.noConflict?x.noConflict():x;cb()};sc.onerror=function(){cb()};document.head.appendChild(sc)}
+function mapInit(){if(MP||!$("rmap"))return;mapLib(function(){if(MP)return;if(!window.LF)return mapMsg("Map could not load. Please check your internet.");var c=S.loc&&S.loc.lat?[S.loc.lat,S.loc.lng]:[10.3624,77.9695];
+ MP=LF.map("rmap",{zoomControl:false}).setView(c,14);mkBase(MP,1);
+ MK=LF.marker(c,{icon:LF.divIcon({className:"",html:'<div class="me"></div>',iconSize:[22,22],iconAnchor:[11,11]})}).addTo(MP);setTimeout(function(){MP.invalidateSize();mapMove();if(S.on)hot(1)},250)})}
+$("mx").onclick=function(){var w=$("mw"),f=w.classList.toggle("full");this.innerHTML=f?"\u2715":"\u2922";setTimeout(function(){MP&&MP.invalidateSize()},60)};
+window.addEventListener("resize",function(){MP&&MP.invalidateSize()});
+function mapMove(){if(!MP||!S.loc||!S.loc.lat)return;var c=[S.loc.lat,S.loc.lng];MK.setLatLng(c);if(!S.pan){MP.setView(c,15);S.pan=1}}
+function hot(on){if(!MP)return;HZ.forEach(function(z){MP.removeLayer(z)});HZ=[];if(!on)return;var c=MK.getLatLng();[[.012,.008],[-.01,.014],[.006,-.013]].forEach(function(o){HZ.push(LF.circle([c.lat+o[0],c.lng+o[1]],{radius:600,color:"#e0262d",weight:1,fillColor:"#e0262d",fillOpacity:.18}).addTo(MP))})}
+var _pl=pushLoc;pushLoc=function(){_pl();mapMove()};
+var _on=online;online=function(v){_on(v);hot(v)};
+var _en=enter;enter=function(){_en();mapInit();mapMove();loadRt();clearInterval(S.rtp);S.rtp=setInterval(loadRt,30000);setTimeout(function(){MP&&MP.invalidateSize()},300)};
+$("nav").addEventListener("click",function(){setTimeout(function(){MP&&MP.invalidateSize()},60)});
+$("q-loc").onclick=function(){if(S.loc&&S.loc.lat&&MP)MP.setView([S.loc.lat,S.loc.lng],16);else alert(t("Location is off"))};
+$("q-sup").onclick=function(){location.href="tel:180036376486"};
+$("q-sos").onclick=function(){if(confirm(t("Send emergency alert to FG DRIVO?"))){api("POST","/api/driver/"+S.ph+"/sos",{lat:S.loc&&S.loc.lat,lng:S.loc&&S.loc.lng},function(){});alert(t("Emergency alert sent"))}};
+var _st=stats;stats=function(){_st();var g=2000;if($("gt")){$("gt").textContent=inr(S.earn)+" / "+inr(g);$("gb").style.width=Math.min(100,S.earn/g*100)+"%"}};
+var _pf=prof;prof=function(){_pf();var m=S.me;if(!m||!$("hgn"))return;$("hgn").textContent=m.n;$("hgc").textContent=t(m.c)+" \u00B7 "+t(m.vt)+" \u00B7 "+m.vn};
+/* customer feedback: server sends {feedback:[{n:name,s:1-5,c:comment,w:when,a:pickup,b:drop}]} newest first */
+var RV=[],DEMO=[{n:"Rahul S.",s:5,c:"Smooth ride and very polite driver.",w:"Today",a:"Dindigul",b:"Chinnalapatti"},{n:"Priya M.",s:5,c:"On time pickup. Clean car.",w:"Yesterday",a:"Madurai",b:"Dindigul"},{n:"Arun K.",s:4,c:"Good driving, took a slightly longer route.",w:"Yesterday",a:"Dindigul",b:"Palani"},{n:"Divya R.",s:5,c:"Felt very safe. Thank you!",w:"Mon",a:"Dindigul",b:"Kodaikanal"},{n:"Suresh B.",s:3,c:"Car AC was not cool enough.",w:"Sun",a:"Palani",b:"Dindigul"}];
+function esc(x){return String(x==null?"":x).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function stars(n){n=Math.max(0,Math.min(5,Math.round(n)));return "\u2605\u2605\u2605\u2605\u2605".slice(0,n)+"\u2606\u2606\u2606\u2606\u2606".slice(0,5-n)}
+function loadRt(){api("GET","/api/driver/"+S.ph+"/feedback",null,function(r){var f=r&&r.feedback;S.demoRt=!(f&&f.length);RV=S.demoRt?DEMO:f;drawRt()})}
+function drawRt(){var n=RV.length,a=n?RV.reduce(function(x,y){return x+(+y.s||0)},0)/n:0,av=a.toFixed(1),cn=[0,0,0,0,0,0];RV.forEach(function(x){cn[Math.round(x.s)]++});
+ $("sR").textContent=av+"\u2605";$("hrp").textContent="\u2605 "+av;
+ var bars=[5,4,3,2,1].map(function(k){return '<div class="rb2"><span>'+k+'\u2605</span><div><i style="width:'+(n?cn[k]/n*100:0)+'%"></i></div><span>'+cn[k]+'</span></div>'}).join("");
+ var one=function(x){return '<div class="rv"><div class="row"><b>'+esc(x.n||"Customer")+'</b><span class="st">'+stars(x.s)+'</span></div>'+(x.c?'<p>'+esc(x.c)+'</p>':'')+'<small>'+(x.a&&x.b?esc(t(x.a))+' \u2192 '+esc(t(x.b))+' \u00B7 ':'')+esc(t(x.w||""))+'</small></div>'};
+ $("rtbody").innerHTML='<div class="card rsum"><div class="big">'+av+'<small>\u2605</small></div><div><span class="st">'+stars(a)+'</span><small>'+n+' '+t("reviews")+'</small></div></div><div class="card">'+bars+'</div>'+(S.demoRt?'<div class="nt" style="margin-bottom:12px">'+t("Sample reviews shown until real customer feedback arrives")+'</div>':'')+'<div class="card"><h3>'+t("Customer feedback")+'</h3>'+RV.map(one).join("")+'</div>';
+ $("rtH").innerHTML='<div class="row"><h3 style="margin:0">'+t("Latest feedback")+'</h3><b class="st">'+stars(a)+' '+av+'</b></div>'+(n?one(RV[0]):'')}
+TA["Welcome back"]="மீண்டும் வருக";TA["Daily goal"]="இன்றைய இலக்கு";TA["My location"]="என் இருப்பிடம்";TA["Ratings"]="மதிப்பீடுகள்";TA["reviews"]="மதிப்புரைகள்";TA["Customer feedback"]="பயணி கருத்துகள்";TA["Latest feedback"]="சமீபத்திய கருத்து";TA["Sample reviews shown until real customer feedback arrives"]="உண்மையான பயணி கருத்துகள் வரும் வரை மாதிரி கருத்துகள் காட்டப்படுகின்றன";TA["Send emergency alert to FG DRIVO?"]="FG DRIVO-க்கு அவசர எச்சரிக்கை அனுப்பவா?";TA["Emergency alert sent"]="அவசர எச்சரிக்கை அனுப்பப்பட்டது";
+TA["Allow FG DRIVO to access this device's location?"]="FG DRIVO இந்த சாதனத்தின் இருப்பிடத்தை அணுக அனுமதிக்கவா?";TA["Used to find nearby rides and confirm your service area."]="அருகிலுள்ள சவாரிகளைக் கண்டறியவும் சேவைப் பகுதியை உறுதிசெய்யவும் பயன்படுகிறது.";TA["While using the app"]="செயலியைப் பயன்படுத்தும் போது";TA["Only this time"]="இந்த முறை மட்டும்";TA["Don't allow"]="அனுமதிக்க வேண்டாம்";TA["Location denied. You can allow it anytime with Try again."]="இருப்பிடம் மறுக்கப்பட்டது. மீண்டும் முயற்சி என்பதைத் தட்டி எப்போது வேண்டுமானாலும் அனுமதிக்கலாம்.";TA["Location needs a secure link (https or localhost). Please open the app with https."]="இருப்பிடத்திற்கு பாதுகாப்பான இணைப்பு (https அல்லது localhost) தேவை. https மூலம் செயலியைத் திறக்கவும்.";
+/* ---------- v2: navigation, customer call, loud ride alert ---------- */
+TA["Navigate"]="வழிகாட்டு";TA["Call customer"]="பயணிக்கு அழை";TA["Number not available"]="எண் கிடைக்கவில்லை";
+function navGo(drop){var c=drop?S.dk:S.pk,n=drop?S.r[1]:S.r[0],d=c&&c[0]&&c[1]?c[0]+","+c[1]:encodeURIComponent(n+", Tamil Nadu");window.open("https://www.google.com/maps/dir/?api=1&destination="+d+"&travelmode=driving","_blank")}
+function callCust(){api("POST","/api/ride/"+S.rid+"/call",{ph:S.ph},function(r){var n=(r&&r.tel)||S.cp;if(n)location.href="tel:"+n;else alert(t("Number not available"))})}
+var _t2=trip;trip=function(i){_t2(i);if(i==4||!S.trip)return;$("sheet").insertAdjacentHTML("beforeend",'<div class="btns" style="margin-top:10px"><button class="btn alt" id="nv">\uD83D\uDDFA\uFE0F '+t("Navigate")+'</button><button class="btn" id="cl">\uD83D\uDCDE '+t("Call customer")+'</button></div>');$("nv").onclick=function(){navGo(i==3)};$("cl").onclick=callCust};
+var AC,RG,WL;
+function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=="suspended")AC.resume()}catch(e){}}
+["click","touchstart"].forEach(function(n){document.addEventListener(n,unlock,{passive:true})});
+function beep(){if(!AC)return;var o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime;o.type="square";g.gain.value=.7;o.connect(g);g.connect(AC.destination);o.frequency.setValueAtTime(880,n);o.frequency.setValueAtTime(1175,n+.15);o.start(n);o.stop(n+.3)}
+function vib(){try{navigator.vibrate&&navigator.vibrate([400,150,400])}catch(e){}}
+function ringStop(){clearInterval(RG);RG=null;try{navigator.vibrate&&navigator.vibrate(0)}catch(e){}}
+function ringStart(){ringStop();beep();vib();RG=setInterval(function(){beep();vib()},900);
+ try{if(document.hidden&&window.Notification&&Notification.permission=="granted"){var n=new Notification("FG DRIVO",{body:t("New ride request")+": "+S.offer[0]+" \u2192 "+S.offer[1]+" \u00B7 "+inr(S.offer[3]),tag:"ride",requireInteraction:true});n.onclick=function(){window.focus();n.close()}}}catch(e){}}
+var _rq=req;req=function(){_rq();if($("yes"))ringStart()};
+var _sh=sheet;sheet=function(h){if(!/id="yes"/.test(h))ringStop();_sh(h)};
+function wake(){try{navigator.wakeLock&&navigator.wakeLock.request("screen").then(function(l){WL=l}).catch(function(){})}catch(e){}}
+var _on2=online;online=function(v){_on2(v);if(v){unlock();wake();try{window.Notification&&Notification.permission=="default"&&Notification.requestPermission()}catch(e){}}else{ringStop();try{WL&&WL.release()}catch(e){}}};
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&S.on)wake()});
+/* ---------- v3: satellite view + live location tracking ---------- */
+(function(){
+var st=document.createElement("style");st.textContent=".mbt{position:absolute;z-index:5;width:44px;height:44px;border-radius:50%;border:0;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.3);font-size:20px;cursor:pointer}.me{position:relative}.me .ar{position:absolute;left:50%;top:-14px;margin-left:-6px;width:0;height:0;border:6px solid transparent;border-bottom:10px solid #5427a8;border-top:0;transform-origin:6px 21px;display:none}";document.head.appendChild(st);
+$("mw").insertAdjacentHTML("beforeend",'<button class="mbt" id="mfol" style="right:10px;bottom:34px" title="My location">\uD83C\uDFAF</button><button class="mbt" id="mlay" style="right:10px;bottom:88px" title="Satellite">\uD83D\uDEF0\uFE0F</button>');
+var cur,SAT,LAB,sat=0,ACC,AR,fol=1,WID,first=1;
+function setup(){sat=0;ACC=null;first=1;fol=1;
+ SAT=LF.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Tiles &copy; Esri"});
+ LAB=LF.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",{maxZoom:19});
+ var lb=$("mlay");lb.textContent="\uD83D\uDEF0\uFE0F";lb.onclick=function(){sat=!sat;if(sat){SAT.addTo(MP);LAB.addTo(MP);lb.textContent="\uD83D\uDDFA\uFE0F"}else{MP.removeLayer(SAT);MP.removeLayer(LAB);lb.textContent="\uD83D\uDEF0\uFE0F"}};MK.setIcon(LF.divIcon({className:"",html:'<div class="me"><i class="ar"></i></div>',iconSize:[22,22],iconAnchor:[11,11]}));AR=MK.getElement().querySelector(".ar");
+ MP.on("dragstart",function(){fol=0;$("mfol").style.background="#fff"})}
+$("mfol").onclick=function(){fol=1;this.style.background="#f5c400";if(MP&&S.loc&&S.loc.lat)MP.setView([S.loc.lat,S.loc.lng],Math.max(MP.getZoom(),17))};
+$("q-loc").addEventListener("click",function(){fol=1;$("mfol").style.background="#f5c400"});
+function live(){if(WID||!navigator.geolocation||!(S.loc&&S.loc.lat))return;if(!S.wid)watchLoc();
+ WID=navigator.geolocation.watchPosition(function(p){var c=p.coords,ll=[c.latitude,c.longitude];S.loc={lat:c.latitude,lng:c.longitude};if(!MP||!MK)return;MK.setLatLng(ll);
+  if(ACC)ACC.setLatLng(ll).setRadius(c.accuracy||30);else ACC=LF.circle(ll,{radius:c.accuracy||30,color:"#5427a8",weight:1,fillColor:"#5427a8",fillOpacity:.12,interactive:false}).addTo(MP);
+  if(AR){if(c.heading!=null&&!isNaN(c.heading)&&c.speed>.5){AR.style.display="block";AR.style.transform="rotate("+c.heading+"deg)"}else AR.style.display="none"}
+  if(first){first=0;MP.setView(ll,17);$("mfol").style.background="#f5c400"}else if(fol)MP.panTo(ll,{animate:true})},function(){},{enableHighAccuracy:true,maximumAge:2000,timeout:20000})}
+setInterval(function(){if(!window.LF||!MP||!MK)return;if(cur!==MP){cur=MP;setup()}live()},700);
+})();
+/* ---------- v4: daily goal in header, status pill hidden ---------- */
+(function(){var e=document.createElement("style");e.textContent="#pill{display:none!important}.gp{background:rgba(255,255,255,.18);color:#fff;border-radius:16px;padding:6px 12px;font-size:12px;font-weight:700;min-width:104px;text-align:center}.gp i{display:block;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:4px;overflow:hidden}.gp b{display:block;height:100%;width:0;background:#f5c400;transition:.4s}";document.head.appendChild(e)})();
+var _st4=stats;stats=function(){_st4();var g=2000;$("gpt").textContent="\uD83C\uDFAF "+inr(S.earn)+" / "+inr(g);$("gpb").style.width=Math.min(100,S.earn/g*100)+"%"};
+/* ---------- v5: ratings inside Profile, compact map credit ---------- */
+(function(){var e=document.createElement("style");e.textContent=".sec{font-size:15px;margin:2px 4px 10px}.rhero{background:linear-gradient(150deg,#241052,#5427a8 65%,#7e52d6);color:#fff;border-radius:26px;padding:20px;display:flex;gap:18px;align-items:center;margin-bottom:14px;box-shadow:0 14px 34px rgba(84,39,168,.35);position:relative;overflow:hidden}.rhero::after{content:'';position:absolute;right:-50px;top:-60px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,rgba(245,196,0,.35),transparent 70%)}.rl{text-align:center;min-width:92px;position:relative;z-index:1}.rbig{font-size:54px;font-weight:900;line-height:1;color:#f5c400}.rl small{display:block;font-size:11px;opacity:.8;margin-top:4px}.st2{color:#f5c400;letter-spacing:2px;font-size:14px;margin-top:6px}.rr{flex:1;position:relative;z-index:1}.rbp{display:flex;align-items:center;gap:8px;font-size:11px;margin:5px 0}.rbp>div{flex:1;height:6px;background:rgba(255,255,255,.2);border-radius:6px;overflow:hidden}.rbp i{display:block;height:100%;background:#f5c400}.rbp span:first-child{width:22px}.rbp span:last-child{width:18px;text-align:right}.rv2{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #f0ebf8}.rv2:last-child{border:0}.rav{flex:none;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#5427a8,#7e52d6);color:#f5c400;font-weight:900;display:flex;align-items:center;justify-content:center}.rbd{flex:1}.rbd p{margin:5px 0;font-size:14px;line-height:1.45}.rbd small{color:#7a6c94;font-size:11px}.rchip{background:#fff6d6;color:#9a6b00;font-size:12px;font-weight:800;padding:3px 9px;border-radius:12px}.leaflet-control-attribution{font-size:0!important;background:rgba(255,255,255,.85)!important;border-radius:12px 0 0 0;padding:0 8px!important;line-height:22px;cursor:pointer}.leaflet-control-attribution::before{content:'\\24D8';font-size:15px;color:#5427a8}.leaflet-control-attribution svg{display:none!important}.leaflet-control-attribution.open{font-size:10px!important}.leaflet-control-attribution.open::before{content:''}.leaflet-control-attribution.open svg{display:inline!important}";document.head.appendChild(e)})();
+TA["Rating & feedback"]="\u0BAE\u0BA4\u0BBF\u0BAA\u0BCD\u0BAA\u0BC0\u0B9F\u0BC1 & \u0B95\u0BB0\u0BC1\u0BA4\u0BCD\u0BA4\u0BC1\u0B95\u0BB3\u0BCD";TA["Show all"]="\u0B85\u0BA9\u0BC8\u0BA4\u0BCD\u0BA4\u0BC8\u0BAF\u0BC1\u0BAE\u0BCD \u0B95\u0BBE\u0B9F\u0BCD\u0B9F\u0BC1";TA["Show less"]="\u0B95\u0BC1\u0BB1\u0BC8\u0BB5\u0BBE\u0B95\u0BCD \u0B95\u0BBE\u0B9F\u0BCD\u0B9F\u0BC1";
+drawRt=function(){var n=RV.length,a=n?RV.reduce(function(x,y){return x+(+y.s||0)},0)/n:0,av=a.toFixed(1),cn=[0,0,0,0,0,0];RV.forEach(function(x){cn[Math.round(x.s)]++});
+ $("sR").textContent=av+"\u2605";$("hrp").textContent="\u2605 "+av;
+ var bars=[5,4,3,2,1].map(function(k){return '<div class="rbp"><span>'+k+'\u2605</span><div><i style="width:'+(n?cn[k]/n*100:0)+'%"></i></div><span>'+cn[k]+'</span></div>'}).join("");
+ var one=function(x,i){return '<div class="rv2'+(i>2?' more hide':'')+'"><div class="rav">'+esc((x.n||"C").charAt(0).toUpperCase())+'</div><div class="rbd"><div class="row"><b>'+esc(x.n||"Customer")+'</b><span class="rchip">\u2605 '+(+x.s||0)+'</span></div>'+(x.c?'<p>'+esc(x.c)+'</p>':'')+'<small>'+(x.a&&x.b?esc(t(x.a))+' \u2192 '+esc(t(x.b))+' \u00B7 ':'')+esc(t(x.w||""))+'</small></div></div>'};
+ $("rtbody").innerHTML='<div class="rhero"><div class="rl"><div class="rbig">'+av+'</div><div class="st2">'+stars(a)+'</div><small>'+n+' '+t("reviews")+'</small></div><div class="rr">'+bars+'</div></div>'+(S.demoRt?'<div class="nt" style="margin:-4px 0 12px">'+t("Sample reviews shown until real customer feedback arrives")+'</div>':'')+'<div class="card"><h3>'+t("Customer feedback")+'</h3>'+RV.map(one).join("")+(n>3?'<div class="lnk" id="rmore">'+t("Show all")+'</div>':'')+'</div>';
+ if($("rmore"))$("rmore").onclick=function(){var o=this.dataset.o!="1";this.dataset.o=o?"1":"0";this.textContent=t(o?"Show less":"Show all");qa(".rv2.more").forEach(function(r){r.classList.toggle("hide",!o)})};
+ $("rtH").innerHTML='<div class="row"><h3 style="margin:0">'+t("Latest feedback")+'</h3><b class="st">'+stars(a)+' '+av+'</b></div>'+(n?'<div class="rv"><div class="row"><b>'+esc(RV[0].n||"Customer")+'</b><span class="st">'+stars(RV[0].s)+'</span></div>'+(RV[0].c?'<p>'+esc(RV[0].c)+'</p>':'')+'</div>':'')};
+var _su=setup_attr=function(){var at=document.querySelector("#rmap .leaflet-control-attribution");if(at&&!at._k){at._k=1;at.onclick=function(e){if(e.target.tagName!="A")at.classList.toggle("open")}}};
+setInterval(_su,1000);
+/* v6: hide header goal pill on Profile tab */
+function gsync(){var g=$("gpill"),p=$("t-me");if(g&&p)g.style.display=p.classList.contains("show")?"none":""}
+$("nav").addEventListener("click",gsync);setInterval(gsync,300);
+/* ---------- v7: edit profile + Enter key ---------- */
+(function(){var e=document.createElement("style");e.textContent=".eb{margin-left:auto;border:0;background:#f3eefb;color:#5427a8;font-weight:800;font-size:13px;padding:9px 14px;border-radius:14px;cursor:pointer}";document.head.appendChild(e)})();
+TA["Edit"]="மாற்று";TA["Edit profile"]="சுயவிவரத்தை மாற்று";
+var EF=[{k:"p",l:"Your photo (clear face, no sunglasses)",t:"file"},{k:"n",l:"Full name (as on licence)",t:"text",v:IT[1][2][0].v,m:IT[1][2][0].m},{k:"e",l:"Emergency contact (+91)",t:"text",max:10,v:IT[1][2][3].v,m:"Invalid number",x:IT[1][2][3].x},{k:"c",l:"Operating city",t:"select",o:IT[5][2][0].o},{k:"vt",l:"Vehicle type",t:"select",o:IT[5][2][1].o},{k:"vn",l:"Vehicle number",t:"text",up:1,v:IT[5][2][2].v,m:IT[5][2][2].m}];
+function edGet(){try{return JSON.parse(localStorage.getItem("fged_"+S.ph)||"{}")}catch(x){return{}}}
+function edApply(){var d=edGet(),m=S.me;if(!m||!d.n)return;m.n=d.n;m.c=d.c||m.c;m.vt=d.vt||m.vt;m.vn=d.vn||m.vn;if(d.p)m.ph=d.p}
+var _en7=enter;enter=function(){edApply();_en7()};
+function openEdit(){var m=S.me||{},pf=D.prof||{},cur={p:m.ph||"",n:m.n||"",e:pf.emg||edGet().e||"",c:m.c||"",vt:m.vt||"",vn:m.vn||""},h='<div class="rh"><b class="bk" id="bk">\u2190</b><b>'+t("Edit profile")+'</b><span></span></div><div class="fb">';T={};
+ EF.forEach(function(f){var v=cur[f.k];if(f.t=="file")T[f.k]=v;h+='<label class="lb">'+t(f.l)+'</label>';
+  if(f.t=="select")h+='<select id="ef_'+f.k+'">'+f.o.map(function(o){return '<option value="'+o+'"'+(o==v?' selected':'')+'>'+t(o)+'</option>'}).join('')+'</select>';
+  else if(f.t=="file")h+='<label class="up" id="ef_'+f.k+'"'+(v?' style="background-image:url('+v+')"':'')+'><input type="file" accept="image/*" hidden><span>'+(v?t("Change photo"):'\uD83D\uDCF7 '+t("Tap to upload"))+'</span></label>';
+  else h+='<input id="ef_'+f.k+'" type="text" value="'+esc(v)+'"'+(f.max?' maxlength="'+f.max+'" inputmode="numeric"':'')+'>';
+  h+='<div class="er" id="ee_'+f.k+'"></div>'});
+ $("frm").innerHTML=h+'</div><div class="rf"><button class="btn alt" id="sv">'+t("Save")+'</button></div>';$("frm").classList.remove("hide");
+ EF.forEach(function(f){var el=$("ef_"+f.k);if(f.max)el.oninput=function(){this.value=this.value.replace(/\D/g,"")};if(f.up)el.oninput=function(){this.value=this.value.toUpperCase()};
+  if(f.t=="file")el.querySelector("input").onchange=function(){var fl=this.files[0];if(!fl)return;shrink(fl,function(u){T[f.k]=u;el.style.backgroundImage="url("+u+")";el.querySelector("span").textContent=t("Change photo")})}});
+ $("bk").onclick=function(){$("frm").classList.add("hide")};$("sv").onclick=saveEdit}
+function saveEdit(){var o={},ok=true;
+ EF.forEach(function(f){var v=f.t=="file"?T[f.k]:$("ef_"+f.k).value.trim(),m="";
+  if(!v){if(f.k=="n"||f.k=="vn"||(f.k=="e"&&D.prof))m="Required"}else if(f.v&&!f.v.test(v))m=f.m||"Invalid";else if(f.x)m=f.x(v)||"";
+  $("ee_"+f.k).textContent=m?t(m):"";if(m)ok=false;o[f.k]=v});
+ if(!ok)return;
+ var m=S.me;m.n=o.n;m.c=o.c;m.vt=o.vt;m.vn=o.vn;if(o.p)m.ph=o.p;
+ try{localStorage.setItem("fged_"+S.ph,JSON.stringify({n:o.n,e:o.e,c:o.c,vt:o.vt,vn:o.vn,p:o.p}))}catch(x){}
+ var sv=function(id,x){lsec(id,x);api("POST","/api/driver/"+S.ph+"/section",{id:id,data:x},function(){})};
+ if(D.prof){D.prof.name=o.n;if(o.e)D.prof.emg=o.e;sv("prof",D.prof)}
+ if(D.city){D.city.c=o.c;D.city.vt=o.vt;D.city.vn=o.vn;sv("city",D.city)}
+ if(D.photo&&o.p){D.photo.p=o.p;sv("photo",split("photo",D.photo))}
+ $("frm").classList.add("hide");prof();pushLoc()}
+$("pedit").onclick=openEdit;
+document.addEventListener("keydown",function(e){if(e.key!="Enter"||e.isComposing)return;var g=e.target&&e.target.tagName;if(g=="BUTTON"||g=="TEXTAREA"||g=="A")return;
+ var vis=function(i){return $(i)&&!$(i).classList.contains("hide")},b=null;
+ if(vis("frm"))b=$("sv");else if($("sheet").classList.contains("up")&&$("ok"))b=$("ok");
+ else if(vis("s-otp"))b=$("o-go");else if(vis("s-phone"))b=$("p-go");else if(vis("s-lang"))b=$("b-lang");else if(vis("s-welcome"))b=$("b-start");
+ if(b){e.preventDefault();b.click()}});
+
+/* ---------- v7: location skipped on onboarding -> ask again on Driver home map ---------- */
+(function(){
+var st=document.createElement("style");
+st.textContent="#locb{position:absolute;inset:0;z-index:1100;border-radius:26px;background:rgba(20,8,50,.82);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;color:#fff;gap:8px}#locb.hide{display:none}#locb .li{font-size:38px}#locb b{font-size:16px}#locb p{margin:0;font-size:12px;opacity:.85;max-width:240px}#locb .btn{width:auto;padding:11px 26px;margin-top:6px}#locb #locb-e{font-size:12px;color:#ffd0d0;min-height:0}";
+document.head.appendChild(st);
+$("mw").insertAdjacentHTML("beforeend",'<div id="locb" class="hide"><div class="li">&#128205;</div><b data-t>Turn on location</b><p data-t>Enable location to see your live position on the map and get nearby rides.</p><div id="locb-e"></div><button class="btn" id="locb-b" data-t>ENABLE LOCATION</button></div>');
+TA["Turn on location"]="இருப்பிடத்தை ஆன் செய்யவும்";
+TA["Enable location to see your live position on the map and get nearby rides."]="வரைபடத்தில் உங்கள் நேரடி இருப்பிடத்தைப் பார்க்கவும், அருகிலுள்ள சவாரிகளைப் பெறவும் இருப்பிடத்தை இயக்கவும்.";
+TA["ENABLE LOCATION"]="இருப்பிடத்தை இயக்கு";
+function hasLoc(){return !!(S.loc&&S.loc.lat)}
+function sync(){var b=$("locb");if(b)b.classList.toggle("hide",hasLoc()||$("home").classList.contains("hide"))}
+function ask(){
+ var e=$("locb-e"),btn=$("locb-b");e.textContent="";
+ if(!navigator.geolocation){e.textContent="Location is not supported on this device.";return}
+ btn.disabled=true;btn.textContent="...";
+ navigator.geolocation.getCurrentPosition(function(p){
+   S.loc={lat:p.coords.latitude,lng:p.coords.longitude};btn.disabled=false;btn.textContent="ENABLE LOCATION";
+   S.pan=0;watchLoc();pushLoc();if(typeof mapMove=="function")mapMove();
+   if(window.locGate)locGate();sync();
+ },function(er){
+   btn.disabled=false;btn.textContent="TRY AGAIN";
+   e.textContent=!window.isSecureContext?"Location needs a secure link (https). Please open the app with https.":er.code==1?"Permission denied. Allow location in browser/phone settings, then tap Try again.":"Could not get location. Turn on GPS and try again.";
+ },{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+}
+$("locb-b").onclick=ask;
+/* My location button + Go Online also trigger the prompt when location is off */
+$("q-loc").addEventListener("click",function(){if(!hasLoc())ask()});
+$("go").addEventListener("click",function(){if(!hasLoc())ask()});
+setInterval(sync,500);
+})();
+TA["Location off"]="இருப்பிடம் ஆஃப்";
+(function(){try{if(navigator.permissions&&navigator.permissions.query)navigator.permissions.query({name:"geolocation"}).then(function(r){r.onchange=function(){if(r.state!="granted"&&S.loc&&S.loc.lat){S.loc={na:1}}if(window.locGate)locGate()}})}catch(e){}})();
+
+/* ---------- v8: professional customer-OTP screen (Start Trip) ---------- */
+(function(){
+var st=document.createElement("style");
+st.textContent=
+"#otpv{position:absolute;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column;animation:otin .25s ease}@keyframes otin{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}"+
+"#otpv .oh{background:linear-gradient(150deg,#241052,#5427a8 70%,#7e52d6);color:#fff;padding:16px 18px 54px;display:flex;align-items:center;gap:12px}"+
+"#otpv .ob{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.16);border:0;color:#fff;font-size:18px;cursor:pointer}"+
+"#otpv .oh b{font-size:18px}#otpv .oh small{display:block;opacity:.8;font-size:12px;margin-top:2px}"+
+"#otpv .oc{margin:-38px 16px 0;background:#fff;border-radius:20px;padding:14px;box-shadow:0 10px 28px rgba(60,30,90,.14)}"+
+"#otpv .op{display:flex;align-items:center;gap:12px}#otpv .oa{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#5427a8,#7e52d6);color:var(--y);font-weight:900;font-size:18px;display:flex;align-items:center;justify-content:center;flex:none}"+
+"#otpv .on{flex:1;min-width:0}#otpv .on b{display:block;font-size:15px}#otpv .on small{color:#7a6c94;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}"+
+"#otpv .ocall{width:40px;height:40px;border-radius:50%;border:0;background:#e8f7ef;font-size:18px;cursor:pointer}"+
+"#otpv .or{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px dashed #e4dcf3;font-size:12px;color:#7a6c94}#otpv .or b{color:var(--ink);font-size:16px}"+
+"#otpv .om{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 16px;min-height:0}"+
+"#otpv .om h3{font-size:17px;margin:0 0 4px}#otpv .om p{color:#7a6c94;font-size:13px;text-align:center;margin:0 0 16px}"+
+"#otpv .bx{display:flex;gap:12px}#otpv .bx i{width:56px;height:64px;border-radius:14px;background:#fff;border:2px solid #e4dcf3;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:28px;font-weight:900;color:var(--p);transition:.15s}"+
+"#otpv .bx i.f{border-color:var(--p);background:#f3edff}#otpv .bx i.a{border-color:var(--y);box-shadow:0 0 0 4px rgba(245,196,0,.25)}"+
+"#otpv .bx.bad i{border-color:var(--red);background:#fdeaeb;color:var(--red)}#otpv .bx.bad{animation:osh .4s}@keyframes osh{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}"+
+"#otpv .oe{min-height:18px;margin-top:12px;font-size:13px;font-weight:700;color:var(--red);text-align:center}"+
+"#otpv .kp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 8px}"+
+"#otpv .kp button{height:46px;border:0;border-radius:12px;background:#fff;font-size:21px;font-weight:800;color:var(--ink);box-shadow:0 2px 6px rgba(60,30,90,.08);cursor:pointer}#otpv .kp button:active{background:#f3edff}#otpv .kp .x{background:#f3edff;color:var(--p)}"+
+"#otpv .of{padding:6px 16px 16px}#otpv .of .btn:disabled{opacity:.45;cursor:not-allowed}#otpv .sec{display:block;text-align:center;font-size:11px;color:#9a8fb3;margin-top:8px}";
+st.textContent+="#otpv .dmo{background:#fff6d6;border:1.5px dashed #e0b400;color:#7a5a00;font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;margin-bottom:12px}#otpv .dmo b{letter-spacing:3px;font-size:14px}";
+document.head.appendChild(st);
+var TT={"Start Trip":"பயணத்தைத் தொடங்கு","Verify the customer OTP to begin the trip":"பயணத்தைத் தொடங்க பயணியின் OTP-ஐ சரிபார்க்கவும்","Ask customer for OTP":"பயணியிடம் OTP கேளுங்கள்","Enter the 4-digit code shown in the customer's app":"பயணியின் செயலியில் காட்டப்படும் 4 இலக்க எண்ணை உள்ளிடவும்","VERIFY & START TRIP":"சரிபார்த்து பயணத்தைத் தொடங்கு","Verifying...":"சரிபார்க்கிறது...","Incorrect OTP. Please check and try again.":"தவறான OTP. சரிபார்த்து மீண்டும் முயற்சிக்கவும்.","Could not reach server. Check internet and retry.":"சேவையகத்தை அடைய முடியவில்லை. இணையத்தை சரிபார்க்கவும்.","Fare":"கட்டணம்","Pickup":"பிக்அப்","Do not start the trip without verifying the OTP":"OTP சரிபார்க்காமல் பயணத்தைத் தொடங்க வேண்டாம்"};
+for(var k in TT)TA[k]=TT[k];
+window.DEMO_MODE=new URLSearchParams(window.location.search).get("demo")==="1";
+var cur="",busy=0;
+function close(){var o=$("otpv");if(o)o.remove();busy=0}
+function paint(){var bx=$("obx");if(!bx)return;var h="";for(var i=0;i<4;i++)h+='<i class="'+(cur[i]?"f":i==cur.length?"a":"")+'">'+(cur[i]?"\u25CF":"")+"</i>";bx.innerHTML=h;$("overify").disabled=cur.length<4||busy}
+function press(d){if(busy)return;var bx=$("obx");bx.classList.remove("bad");$("oerr").textContent="";if(d=="x")cur=cur.slice(0,-1);else if(cur.length<4)cur+=d;paint()}
+function submit(){
+ if(cur.length<4||busy)return;busy=1;var b=$("overify");b.disabled=true;b.textContent=t("Verifying...");
+ var go=function(cb){if(DEMO_MODE&&S.demo)setTimeout(function(){cb({ok:cur.length==4})},600);else api("POST","/api/ride/"+S.rid+"/start",{ph:S.ph,otp:cur},function(r){cb(DEMO_MODE&&S.demo&&cur.length==4?{ok:1}:r)})};
+ go(function(r){
+  busy=0;
+  if(r&&r.ok){close();_trip(3);return}
+  b.textContent=t("VERIFY & START TRIP");
+  $("oerr").textContent=t(r&&r.err?"Could not reach server. Check internet and retry.":"Incorrect OTP. Please check and try again.");
+  $("obx").classList.add("bad");cur="";paint();try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}
+ })}
+function otpUI(){
+ var r=S.r||["","",0,0],nm=S.rn||t("Rahul S."),ini=String(nm).trim().charAt(0).toUpperCase()||"C";cur="";busy=0;
+ var o=$("otpv");if(o)o.remove();
+ var keys="";[1,2,3,4,5,6,7,8,9].forEach(function(n){keys+='<button data-k="'+n+'">'+n+"</button>"});keys+='<button disabled style="visibility:hidden"></button><button data-k="0">0</button><button class="x" data-k="x">&#9003;</button>';
+ var h='<div id="otpv"><div class="oh"><button class="ob" id="oback">&larr;</button><div><b>'+t("Start Trip")+'</b><small>'+t("Verify the customer OTP to begin the trip")+'</small></div></div>'+
+ '<div class="oc"><div class="op"><div class="oa">'+esc(ini)+'</div><div class="on"><b>'+esc(nm)+'</b><small>'+t("Pickup")+": "+esc(t(r[0]))+'</small></div>'+(S.cp?'<button class="ocall" id="ocall">&#128222;</button>':"")+'</div>'+
+ '<div class="or"><span>'+esc(t(r[0]))+" &rarr; "+esc(t(r[1]))+'</span><span>'+t("Fare")+" <b>"+inr(r[3])+'</b></span></div></div>'+
+ '<div class="om">'+'<h3>'+t("Ask customer for OTP")+"</h3><p>"+t("Enter the 4-digit code shown in the customer's app")+'</p><div class="bx" id="obx"></div><div class="oe" id="oerr"></div></div>'+
+ '<div class="kp" id="okp">'+keys+'</div><div class="of"><button class="btn" id="overify" disabled>'+t("VERIFY & START TRIP")+'</button><span class="sec">&#128274; '+t("Do not start the trip without verifying the OTP")+"</span></div></div>";
+ $("app").insertAdjacentHTML("beforeend",h);paint();
+ qa("#okp button[data-k]").forEach(function(b){b.onclick=function(){press(b.dataset.k)}});
+ $("overify").onclick=submit;
+ $("oback").onclick=function(){close();_trip(1)};
+ if($("ocall"))$("ocall").onclick=callCust}
+document.addEventListener("keydown",function(e){if(!$("otpv"))return;if(/^\d$/.test(e.key))press(e.key);else if(e.key=="Backspace")press("x");else if(e.key=="Enter")submit()});
+var _trip=trip;
+trip=function(i){if(i==2){S.trip=1;sheet("");return otpUI()}return _trip(i)};
+})();
+
+/* demo: 3 sec after GO ONLINE a customer ride request pops up (UI preview only) */
+var CU=["Priya M.","Arun K.","Divya R.","Karthik S.","Meena L.","Suresh B.","Lakshmi N.","Vignesh T.","Rahul S.","Anitha P.","Mohan D.","Kavitha G."],
+ DI=Math.floor(Math.random()*CU.length),FBK=["Bus Stand","Railway Station","Main Road","Market Area","Govt Hospital","College Road","Temple Street","Collector Office","Town Centre","Old Town"];
+function dOff(c,km,deg){var r=Math.PI/180;return[+(c[0]+km*Math.cos(deg*r)/111).toFixed(6),+(c[1]+km*Math.sin(deg*r)/(111*Math.cos(c[0]*r))).toFixed(6)]}
+function dHav(a,b){var R=6371,r=Math.PI/180,x=(b[0]-a[0])*r,y=(b[1]-a[1])*r,h=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(y/2)*Math.sin(y/2);return 2*R*Math.asin(Math.sqrt(h))}
+function dPlace(c,fb,cb){var done=0,fin=function(n){if(done)return;done=1;cb(n||fb)};setTimeout(fin,2500);
+ try{fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&accept-language=en&lat="+c[0]+"&lon="+c[1]).then(function(r){return r.json()}).then(function(j){var a=(j&&j.address)||{},f=a.neighbourhood||a.suburb||a.hamlet||a.road,s=a.village||a.town||a.city||a.county,n=f&&s&&f!=s?f+", "+s:(f||s);fin(n?String(n).slice(0,34):"")}).catch(function(){fin()})}catch(e){fin()}}
+/* demo routes: only Dindigul (DGL), Kodaikanal & Chinnalapatti  [pickup,drop,km,fare,pickupLatLng,dropLatLng] */
+var DR=[
+ ["Dindigul Bus Stand","Chinnalapatti",14,320,[10.3673,77.9803],[10.2833,77.9167]],
+ ["Dindigul Bus Stand","Kodaikanal",92,2350,[10.3673,77.9803],[10.2392,77.4876]],
+ ["Chinnalapatti","Dindigul Railway Stn",15,340,[10.2833,77.9167],[10.3629,77.9722]],
+ ["Kodaikanal Lake","Dindigul Bus Stand",90,2300,[10.2358,77.4896],[10.3673,77.9803]],
+ ["Dindigul Railway Stn","Kodaikanal Bus Stand",93,2380,[10.3629,77.9722],[10.2392,77.4876]],
+ ["Chinnalapatti","Kodaikanal Lake",78,1980,[10.2833,77.9167],[10.2358,77.4896]],
+ ["Kodaikanal Bus Stand","Chinnalapatti",79,2000,[10.2392,77.4876],[10.2833,77.9167]],
+ ["Dindigul Bus Stand","Chinnalapatti Handloom",15,340,[10.3673,77.9803],[10.2833,77.9167]]
+];
+Object.assign(TA,{"Kodaikanal Bus Stand":"\u0b95\u0bca\u0b9f\u0bc8\u0b95\u0bcd\u0b95\u0bbe\u0ba9\u0bb2\u0bcd \u0baa\u0bc7\u0bb0\u0bc1\u0ba8\u0bcd\u0ba4\u0bc1 \u0ba8\u0bbf\u0bb2\u0bc8\u0baf\u0bae\u0bcd"});
+function fireDemo(){
+ if(!S.on||S.trip||S.dpend||$("sheet").classList.contains("up"))return;
+ var i=DI++,d=DR[i%DR.length],cust=CU[i%CU.length];
+ S.demo=1;S.rid="demo";S.rn=cust;S.rd=Math.round((.8+(i*.7)%1.8)*10)/10;S.cp="";S.pk=d[4];S.dk=d[5];S.offer=[d[0],d[1],d[2],d[3]];req()}
+(function(){var _on=online;online=function(v){_on(v);clearTimeout(S.dt);if(v&&window.DEMO_MODE&&!S.trip)S.dt=setTimeout(fireDemo,3000)}})();
+(function(){var _t=trip;trip=function(i){if(i==4)setTimeout(function(){S.demo=0},0);return _t(i)}})();
+
+/* ---------- v10: in-app live navigation (driver <-> customer on map) ---------- */
+(function(){
+var st=document.createElement("style");
+st.textContent=
+"#navv{position:absolute;inset:0;z-index:45;background:#e9e3f5;animation:otin .25s ease}#navmap{position:absolute;inset:0}"+
+"#navv .nvt{position:absolute;top:12px;left:12px;right:12px;z-index:1200;background:#fff;border-radius:18px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(36,21,63,.22)}"+
+"#navv .nvt button{width:38px;height:38px;border-radius:50%;border:0;background:#f3edff;color:var(--p);font-size:18px;font-weight:900;cursor:pointer;flex:none}"+
+"#navv .nvt div{min-width:0}#navv .nvt b{display:block;font-size:15px}#navv .nvt small{display:block;color:#7a6c94;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"+
+"#navv .nvr{position:absolute;right:12px;bottom:232px;z-index:1200;width:44px;height:44px;border-radius:50%;border:0;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.3);font-size:20px;cursor:pointer}"+
+"#navv .nvc{position:absolute;left:0;right:0;bottom:0;z-index:1200;background:#fff;border-radius:24px 24px 0 0;padding:16px;box-shadow:0 -10px 40px rgba(36,21,63,.25)}"+
+"#navv .nvp{display:flex;align-items:center;gap:12px}#navv .nva{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#5427a8,#7e52d6);color:var(--y);font-weight:900;font-size:18px;display:flex;align-items:center;justify-content:center;flex:none}"+
+"#navv .nvn{flex:1;min-width:0}#navv .nvn b{display:block;font-size:15px}#navv .nvn small{color:#1fa463;font-weight:700;font-size:12px}#navv .nvn small::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:#1fa463;margin-right:6px;animation:pu 1.6s infinite}"+
+"#navv .nvk{width:42px;height:42px;border-radius:50%;border:0;background:#e8f7ef;font-size:19px;cursor:pointer;flex:none}"+
+"#navv .nve{display:flex;justify-content:space-between;align-items:center;margin:12px 0;padding:10px 14px;background:#f6f3fb;border-radius:14px}#navv .nve b{font-size:20px;color:var(--p)}#navv .nve span{font-size:13px;color:#7a6c94;font-weight:700}"+
+"#navv .nvb{display:flex;gap:10px}#navv .nvb .btn{flex:1;padding:14px 8px;font-size:15px}#navv .nvb .btn.sm{flex:none;width:auto;padding:14px 16px;font-size:20px}"+
+".nvpin{font-size:34px;line-height:1;filter:drop-shadow(0 3px 3px rgba(0,0,0,.45));text-align:center}.nvtag{position:absolute;left:50%;top:-22px;transform:translateX(-50%);background:#e0262d;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;white-space:nowrap}";
+document.head.appendChild(st);
+var TN={"Navigate to drop":"டிராப் இடத்திற்கு செல்லவும்","Customer live":"பயணி நேரலை","Finding route...":"வழியைத் தேடுகிறது...","Customer":"பயணி","Open in Google Maps":"கூகுள் மேப்பில் திற","Complete Trip":"பயணத்தை முடி","I have arrived":"நான் வந்துவிட்டேன்","min":"நிமி","km":"கி.மீ"};
+for(var k in TN)if(!TA[k])TA[k]=TN[k];
+var NM,NT,DM,RL,NP,LR=0,LL=null,drop=0;
+function hav(a,b){var R=6371,r=Math.PI/180,x=(b[0]-a[0])*r,y=(b[1]-a[1])*r,h=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(y/2)*Math.sin(y/2);return 2*R*Math.asin(Math.sqrt(h))}
+function nclose(){clearInterval(NT);NT=null;if(NM){try{NM.remove()}catch(e){}NM=null}var o=$("navv");if(o)o.remove()}
+function info(km,min,est){$("neta").innerHTML="<b>"+Math.max(1,Math.round(min))+" "+t("min")+"</b>";$("ndist").textContent=(est?"~":"")+km.toFixed(1)+" "+t("km")}
+function route(){
+ if(!NM||!S.loc||!S.loc.lat)return;LR=Date.now();var a=[S.loc.lat,S.loc.lng];LL=a;
+ var fb=function(){var d=hav(a,NP);RL.setLatLngs([a,NP]);RL.setStyle({dashArray:"8 10"});info(d*1.3,d*1.3/30*60,1)};
+ try{fetch("https://router.project-osrm.org/route/v1/driving/"+a[1]+","+a[0]+";"+NP[1]+","+NP[0]+"?overview=full&geometries=geojson").then(function(r){return r.json()}).then(function(j){
+  var r=j&&j.routes&&j.routes[0];if(!r||!NM)return fb();
+  RL.setLatLngs(r.geometry.coordinates.map(function(c){return[c[1],c[0]]}));RL.setStyle({dashArray:null});info(r.distance/1000,r.duration/60)}).catch(fb)}catch(e){fb()}}
+var _nav=navGo;
+navGo=function(isDrop){
+ if(!(S.loc&&S.loc.lat)){alert(t("Location is off"));return}
+ var c=isDrop?S.dk:S.pk;
+ if(!(c&&c[0]&&c[1])){
+  if(window.DEMO_MODE&&S.demo){c=isDrop?[S.loc.lat+.045,S.loc.lng+.035]:[S.loc.lat+.009,S.loc.lng+.007];if(isDrop)S.dk=c;else S.pk=c}
+  else return _nav(isDrop)}
+ mapLib(function(){
+  if(!window.LF)return _nav(isDrop);
+  nclose();drop=!!isDrop;NP=[+c[0],+c[1]];LR=0;
+  var r=S.r||["","",0,0],nm=S.rn||t("Rahul S."),ini=String(nm).trim().charAt(0).toUpperCase()||"C",dest=drop?r[1]:r[0];
+  $("app").insertAdjacentHTML("beforeend",'<div id="navv"><div id="navmap"></div>'+
+   '<div class="nvt"><button id="nvx">&larr;</button><div><b>'+t(drop?"Navigate to drop":"Navigate to pickup")+'</b><small>'+esc(t(dest))+'</small></div></div>'+
+   '<button class="nvr" id="nvr">&#127919;</button>'+
+   '<div class="nvc"><div class="nvp"><div class="nva">'+esc(ini)+'</div><div class="nvn"><b>'+esc(nm)+'</b><small>'+t("Customer live")+'</small></div><button class="nvk" id="nvk">&#128222;</button></div>'+
+   '<div class="nve"><div><b id="neta">--</b></div><span id="ndist">'+t("Finding route...")+'</span></div>'+
+   '<div class="nvb"><button class="btn out sm" id="nvg" title="'+t("Open in Google Maps")+'">&#128506;&#65039;</button><button class="btn" id="nvgo">'+t(drop?"Complete Trip":"I have arrived")+'</button></div></div></div>');
+  var me=[S.loc.lat,S.loc.lng];
+  NM=LF.map("navmap",{zoomControl:false,attributionControl:false});
+  mkBase(NM,0);
+  RL=LF.polyline([me,NP],{color:"#5427a8",weight:6,opacity:.9,dashArray:"8 10"}).addTo(NM);
+  DM=LF.marker(me,{icon:LF.divIcon({className:"",html:'<div class="me"></div>',iconSize:[22,22],iconAnchor:[11,11]}),zIndexOffset:500}).addTo(NM);
+  LF.marker(NP,{icon:LF.divIcon({className:"",html:'<div class="nvpin"><span class="nvtag">'+t(drop?"Drop":"Pickup")+'</span>&#128205;</div>',iconSize:[34,34],iconAnchor:[17,32]})}).addTo(NM);
+  var fit=function(){NM.invalidateSize();NM.fitBounds([me,NP],{paddingTopLeft:[40,100],paddingBottomRight:[40,270],maxZoom:17})};
+  setTimeout(fit,200);
+  $("nvr").onclick=function(){if(S.loc&&S.loc.lat)DM.setLatLng([S.loc.lat,S.loc.lng]);NM.fitBounds([DM.getLatLng(),NP],{paddingTopLeft:[40,100],paddingBottomRight:[40,270],maxZoom:17})};
+  $("nvx").onclick=nclose;$("nvk").onclick=callCust;$("nvg").onclick=function(){_nav(drop)};
+  $("nvgo").onclick=function(){nclose();trip(drop?4:1)};
+  route();
+  NT=setInterval(function(){if(!NM||!S.loc||!S.loc.lat)return;var a=[S.loc.lat,S.loc.lng];DM.setLatLng(a);
+   if(Date.now()-LR>12000||(LL&&hav(a,LL)>.04))route()},1000)})};
+})();
+
+/* ---------- v11: payment after trip + saved earnings (daily goal / earnings page) ---------- */
+(function(){
+var GOAL=2000,ES={trips:[]},DN=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var M={cash:["\uD83D\uDCB5","Cash","Collect cash from customer"],upi:["\uD83D\uDCF1","UPI","Customer pays through UPI"],card:["\uD83D\uDCB3","Debit Card","Enter debit card details"]};
+var st=document.createElement("style");
+st.textContent=
+"#payv{position:absolute;inset:0;z-index:42;background:var(--bg);display:flex;flex-direction:column;overflow-y:auto;animation:otin .25s ease}"+
+"#payv .ph{background:linear-gradient(150deg,#241052,#5427a8 70%,#7e52d6);color:#fff;padding:18px 18px 70px}#payv .ph b{font-size:18px;display:block}#payv .ph small{opacity:.8;font-size:12px}"+
+"#payv .pc{margin:-52px 16px 0;background:#fff;border-radius:22px;padding:16px;text-align:center;box-shadow:0 10px 28px rgba(60,30,90,.14)}"+
+"#payv .pa{font-size:42px;font-weight:900;color:var(--p);line-height:1.1}#payv .pr{font-size:12px;color:#7a6c94;margin-top:6px}"+
+"#payv .pm{padding:14px 16px 0}#payv .pm h3{font-size:14px;margin:0 0 8px;color:#7a6c94}"+
+"#payv .po{display:flex;align-items:center;gap:12px;background:#fff;border:2px solid #e4dcf3;border-radius:16px;padding:12px;margin-bottom:10px;cursor:pointer;transition:.15s}#payv .po.on{border-color:var(--p);background:#f3edff}"+
+"#payv .po i{font-style:normal;font-size:26px;width:44px;height:44px;border-radius:12px;background:#f6f3fb;display:flex;align-items:center;justify-content:center;flex:none}"+
+"#payv .po div{flex:1;min-width:0}#payv .po b{display:block;font-size:15px}#payv .po small{color:#7a6c94;font-size:12px}"+
+"#payv .po u{width:22px;height:22px;border-radius:50%;border:2px solid #cfc3e8;flex:none;position:relative}#payv .po.on u{border-color:var(--p)}#payv .po.on u::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--p)}"+
+"#payv .pfx{padding:8px 16px 18px;margin-top:auto}#payv .pfx .btn:disabled{opacity:.6}#payv .pn{text-align:center;font-size:12px;color:#7a6c94;margin:0 0 10px}"+
+"#payv .ok{text-align:center;padding:40px 20px 0}#payv .ck{width:84px;height:84px;border-radius:50%;background:#e3f6ec;color:#1fa463;font-size:44px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;animation:pop .45s}@keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12)}100%{transform:none;opacity:1}}"+
+"#payv .ok h2{font-size:20px;margin-bottom:4px}#payv .ok .pa{margin:8px 0}"+
+"#payv .gl{margin:18px 16px 0;background:#fff;border-radius:18px;padding:14px;box-shadow:0 6px 20px rgba(60,30,90,.1)}#payv .gl .row{font-size:13px;font-weight:700}#payv .gb{height:10px;background:#eee;border-radius:8px;overflow:hidden;margin:10px 0 6px}#payv .gb i{display:block;height:100%;background:linear-gradient(90deg,#f5c400,#ffd84d);border-radius:8px;transition:width .9s}"+
+"#payv .spn{display:inline-block;width:16px;height:16px;border:3px solid rgba(36,21,63,.25);border-top-color:var(--ink);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-3px;margin-right:8px}@keyframes sp{to{transform:rotate(360deg)}}"+
+".ehero{background:linear-gradient(150deg,#241052,#5427a8 65%,#7e52d6);color:#fff;border-radius:26px;padding:18px;margin-bottom:14px;box-shadow:0 14px 34px rgba(84,39,168,.35)}.ehero small{opacity:.8;font-size:12px}.ebig{font-size:38px;font-weight:900;color:#f5c400;margin:2px 0 8px}.erow{display:flex;justify-content:space-between;font-size:13px;font-weight:700}.ebar{height:8px;background:rgba(255,255,255,.22);border-radius:8px;overflow:hidden;margin:10px 0 6px}.ebar i{display:block;height:100%;background:#f5c400;border-radius:8px;transition:width .6s}"+
+".chart div b{position:absolute;top:-16px;left:-4px;right:-4px;text-align:center;font-size:9px;color:#5427a8;font-weight:800;white-space:nowrap}.mi{display:inline-flex;width:34px;height:34px;border-radius:10px;background:#f3edff;align-items:center;justify-content:center;font-size:17px;margin-right:10px;vertical-align:middle}";
+document.head.appendChild(st);
+var TX={"Collect Payment":"கட்டணம் வசூலிக்கவும்","Trip completed":"பயணம் முடிந்தது","Payment method":"கட்டண முறை","Cash":"பணம்","UPI":"UPI","Card / Wallet":"கார்டு / வாலட்","Customer pays through UPI":"பயணி UPI மூலம் செலுத்துவார்","Paid through the customer app":"பயணியின் செயலி மூலம் செலுத்தப்பட்டது","CASH COLLECTED":"பணம் பெறப்பட்டது","REQUEST PAYMENT":"கட்டணம் கோரு","Waiting for customer payment...":"பயணியின் கட்டணத்திற்காக காத்திருக்கிறது...","Customer will get a payment request in their app":"பயணிக்கு அவர் செயலியில் கட்டண கோரிக்கை செல்லும்","Payment not received yet. Please try again.":"கட்டணம் இன்னும் வரவில்லை. மீண்டும் முயற்சிக்கவும்.","Payment received":"கட்டணம் பெறப்பட்டது","Daily goal":"இன்றைய இலக்கு","Daily goal achieved!":"இன்றைய இலக்கு அடைந்தது!","to go":"மீதம்","Today's earnings":"இன்றைய வருமானம்","trips":"பயணங்கள்","This week":"இந்த வாரம்","Payment breakdown":"கட்டண விவரம்","Payouts":"செலுத்துதல்கள்","Next payout":"அடுத்த செலுத்துதல்","Online payments (UPI + Card)":"ஆன்லைன் கட்டணம் (UPI + கார்டு)","Cash collected":"பெற்ற பணம்","No trips yet. Go online to start earning.":"இன்னும் பயணங்கள் இல்லை. வருமானம் ஈட்ட ஆன்லைனுக்கு செல்லவும்.","Reset earnings (demo)":"வருமானத்தை மீட்டமை (டெமோ)","Yesterday":"நேற்று","Today":"இன்று"};
+for(var k in TX)if(!TA[k])TA[k]=TX[k];
+function key(){return "fgearn_"+(S.ph||"guest")}
+function eLoad(){try{ES=JSON.parse(localStorage.getItem(key())||"null")||{trips:[]}}catch(e){ES={trips:[]}}if(!ES.trips)ES.trips=[]}
+function eSave(){try{localStorage.setItem(key(),JSON.stringify(ES))}catch(e){}}
+function dk(d){d=d||new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)}
+function sum(f){return ES.trips.filter(f).reduce(function(a,x){return a+x.f},0)}
+function eInit(){eLoad();var k=dk();S.earn=sum(function(x){return x.d==k});S.n=ES.trips.filter(function(x){return x.d==k}).length;H=ES.trips.slice().reverse()}
+function days(){var o=[];for(var i=6;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);var k=dk(d);o.push({k:k,l:DN[d.getDay()],v:sum(function(x){return x.d==k})})}return o}
+function renderEarn(){
+ var el=$("t-earn");if(!el)return;var ds=days(),wk=ds.reduce(function(a,x){return a+x.v},0),keys=ds.map(function(x){return x.k});
+ var inW=function(x){return keys.indexOf(x.d)>-1},cash=sum(function(x){return inW(x)&&x.m=="cash"}),upi=sum(function(x){return inW(x)&&x.m=="upi"}),card=sum(function(x){return inW(x)&&x.m=="card"});
+ var pct=Math.min(100,S.earn/GOAL*100),left=Math.max(0,GOAL-S.earn),mx=Math.max.apply(null,ds.map(function(x){return x.v}).concat([1]));
+ var bars=ds.map(function(x){return '<div style="height:'+(x.v?Math.max(6,x.v/mx*100):4)+'%" title="'+inr(x.v)+'">'+(x.v?'<b>'+inr(x.v)+'</b>':'')+'<span>'+t(x.l)+'</span></div>'}).join("");
+ var row=function(i,n,v){return '<div class="li"><span><span class="mi">'+i+'</span>'+t(n)+'</span><b>'+inr(v)+'</b></div>'};
+ el.innerHTML='<div class="ehero"><small>'+t("Today's earnings")+'</small><div class="ebig">'+inr(S.earn)+'</div><div class="erow"><span>&#128662; '+S.n+' '+t("trips")+'</span><span>&#127919; '+inr(S.earn)+' / '+inr(GOAL)+'</span></div><div class="ebar"><i style="width:'+pct+'%"></i></div><small>'+(left?inr(left)+' '+t("to go"):"&#127881; "+t("Daily goal achieved!"))+'</small></div>'+
+ '<div class="card"><small style="color:#7a6c94">'+t("This week")+'</small><div class="fare" id="wk">'+inr(wk)+'</div><div class="chart" id="ch" style="margin-top:26px">'+bars+'</div><div style="height:16px"></div></div>'+
+ '<div class="card"><h3>'+t("Payment breakdown")+'</h3>'+row("\uD83D\uDCB5","Cash",cash)+row("\uD83D\uDCF1","UPI",upi)+row("\uD83D\uDCB3","Debit Card",card)+'</div>'+
+ '<div class="card"><h3>'+t("Payouts")+'</h3><div class="li"><span>'+t("Next payout")+'<small>'+t("Online payments (UPI + Card)")+'</small></span><b>'+inr(upi+card)+'</b></div><div class="li"><span>'+t("Cash collected")+'<small>'+t("This week")+'</small></span><b>'+inr(cash)+'</b></div></div>'+
+ '';}
+function when(ts){var d=new Date(ts),n=new Date(),hm=("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);if(dk(d)==dk(n))return t("Today")+" "+hm;var y=new Date();y.setDate(y.getDate()-1);if(dk(d)==dk(y))return t("Yesterday")+" "+hm;return d.getDate()+" "+t(DN[d.getDay()])}
+hist=function(){var el=$("hist");if(!el)return;var a=ES.trips.slice().reverse();
+ el.innerHTML=a.length?a.map(function(x){var m=M[x.m]||M.cash;return '<div class="li"><span>'+esc(t(x.a))+' \u2192 '+esc(t(x.b))+'<small>'+when(x.ts)+' \u00B7 '+x.km+' '+t("km")+' \u00B7 '+m[0]+' '+t(m[1])+'</small></span><b>'+inr(x.f)+'</b></div>'}).join(""):'<div class="nt">'+t("No trips yet. Go online to start earning.")+'</div>'};
+chart=function(){renderEarn()};
+var _s=stats;stats=function(){_s();renderEarn()};
+var _en=enter;enter=function(){eInit();_en();stats();hist()};
+
+/* ----- payment screen ----- */
+var busy=0,paid=0;
+function pclose(){var o=$("payv");if(o)o.remove();busy=0}
+function payUI(){
+ var r=S.r||["","",0,0],fare=r[3],sel="cash";paid=0;busy=0;pclose();
+ $("app").insertAdjacentHTML("beforeend",'<div id="payv"></div>');
+ function draw(){
+  var m=M[sel];
+  $("payv").innerHTML='<div class="ph"><b>'+t("Collect Payment")+'</b><small>'+t("Trip completed")+'</small></div>'+
+  '<div class="pc"><div class="pa">'+inr(fare)+'</div><div class="pr">'+esc(t(r[0]))+' &rarr; '+esc(t(r[1]))+' &middot; '+r[2]+' '+t("km")+'</div></div>'+
+  '<div class="pm"><h3>'+t("Payment method")+'</h3>'+Object.keys(M).map(function(k){return '<div class="po'+(k==sel?' on':'')+'" data-m="'+k+'"><i>'+M[k][0]+'</i><div><b>'+t(M[k][1])+'</b><small>'+t(M[k][2])+'</small></div><u></u></div>'}).join("")+'</div>'+
+  payForm()+'<div class="pfx"><p class="pn" id="pnote">'+(sel=="cash"?"":t("Customer will get a payment request in their app"))+'</p><button class="btn" id="pgo">'+t(sel=="cash"?"CASH COLLECTED":"REQUEST PAYMENT")+" &middot; "+inr(fare)+'</button></div>';
+  qa("#payv .po").forEach(function(e){e.onclick=function(){if(busy)return;sel=e.dataset.m;draw()}});
+  $("pgo").onclick=go;wireForm()}
+ var UV="",CD={n:"",nm:"",ex:"",cv:""};
+  function luhn(s){var n=0,d=0,i,x;for(i=s.length-1;i>=0;i--){x=+s[i];if(d){x*=2;if(x>9)x-=9}n+=x;d=!d}return n%10==0}
+  function vUpi(){return /^[a-zA-Z0-9._-]{2,}@[a-zA-Z]{2,}$/.test(UV)?"":"Enter a valid UPI ID (e.g. name@okaxis)"}
+  function vCard(){if(CD.n.length<13||CD.n.length>19||!luhn(CD.n))return "Enter a valid card number";
+   if(CD.nm.trim().length<2)return "Enter the name on the card";
+   var m=/^(\d\d)\/(\d\d)$/.exec(CD.ex);if(!m||+m[1]<1||+m[1]>12)return "Enter expiry as MM/YY";
+   var now=new Date(),yy=now.getFullYear()%100,mm=now.getMonth()+1;if(+m[2]<yy||(+m[2]==yy&&+m[1]<mm))return "Card has expired";
+   if(!/^\d{3}$/.test(CD.cv))return "Enter the 3-digit CVV";return ""}
+  function payForm(){
+   if(sel=="upi")return '<div class="dtl"><h3>'+t("UPI details")+'</h3><input id="upid" placeholder="name@okaxis" autocomplete="off" autocapitalize="none" spellcheck="false"><div class="uc">'+["@okaxis","@oksbi","@ybl","@paytm","@okhdfcbank"].map(function(s){return '<span data-s="'+s+'">'+s+'</span>'}).join("")+'</div><small>'+t("Enter the customer's UPI ID")+'</small><div class="perr" id="perr"></div></div>';
+   if(sel=="card")return '<div class="dtl"><h3>'+t("Debit card details")+'</h3><input id="cdn" inputmode="numeric" maxlength="23" placeholder="1234 5678 9012 3456" autocomplete="off"><input id="cdm" placeholder="'+t("Name on card")+'" autocomplete="off"><div class="cr"><input id="cde" inputmode="numeric" maxlength="5" placeholder="MM/YY" autocomplete="off"><input id="cdv" type="password" inputmode="numeric" maxlength="3" placeholder="CVV" autocomplete="off"></div><small>'+t("Card details are used only for this payment and are not saved")+'</small><div class="perr" id="perr"></div></div>';
+   return ""}
+  function wireForm(){
+   var pe=function(){var e=$("perr");if(e)e.textContent=""},u=$("upid");
+   if(u){u.value=UV;u.oninput=function(){UV=u.value.trim();pe()};qa("#payv .uc span").forEach(function(c){c.onclick=function(){u.value=u.value.split("@")[0]+c.dataset.s;UV=u.value.trim();pe();u.focus()}})}
+   var n=$("cdn");if(n){var m=$("cdm"),e=$("cde"),v=$("cdv");
+    n.value=CD.n.replace(/(.{4})/g,"$1 ").trim();m.value=CD.nm;e.value=CD.ex;
+    n.oninput=function(){var d=n.value.replace(/\D/g,"").slice(0,19);CD.n=d;n.value=d.replace(/(.{4})/g,"$1 ").trim();pe()};
+    m.oninput=function(){CD.nm=m.value;pe()};
+    e.oninput=function(){var d=e.value.replace(/\D/g,"").slice(0,4);if(d.length>2)d=d.slice(0,2)+"/"+d.slice(2);e.value=d;CD.ex=d;pe()};
+    v.oninput=function(){v.value=v.value.replace(/\D/g,"").slice(0,3);CD.cv=v.value;pe()}}}
+  function go(){
+   if(busy)return;
+   if(sel=="cash")return ok();
+  var er=sel=="upi"?vUpi():vCard();if(er){$("perr").textContent=t(er);return}
+  busy=1;var b=$("pgo");b.disabled=true;b.innerHTML='<span class="spn"></span>'+t("Waiting for customer payment...");
+  var done=function(r){busy=0;if(r&&r.ok)ok();else{b.disabled=false;b.textContent=t("REQUEST PAYMENT")+" \u00B7 "+inr(fare);$("pnote").textContent=t("Payment not received yet. Please try again.");$("pnote").style.color="#e0262d"}};
+  if(window.DEMO_MODE&&S.demo)setTimeout(function(){done({ok:1})},2500);
+  else api("POST","/api/ride/"+S.rid+"/pay",{ph:S.ph,method:sel,amount:fare,upi:sel=="upi"?UV:undefined,last4:sel=="card"?CD.n.slice(-4):undefined},done)}
+ function ok(){
+  if(paid)return;paid=1;var before=S.earn,l4=CD.n.slice(-4),uv=UV;CD={n:"",nm:"",ex:"",cv:""};
+  ES.trips.push({id:Date.now(),a:r[0],b:r[1],km:r[2],f:fare,m:sel,ts:Date.now(),d:dk()});eSave();
+  S.earn+=fare;S.n++;S.trip=null;H=ES.trips.slice().reverse();stats();hist();
+  if(sel=="cash"&&!(window.DEMO_MODE&&S.demo))api("POST","/api/ride/"+S.rid+"/pay",{ph:S.ph,method:"cash",amount:fare},function(){});
+  var pct=Math.min(100,S.earn/GOAL*100),hit=before<GOAL&&S.earn>=GOAL,left=Math.max(0,GOAL-S.earn);
+  $("payv").innerHTML='<div class="ok"><div class="ck">&#10003;</div><h2>'+t("Payment received")+'</h2><div class="pa">'+inr(fare)+'</div><small style="color:#7a6c94">'+M[sel][0]+' '+t(M[sel][1])+(sel=="card"&&l4?" \u2022\u2022\u2022\u2022 "+l4:"")+(sel=="upi"&&uv?" \u00B7 "+esc(uv):"")+'</small></div>'+
+  '<div class="gl"><div class="row"><span>&#127919; '+t("Daily goal")+'</span><span>'+inr(S.earn)+' / '+inr(GOAL)+'</span></div><div class="gb"><i style="width:'+(before/GOAL*100>100?100:before/GOAL*100)+'%"></i></div><small style="color:#7a6c94">'+(hit||!left?"&#127881; "+t("Daily goal achieved!"):inr(left)+" "+t("to go"))+'</small></div>'+
+  '<div class="pfx"><button class="btn" id="pdn">'+t("Done")+'</button></div>';
+  setTimeout(function(){var i=document.querySelector("#payv .gb i");if(i)i.style.width=pct+"%"},60);
+  $("pdn").onclick=function(){pclose();sheet("");S.demo=0;online(true)}}
+ draw()}
+var _t=trip;trip=function(i){if(i==4){S.trip=1;sheet("");return payUI()}return _t(i)};
+eInit();stats();hist();
+})();
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+
+Object.assign(TA,{"Live navigation to every pickup":"ஒவ்வொரு பயணியிடமும் நேரலை வழிகாட்டல்","Debit Card":"டெபிட் கார்டு","Enter debit card details":"டெபிட் கார்டு விவரங்களை உள்ளிடவும்","UPI details":"UPI விவரங்கள்","Enter the customer's UPI ID":"பயணியின் UPI ID-ஐ உள்ளிடவும்","Debit card details":"டெபிட் கார்டு விவரங்கள்","Name on card":"கார்டில் உள்ள பெயர்","Card details are used only for this payment and are not saved":"கார்டு விவரங்கள் இந்தக் கட்டணத்திற்கு மட்டும் பயன்படுத்தப்படும்; சேமிக்கப்படாது","Enter a valid UPI ID (e.g. name@okaxis)":"சரியான UPI ID-ஐ உள்ளிடவும் (எ.கா. name@okaxis)","Enter a valid card number":"சரியான கார்டு எண்ணை உள்ளிடவும்","Enter the name on the card":"கார்டில் உள்ள பெயரை உள்ளிடவும்","Enter expiry as MM/YY":"காலாவதி தேதியை MM/YY என உள்ளிடவும்","Card has expired":"கார்டு காலாவதியாகிவிட்டது","Enter the 3-digit CVV":"3 இலக்க CVV-ஐ உள்ளிடவும்"});
+
+/* ===== side menu (drawer) ===== */
+(function(){
+Object.assign(TA,{
+"Dashboard":"டாஷ்போர்டு","Last Trip Details":"கடைசிப் பயண விவரங்கள்","Notifications":"அறிவிப்புகள்","Earnings Reports":"வருமான அறிக்கைகள்","Document Status":"ஆவண நிலை","FAQs":"அடிக்கடி கேட்கப்படும் கேள்விகள்","Contact Support":"உதவியைத் தொடர்புகொள்","Settings":"அமைப்புகள்","Version":"பதிப்பு","Close":"மூடு","Fare":"கட்டணம்","Distance":"தூரம்","No trips yet":"இன்னும் பயணங்கள் இல்லை","Vehicle No.":"வாகன எண்","Cash":"பணம்",
+"Weekly payout is credited every Monday to your bank":"வாராந்திர பணப்பட்டுவாடா ஒவ்வொரு திங்களும் உங்கள் வங்கிக் கணக்கில் செலுத்தப்படும்","Your documents are verified":"உங்கள் ஆவணங்கள் சரிபார்க்கப்பட்டன","Complete a few more trips to reach today's goal":"இன்றைய இலக்கை அடைய இன்னும் சில பயணங்களை முடிக்கவும்","Just now":"இப்போது","Today":"இன்று","This week":"இந்த வாரம்",
+"How do I go online?":"ஆன்லைன் செல்வது எப்படி?","Tap the big GO ONLINE button on the home screen. Location must be on.":"முகப்புத் திரையில் உள்ள GO ONLINE பொத்தானைத் தட்டவும். இருப்பிடம் ஆன் ஆக இருக்க வேண்டும்.","When do I get my payout?":"பணம் எப்போது கிடைக்கும்?","Every Monday, directly to your bank account.":"ஒவ்வொரு திங்களும், நேரடியாக உங்கள் வங்கிக் கணக்கில்.","What if I face an emergency?":"அவசரநிலை ஏற்பட்டால்?","Use the SOS button on the home screen to alert FG DRIVO.":"முகப்புத் திரையில் உள்ள SOS பொத்தானை அழுத்தி FG DRIVO-வுக்குத் தெரிவிக்கவும்."});
+var NT=[["\uD83D\uDCB0","Weekly payout is credited every Monday to your bank","This week"],["\u2705","Your documents are verified","Today"],["\uD83C\uDFAF","Complete a few more trips to reach today's goal","Just now"]];
+var FQ=[["How do I go online?","Tap the big GO ONLINE button on the home screen. Location must be on."],["When do I get my payout?","Every Monday, directly to your bank account."],["What if I face an emergency?","Use the SOS button on the home screen to alert FG DRIVO."]];
+var unread=NT.length,ex=false;
+var app=$("app"),dw=document.createElement("div");dw.className="dw";dw.id="dw";
+dw.innerHTML='<div class="dwb" id="dwb"></div><aside class="dwp" id="dwp"></aside>';app.appendChild(dw);
+var mo=document.createElement("div");mo.className="mo";mo.id="mo";app.appendChild(mo);
+function curTab(){var b=document.querySelector("#nav button.act");return b?b.dataset.t2:"home"}
+function render(){
+ var m=S.me;if(!m)return;
+ var cur=curTab(),I=[["dash","\uD83C\uDFE0","Dashboard",cur=="home"],["last","\uD83D\uDCCB","Last Trip Details",0],["noti","\uD83D\uDD14","Notifications",0],["rep","\uD83D\uDCCA","Earnings Reports",cur=="earn"],["rev","\uD83D\uDCB0","Revenue Summary",0],["log","\uD83D\uDD52","Login Summary",0],["doc","\uD83D\uDCC4","Document Status",cur=="me"],["faq","\u2753","FAQs",0],["sup","\uD83D\uDCDE","Contact Support",0],["set","\u2699\uFE0F","Settings",0]];
+ var h='<div class="dwh"><div class="dwt"><div class="dwa" id="dwa"></div><div class="dwl">FG <span>DRIVO</span></div></div><div class="dwn" id="dwn"></div><div class="dwph" id="dwph"></div><div class="dwc"><div><small>'+t("Vehicle")+'</small><b id="dwvt"></b></div><div><small>'+t("Vehicle No.")+'</small><b id="dwvn"></b></div></div></div><div class="dwm">';
+ I.forEach(function(x){
+  h+='<div class="dmi'+(x[3]?" act":"")+(x[0]=="set"&&ex?" ex":"")+'" data-m="'+x[0]+'"><i>'+x[1]+'</i><span>'+t(x[2])+'</span>'+(x[0]=="noti"&&unread?'<em class="bd" style="font-style:normal">'+unread+'</em>':"")+(x[0]=="set"?'<span class="ch">&#9662;</span>':"")+'</div>';
+  if(x[0]=="set")h+='<div class="dsub'+(ex?" show":"")+'"><div data-m="lang"><span>'+t("Language")+'</span><b>'+(L=="ta"?"\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD":"English")+'</b></div></div>';
+ });
+ h+='<div class="dmi dlo" data-m="out"><i>&#128682;</i><span>'+t("Logout")+'</span></div></div><div class="dwv">'+t("Version")+' 1.0</div>';
+ $("dwp").innerHTML=h;
+ $("dwn").textContent=m.n;$("dwph").textContent=S.ph?"+91 "+S.ph:"";$("dwvt").textContent=t(m.vt);$("dwvn").textContent=m.vn;
+ var a=$("dwa");a.textContent=m.ph?"":m.n.split(/\s+/).map(function(w){return w[0]}).join("").slice(0,2).toUpperCase();a.style.backgroundImage=m.ph?"url("+m.ph+")":"";
+ $("hbd").style.display=unread?"block":"none";
+}
+function open(){if(!S.me)return;render();dw.classList.add("open")}
+function close(){dw.classList.remove("open")}
+function modal(title,body){mo.innerHTML='<div><h3>'+title+'</h3>'+body+'<button class="btn alt" id="moc" style="margin-top:14px">'+t("Close")+'</button></div>';mo.classList.add("show");$("moc").onclick=function(){mo.classList.remove("show")}}
+mo.onclick=function(e){if(e.target==mo)mo.classList.remove("show")};
+function tab(n){var b=document.querySelector('#nav button[data-t2="'+n+'"]');if(b)b.click()}
+function act(k){
+ if(k=="set"){ex=!ex;render();return}
+ if(k=="lang"){$("langrow").onclick();render();return}
+ close();
+ if(k=="dash")tab("home");
+ else if(k=="rep")tab("earn");
+  else if(k=="rev"||k=="log")window.FGSUM(k);
+ else if(k=="doc")tab("me");
+ else if(k=="sup")location.href="tel:180036376486";
+ else if(k=="out"){$("out").onclick()}
+ else if(k=="last"){var x=H[0];modal(t("Last Trip Details"),x?'<div class="route"><div>'+t(x.a)+'</div><div>'+t(x.b)+'</div></div><div class="li"><span>'+t("Fare")+'</span><b>'+inr(x.f)+'</b></div><div class="li"><span>'+t("Distance")+'</span><b>'+x.km+' '+t("km")+'</b></div><div class="li"><span>'+t("Cash")+'</span><b>'+t(x.w)+'</b></div>':'<small>'+t("No trips yet")+'</small>')}
+ else if(k=="noti"){unread=0;$("hbd").style.display="none";modal(t("Notifications"),NT.map(function(n){return '<div class="nti"><i>'+n[0]+'</i><div>'+t(n[1])+'<small>'+t(n[2])+'</small></div></div>'}).join(""))}
+ else if(k=="faq")modal(t("FAQs"),FQ.map(function(q){return '<div class="fq"><b>'+t(q[0])+'</b><span>'+t(q[1])+'</span></div>'}).join(""));
+}
+$("hb").onclick=open;$("dwb").onclick=close;
+$("dwp").onclick=function(e){var r=e.target.closest("[data-m]");if(r)act(r.dataset.m)};
+var sx=0;dw.addEventListener("touchstart",function(e){sx=e.touches[0].clientX},{passive:true});
+dw.addEventListener("touchend",function(e){if(e.changedTouches[0].clientX-sx<-60)close()},{passive:true});
+var _rf=refresh;refresh=function(){_rf();if(dw.classList.contains("open"))render()};
+})();
+/* ===== ROYAL SUMMARY PAGES: Revenue Summary + Login Summary ===== */
+(function(){
+var COMM=0.10,PEAK=[[7,10],[17,21]],GOLD="#e2c15a";
+var css=document.createElement("style");css.textContent=
+"#sumv{position:absolute;inset:0;z-index:48;display:none;flex-direction:column;background:radial-gradient(circle at 100% 0,rgba(245,196,0,.14),transparent 45%),linear-gradient(#f6f1fc,#ece3f8)}"+
+"#sumv.show{display:flex;animation:otin .25s ease}"+
+"#sumv .sh{position:relative;flex:none;display:flex;align-items:center;gap:14px;padding:18px 16px 20px;color:#fff;background:linear-gradient(135deg,#150836,#3a1a85 55%,#5427a8);border-bottom:3px solid transparent;border-image:linear-gradient(90deg,#b88a00,#ffe27a,#b88a00) 1;box-shadow:0 8px 26px rgba(21,8,54,.45);overflow:hidden}"+
+"#sumv .sh::after{content:'';position:absolute;right:-40px;top:-60px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,rgba(245,196,0,.45),transparent 70%)}"+
+"#sumv .sb{position:relative;z-index:1;width:42px;height:42px;border-radius:50%;border:1.5px solid #f5c400;background:rgba(255,255,255,.08);color:#ffe27a;font-size:22px;font-weight:900;cursor:pointer;flex:none}"+
+"#sumv .sh div{position:relative;z-index:1}#sumv .sh small{display:block;font-size:11px;letter-spacing:3px;color:#f5c400;font-weight:800}"+
+"#sumv .sh b{display:block;font-family:Georgia,'Times New Roman',serif;font-size:23px;letter-spacing:1px;margin-top:3px;background:linear-gradient(90deg,#fff1b0,#f5c400,#fff1b0);-webkit-background-clip:text;background-clip:text;color:transparent}"+
+"#sumv .sbody{flex:1;overflow-y:auto;padding:16px 16px 30px}"+
+"#sumv .rc{background:#fff;border-radius:20px;border:1.5px solid "+GOLD+";padding:16px;margin-bottom:14px;box-shadow:0 8px 24px rgba(60,30,90,.12),inset 0 0 0 4px #fff,inset 0 0 0 5px rgba(226,193,90,.4)}"+
+"#sumv .rl{font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;font-weight:800;color:#8a6d00;margin-bottom:5px}#sumv .rl::before{content:'\\25C6  ';color:#e0a800}"+
+"#sumv .rv2{font-size:15px;font-weight:800;color:#24153f;line-height:1.4;word-break:break-word}"+
+"#sumv .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}"+
+"#sumv .dv{height:1px;margin:14px 0;background:linear-gradient(90deg,transparent,"+GOLD+",transparent)}"+
+"#sumv input[type=datetime-local]{width:100%;border:1.5px solid "+GOLD+";border-radius:14px;padding:13px;font-size:15px;font-weight:700;color:#24153f;background:#fffdf5;margin-bottom:14px;outline:0}"+
+"#sumv .gold{width:100%;border:0;border-radius:16px;padding:15px;font-size:16px;font-weight:900;letter-spacing:1px;color:#24153f;cursor:pointer;background:linear-gradient(135deg,#f5c400,#ffe27a 50%,#e0a800);box-shadow:0 8px 20px rgba(224,168,0,.45),inset 0 1px 0 rgba(255,255,255,.7)}#sumv .gold:active{transform:scale(.98)}"+
+"#sumv .chips{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}#sumv .chips span{padding:7px 14px;border-radius:20px;border:1.5px solid "+GOLD+";background:#fffdf5;color:#5427a8;font-size:12px;font-weight:800;cursor:pointer}"+
+"#sumv .err{color:#e0262d;font-size:12px;font-weight:700;margin:-6px 0 10px;min-height:0}"+
+"#sumv .ban{position:relative;overflow:hidden;text-align:center;border-radius:22px;padding:20px 14px;margin-bottom:14px;color:#fff;background:linear-gradient(150deg,#150836,#3a1a85 60%,#5427a8);border:1.5px solid #f5c400;box-shadow:0 14px 32px rgba(58,26,133,.4),inset 0 0 0 4px rgba(245,196,0,.12)}"+
+"#sumv .ban::after{content:'\\265B';position:absolute;right:12px;top:4px;font-size:46px;color:rgba(245,196,0,.18)}"+
+"#sumv .ban small{display:block;font-size:11px;letter-spacing:2px;color:#ffe27a;font-weight:800;text-transform:uppercase}"+
+"#sumv .ban b{display:block;font-family:Georgia,serif;font-size:36px;color:#f5c400;margin:4px 0 2px;text-shadow:0 2px 12px rgba(245,196,0,.35)}"+
+"#sumv .ban em{font-style:normal;font-size:12px;opacity:.8}"+
+"#sumv .tri{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}"+
+"#sumv .tri div{background:#fff;border:1.5px solid "+GOLD+";border-radius:16px;padding:12px 6px;text-align:center;box-shadow:0 6px 18px rgba(60,30,90,.1)}"+
+"#sumv .tri i{font-style:normal;font-size:22px;display:block}#sumv .tri small{display:block;font-size:10px;letter-spacing:1px;color:#8a6d00;font-weight:800;text-transform:uppercase;margin-top:4px}#sumv .tri b{display:block;font-size:14px;color:#5427a8;margin-top:3px}"+
+"#sumv .li2{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px dashed rgba(226,193,90,.7);font-size:14px;font-weight:700}#sumv .li2:last-child{border:0}#sumv .li2 b{color:#5427a8;font-size:15px}"+
+"#sumv .pk{height:14px;border-radius:10px;background:#efe6f9;border:1px solid "+GOLD+";overflow:hidden;margin-top:8px}#sumv .pk i{display:block;height:100%;background:linear-gradient(90deg,#b88a00,#f5c400,#ffe27a);border-radius:10px;transition:width .6s}"+
+"#sumv .live{display:inline-block;width:9px;height:9px;border-radius:50%;background:#1fa463;margin-right:6px;animation:pu 1.6s infinite}";
+document.head.appendChild(css);
+var T2={"Revenue Summary":"வருவாய் சுருக்கம்","Login Summary":"உள்நுழைவு சுருக்கம்","From Date":"தொடக்க தேதி","To Date":"முடிவு தேதி","Submit":"சமர்ப்பி","Today":"இன்று","Yesterday":"நேற்று","This week":"இந்த வாரம்","Net Earnings":"நிகர வருமானம்","Total Collection":"மொத்த வசூல்","Credit Payment":"கிரெடிட்","Digital Payment":"டிஜிட்டல்","Cash Payment":"பணம்","Driver ID":"ஓட்டுநர் ஐடி","Driver Name":"ஓட்டுநர் பெயர்","Login Time":"உள்நுழைவு நேரம்","Logout Time":"வெளியேறும் நேரம்","Login Location":"உள்நுழைவு இடம்","Logout Location":"வெளியேறும் இடம்","Total Login Hours":"மொத்த உள்நுழைவு நேரம்","Break Time":"இடைவேளை நேரம்","Working Hours":"வேலை நேரம்","Number of Duty":"பயணங்கள்","Trip Kms":"பயண கி.மீ","Dead Kms":"டெட் கி.மீ","Empty Kms":"காலி கி.மீ","Peak Hour Availability":"பீக் நேர இருப்பு","Average Collection/12 Hrs":"சராசரி வசூல் / 12 மணி"};
+for(var k in T2)if(!TA[k])TA[k]=T2[k];
+var v=document.createElement("div");v.id="sumv";$("app").appendChild(v);
+var kind="",tm=null,AC={};
+function esc2(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function p2(n){return("0"+n).slice(-2)}
+function dkey(d){d=d||new Date();return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())}
+function money(n){return"\u20B9"+(n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function dur(ms){var s=Math.max(0,Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60,a=[];if(h)a.push(h+" Hrs");if(h||m)a.push(m+" Mins");a.push(x+" Secs");return a.join(" ")}
+function clock(ts){return new Date(ts).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
+function sk(){return"fgsess_"+(S.ph||"guest")+"_"+dkey()}
+function ld(){var d;try{d=JSON.parse(localStorage.getItem(sk())||"null")}catch(e){}d=d||{start:0,ints:[],loc:null,hb:0};if(!d.ints)d.ints=[];return d}
+function sv(d){try{localStorage.setItem(sk(),JSON.stringify(d))}catch(e){}}
+function trips(){try{return(JSON.parse(localStorage.getItem("fgearn_"+(S.ph||"guest"))||"null")||{trips:[]}).trips||[]}catch(e){return[]}}
+function pays(a){var o={cr:0,di:0,ca:0,tot:0,km:0,n:a.length};a.forEach(function(x){var f=x.f||0;o.tot+=f;o.km+=x.km||0;if(x.m=="card")o.cr+=f;else if(x.m=="upi")o.di+=f;else o.ca+=f});o.net=o.tot*(1-COMM);return o}
+function peakMs(s,e){var o=0,d0=new Date(s);d0.setHours(0,0,0,0);PEAK.forEach(function(p){var a=d0.getTime()+p[0]*36e5,b=d0.getTime()+p[1]*36e5;o+=Math.max(0,Math.min(e,b)-Math.max(s,a))});return o}
+/* session tracking */
+function track(on){var d=ld(),now=Date.now(),op=d.ints.length&&d.ints[d.ints.length-1][1]==null;if(!d.start)d.start=now;if(on&&!op)d.ints.push([now,null]);if(!on&&op)d.ints[d.ints.length-1][1]=now;sv(d)}
+(function(){var d=ld();var op=d.ints.length&&d.ints[d.ints.length-1][1]==null;if(op&&!S.on){d.ints[d.ints.length-1][1]=d.hb||d.ints[d.ints.length-1][0];sv(d)}})();
+var _on=online;online=function(x){_on(x);if(S.me)track(!!x)};
+setInterval(function(){if(!S.me)return;var d=ld();if(!d.start)d.start=Date.now();d.hb=Date.now();if(!d.loc&&S.loc)d.loc={lat:S.loc.lat,lng:S.loc.lng};sv(d)},5000);
+function addr(ll,cb){if(!ll)return cb("");var k=ll.lat.toFixed(3)+","+ll.lng.toFixed(3);if(AC[k]!=null)return cb(AC[k]);AC[k]="";try{fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=en&lat="+ll.lat+"&lon="+ll.lng).then(function(r){return r.json()}).then(function(j){AC[k]=(j&&j.display_name)||(ll.lat.toFixed(5)+", "+ll.lng.toFixed(5));cb(AC[k])}).catch(function(){AC[k]=ll.lat.toFixed(5)+", "+ll.lng.toFixed(5);cb(AC[k])})}catch(e){}}
+function head(ti){return'<div class="sh"><button class="sb" id="sbk" aria-label="Back">\u2190</button><div><small>\u265B FG DRIVO \u265B</small><b>'+t(ti)+'</b></div></div>'}
+function tri(o){return'<div class="tri"><div><i>\uD83D\uDCB3</i><small>'+t("Credit Payment")+'</small><b>'+money(o.cr)+'</b></div><div><i>\uD83D\uDCF2</i><small>'+t("Digital Payment")+'</small><b>'+money(o.di)+'</b></div><div><i>\uD83D\uDCB5</i><small>'+t("Cash Payment")+'</small><b>'+money(o.ca)+'</b></div></div>'}
+function lv(l,val){return'<div><div class="rl">'+t(l)+'</div><div class="rv2">'+val+'</div></div>'}
+/* ---- Revenue Summary ---- */
+function lc(d){return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+"T"+p2(d.getHours())+":"+p2(d.getMinutes())}
+function setRange(a,b){$("sfd").value=lc(a);$("std").value=lc(b)}
+function revUI(){
+ v.innerHTML=head("Revenue Summary")+'<div class="sbody"><div class="chips"><span data-r="0">'+t("Today")+'</span><span data-r="1">'+t("Yesterday")+'</span><span data-r="7">'+t("This week")+'</span></div>'+
+ '<div class="rc"><div class="rl">'+t("From Date")+'</div><input type="datetime-local" id="sfd"><div class="rl">'+t("To Date")+'</div><input type="datetime-local" id="std"><div class="err" id="serr"></div><button class="gold" id="ssub">'+t("Submit")+'</button></div><div id="sres"></div></div>';
+ var n=new Date(),a=new Date(n),b=new Date(n);a.setHours(0,0,0,0);b.setHours(23,59,0,0);setRange(a,b);
+ $("sbk").onclick=close;$("ssub").onclick=revGo;
+ v.querySelector(".chips").onclick=function(e){var s=e.target.closest("[data-r]");if(!s)return;var r=+s.dataset.r,a=new Date(),b=new Date();a.setHours(0,0,0,0);b.setHours(23,59,0,0);if(r==1){a.setDate(a.getDate()-1);b.setDate(b.getDate()-1)}else if(r==7)a.setDate(a.getDate()-6);setRange(a,b);revGo()}}
+function revGo(){
+ var a=new Date($("sfd").value).getTime(),b=new Date($("std").value).getTime();
+ if(!a||!b||a>b){$("serr").textContent="From Date must be before To Date";return}$("serr").textContent="";
+ var o=pays(trips().filter(function(x){return x.ts>=a&&x.ts<=b}));
+ $("sres").innerHTML='<div class="ban"><small>'+t("Net Earnings")+'</small><b>'+money(o.net)+'</b><em>'+o.n+' '+t("trips")+' \u00B7 '+o.km.toFixed(1)+' '+t("km")+'</em></div>'+tri(o)+
+ '<div class="rc"><div class="li2"><span>'+t("Total Collection")+'</span><b>'+money(o.tot)+'</b></div><div class="li2"><span>FG DRIVO '+Math.round(COMM*100)+'% commission</span><b>- '+money(o.tot*COMM)+'</b></div><div class="li2"><span>Avg / trip</span><b>'+money(o.n?o.tot/o.n:0)+'</b></div></div>';
+ $("sres").scrollIntoView({behavior:"smooth",block:"start"})}
+/* ---- Login Summary ---- */
+function logUI(){
+ var m=S.me||{},d=ld(),now=Date.now(),start=d.start||now,work=0,pk=0;
+ d.ints.forEach(function(i){var e=i[1]==null?now:i[1];work+=e-i[0];pk+=peakMs(i[0],e)});
+ var total=now-start,brk=Math.max(0,total-work),pct=Math.min(100,pk/(PEAK.reduce(function(a,p){return a+p[1]-p[0]},0)*36e5)*100);
+ var o=pays(trips().filter(function(x){return x.d==dkey()})),avg=work>0?o.tot/(work/36e5)*12:0;
+ var id="FGD"+String(S.ph||"00000").slice(-5);
+ var la=d.loc?AC[d.loc.lat.toFixed(3)+","+d.loc.lng.toFixed(3)]:"",ca=S.loc?AC[S.loc.lat.toFixed(3)+","+S.loc.lng.toFixed(3)]:"";
+ var ph=function(a,ll){return a?esc2(a):(ll?'<span style="opacity:.6">Locating\u2026</span>':"-")};
+ v.innerHTML=head("Login Summary")+'<div class="sbody">'+
+ '<div class="rc"><div class="g2">'+lv("Driver ID",esc2(id))+lv("Driver Name",esc2(m.n||"-"))+'</div></div>'+
+ '<div class="rc"><div class="g2">'+lv("Login Time",clock(start))+lv("Logout Time",'<span class="live"></span>Active now')+'</div><div class="dv"></div><div class="g2">'+lv("Login Location",ph(la,d.loc))+lv("Logout Location",ph(ca,S.loc))+'</div></div>'+
+ '<div class="rc"><div class="g2">'+lv("Total Login Hours",dur(total))+lv("Break Time",work?dur(brk):"-")+lv("Working Hours",dur(work))+lv("Number of Duty",o.n)+'</div><div class="dv"></div><div class="g2">'+lv("Trip Kms",o.km.toFixed(2)+" Kms")+lv("Dead Kms","0.00 Kms")+lv("Empty Kms","0.00 Kms")+'</div></div>'+
+ tri(o)+
+ '<div class="rc"><div class="li2"><span>'+t("Peak Hour Availability")+'</span><b>'+pct.toFixed(2)+'%</b></div><div class="pk"><i style="width:'+pct+'%"></i></div></div>'+
+ '<div class="ban"><small>'+t("Average Collection/12 Hrs")+'</small><b style="font-size:26px">'+money(avg)+'</b></div>'+
+ '<div class="ban"><small>'+t("Total Collection")+'</small><b style="font-size:26px">'+money(o.tot)+'</b></div>'+
+ '<div class="ban"><small>'+t("Net Earnings")+'</small><b>'+money(o.net)+'</b></div></div>';
+ $("sbk").onclick=close;
+ [d.loc,S.loc].forEach(function(ll){if(ll&&AC[ll.lat.toFixed(3)+","+ll.lng.toFixed(3)]==null)addr(ll,function(){if(kind=="log"&&v.classList.contains("show")){var y=v.querySelector(".sbody").scrollTop;logUI();v.querySelector(".sbody").scrollTop=y}})})}
+function open(k){if(!S.me)return;kind=k;v.classList.add("show");clearInterval(tm);if(k=="rev")revUI();else{logUI();tm=setInterval(function(){var y=v.querySelector(".sbody").scrollTop;logUI();v.querySelector(".sbody").scrollTop=y},5000)}}
+function close(){v.classList.remove("show");clearInterval(tm);kind=""}
+document.addEventListener("keydown",function(e){if(!v.classList.contains("show"))return;if(e.key=="Escape")close();else if(e.key=="Enter"&&kind=="rev"){e.preventDefault();revGo()}});
+window.FGSUM=open;
+})();
+
+refresh();
+
+// ===== DRIVER DASHBOARD UI DEMO =====
+function toggleDriverUI() {
+  S.on = !S.on;
+
+  const btn = document.getElementById("driverToggleBtn");
+  const status = document.getElementById("driverStatusText");
+  const pill = document.getElementById("pill");
+
+  if (S.on) {
+    btn.textContent = "GO OFFLINE";
+    btn.classList.add("online");
+    status.textContent = "You're online and available for rides";
+    pill.textContent = "ONLINE";
+    pill.className = "pill on";
+
+    showBookingDemo();
+  } else {
+    btn.textContent = "GO ONLINE";
+    btn.classList.remove("online");
+    status.textContent = "You're currently offline";
+    pill.textContent = "OFFLINE";
+    pill.className = "pill";
+
+    document.getElementById("bookingUiRequest").classList.add("hide");
+    document.getElementById("bookingUiEmpty").classList.remove("hide");
+    document.getElementById("bookingUiMessage").classList.remove("show");
+  }
+}
+
+// Sample booking for UI testing only
+function showBookingDemo() {
+  document.getElementById("bookingUiName").textContent = "Rahul S.";
+  document.getElementById("bookingUiPickup").textContent =
+    "Dindigul Bus Stand";
+  document.getElementById("bookingUiDrop").textContent =
+    "Chinnalapatti";
+  document.getElementById("bookingUiFare").textContent = "₹320";
+
+  document.getElementById("bookingUiEmpty").classList.add("hide");
+  document.getElementById("bookingUiRequest").classList.remove("hide");
+
+  const msg = document.getElementById("bookingUiMessage");
+  msg.classList.remove("show");
+  msg.textContent = "";
+}
+
+// Demo Accept / Reject buttons
+function respondBookingUI(accepted) {
+  const msg = document.getElementById("bookingUiMessage");
+
+  msg.textContent = accepted
+    ? "✓ Ride accepted! (UI demo only)"
+    : "Booking rejected. (UI demo only)";
+
+  msg.classList.add("show");
+  document.getElementById("bookingUiRequest").classList.add("hide");
+  document.getElementById("bookingUiEmpty").classList.remove("hide");
+
+  if (accepted) {
+    document.getElementById("bookingUiEmpty").querySelector("strong")
+      .textContent = "Ride accepted!";
+    document.getElementById("bookingUiEmpty").querySelector("p")
+      .textContent = "Your active ride screen can be designed next.";
+  } else {
+    document.getElementById("bookingUiEmpty").querySelector("strong")
+      .textContent = "No new bookings yet";
+    document.getElementById("bookingUiEmpty").querySelector("p")
+      .textContent = "Stay online to receive ride requests.";
+  }
+}
+</script></body></html>

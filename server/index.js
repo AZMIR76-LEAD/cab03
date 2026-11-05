@@ -30,6 +30,7 @@ import safetyRoutes from './routes/safety.js';
 import userRoutes from './routes/user.js';
 import driversRoutes from './routes/drivers.js';
 import driverRoutes from './routes/driver.js';
+import rideActionRoutes from './routes/rideAction.js';
 import notificationsRoutes from './routes/notifications.js';
 import { db } from './db.js';
 
@@ -104,6 +105,7 @@ app.get('/api/docs', (req, res) => {
 // 4. Mount API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/rides', ridesRoutes);
+app.use('/api/ride', rideActionRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/saved-places', placesRoutes);
 app.use('/api/safety', safetyRoutes);
