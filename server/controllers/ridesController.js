@@ -4,7 +4,7 @@ import { VEHICLE_PRICING, RIDE_STATUSES } from '../config/constants.js';
 import { calculateFare, getAllFareEstimates } from '../services/pricingService.js';
 import { RideSimulationService } from '../services/rideSimulationService.js';
 import { DispatchAlgorithmService } from '../services/dispatchAlgorithmService.js';
-import { broadcastRideOffer } from '../services/socketService.js';
+import { broadcastRideOffer, emitRideEvent } from '../services/socketService.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
 export class RidesController {
