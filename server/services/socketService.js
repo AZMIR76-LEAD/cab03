@@ -34,7 +34,36 @@ export function initSocketServer(httpServer) {
     // Driver companion registration
     socket.on('driver:register', (data) => {
       socket.join('drivers');
-      console.log(`\x1b[32m[Socket.IO]\x1b[0m Driver ${data?.driverId || socket.id} registered in dispatch pool.`);
+      socket.driverData = data;
+      const drivers = db.get('drivers') || [];
+      const cleanPhone = (data?.phone || '').replace(/\D/g, '').slice(-10);
+      const driverId = data?.driverId || `DRV-${cleanPhone.slice(-4) || '8821'}`;
+
+      const driverProfile = {
+        id: driverId,
+        name: data?.name || 'Driver Partner',
+        phone: data?.phone || '+91 98765 43210',
+        rating: Number(data?.rating) || 4.88,
+        tripsCount: 150,
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+        vehicle: {
+          model: data?.vehicleType || 'SUV',
+          category: (data?.vehicleType || 'suv').toLowerCase(),
+          licensePlate: data?.vehicleNumber || 'TN 57',
+        },
+        coords: data?.coords || { lat: 10.3673, lng: 77.9803 },
+        isOnline: true,
+        socketId: socket.id,
+      };
+
+      const existingIdx = drivers.findIndex((d) => d.id === driverId || d.phone === data?.phone);
+      if (existingIdx >= 0) {
+        drivers[existingIdx] = { ...drivers[existingIdx], ...driverProfile };
+      } else {
+        drivers.push(driverProfile);
+      }
+      db.set('drivers', drivers);
+      console.log(`\x1b[32m[Socket.IO]\x1b[0m Driver ${driverProfile.name} (${driverProfile.vehicle.model} • ${driverProfile.vehicle.licensePlate}) registered in dispatch pool.`);
     });
 
     // Driver live telematics forwarding to passenger

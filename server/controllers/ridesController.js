@@ -28,22 +28,19 @@ export class RidesController {
   static bookRide(req, res) {
     const {
       category = 'sedan',
-      pickup = 'Dindigul Railway Junction (Main Entrance)',
-      destination = 'Palani Road Bypass, Near Velu Vidyalaya',
-      paymentMethod = 'UPI (Google Pay)',
-      pickupCoords = { x: 38, y: 72, lat: 10.3644, lng: 77.9702 },
-      destinationCoords = { x: 74, y: 32, lat: 10.3812, lng: 77.9480 },
+      pickup = '',
+      destination = '',
+      fare,
+      paymentMethod = 'Cash',
+      pickupCoords = { lat: 10.3673, lng: 77.9803 },
+      destinationCoords = { lat: 10.2833, lng: 77.9167 },
     } = req.body;
 
     const pricing = VEHICLE_PRICING[category] || VEHICLE_PRICING.sedan;
     const distanceKm = 7.8;
     const durationMin = 22;
     const fareDetails = calculateFare(category, distanceKm, durationMin);
-
-    const drivers = db.get('drivers');
-    // Intelligent Multi-Factor Bipartite Captain Dispatch Algorithm
-    const dispatchResult = DispatchAlgorithmService.findOptimalCaptain(pickupCoords, category, drivers);
-    const assignedDriver = dispatchResult ? dispatchResult.selectedCaptain : (drivers.find((d) => d.vehicle.category === category) || drivers[0]);
+    const totalFare = fare ? Number(fare) : fareDetails.total;
 
     const rideId = 'RX-' + Math.floor(10000 + Math.random() * 90000);
 
@@ -52,60 +49,54 @@ export class RidesController {
       createdAt: new Date().toISOString(),
       status: RIDE_STATUSES.FINDING_DRIVER,
       category: pricing.name,
-      pickup,
-      destination,
+      pickup: pickup || 'Pickup Point',
+      destination: destination || 'Destination Point',
       pickupCoords,
       destinationCoords,
       distanceKm,
       durationMin,
-      fare: fareDetails.total,
+      fare: totalFare,
       fareBreakdown: fareDetails.breakdown,
       paymentMethod,
-      paymentStatus: 'Paid',
-      otp: '4819',
-      riderName: 'Rahul S.',
+      paymentStatus: 'Pending',
+      otp: String(Math.floor(1000 + Math.random() * 9000)),
+      riderName: 'Passenger',
       riderPhone: '+91 98765 11223',
-      driver: assignedDriver,
-      dispatchAlgorithm: {
-        algorithm: 'Multi-Factor Bipartite Weighted Proximity Matching',
-        metrics: dispatchResult ? dispatchResult.dispatchMetrics : null,
-        candidateRankings: dispatchResult ? dispatchResult.candidateRankings : [],
-      },
+      driver: null, // NO DEFAULT DRIVER - Waiting for real driver in Driver App
       telematics: {
-        etaMinutes: dispatchResult && dispatchResult.dispatchMetrics ? dispatchResult.dispatchMetrics.etaMinutes : fareDetails.etaMinutes,
-        distanceToPickupKm: dispatchResult && dispatchResult.dispatchMetrics ? dispatchResult.dispatchMetrics.distanceKm : 1.4,
-        driverCoords: assignedDriver.coords || { x: 48, y: 62 },
-        heading: assignedDriver.heading || 135,
+        etaMinutes: 3,
+        distanceToPickupKm: 1.2,
+        driverCoords: null,
+        heading: 90,
         lastUpdated: new Date().toISOString(),
       },
     };
 
     db.set('activeRide', newRide);
 
-    // Broadcast ride offer to connected driver partners
+    // Broadcast ride offer to real connected driver partners via WebSocket
     broadcastRideOffer({
       offerId: 'OFFER-' + Math.floor(1000 + Math.random() * 9000),
       tripId: rideId,
-      pickupArea: pickup,
+      pickupArea: newRide.pickup,
       pickupDistanceKm: 1.2,
       pickupEtaMins: 3,
-      destinationArea: destination,
-      estimatedEarnings: Math.round(fareDetails.total * 0.88),
-      fare: fareDetails.total,
+      destinationArea: newRide.destination,
+      estimatedEarnings: Math.round(totalFare * 0.88),
+      fare: totalFare,
       distanceKm,
       pickupCoords,
       destinationCoords,
-      riderName: 'Rahul S.',
-      riderPhone: '+91 98765 11223',
-      timeoutSeconds: 15,
+      riderName: newRide.riderName,
+      riderPhone: newRide.riderPhone,
+      timeoutSeconds: 30,
     });
 
-    // Kick off autonomous background ride lifecycle simulation
-    RideSimulationService.startSimulation(rideId);
+    console.log(`\x1b[32m[Dispatch]\x1b[0m New ride ${rideId} broadcasted to driver pool: ${newRide.pickup} -> ${newRide.destination} (₹${totalFare})`);
 
     return res.status(201).json({
       success: true,
-      message: 'Ride request dispatched. Locating nearest captain.',
+      message: 'Ride request dispatched. Waiting for active driver partner.',
       ride: newRide,
     });
   }

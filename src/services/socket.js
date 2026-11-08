@@ -56,20 +56,19 @@ class SocketClient {
     });
 
     // Wire global handlers
-    this.socket.on('ride:status_changed', (payload) => {
-      this.notifyListeners('ride:status_changed', payload);
-    });
-
-    this.socket.on('driver:telematics', (payload) => {
-      this.notifyListeners('driver:telematics', payload);
-    });
-
-    this.socket.on('safety:sos_alert', (payload) => {
-      this.notifyListeners('safety:sos_alert', payload);
-    });
-
-    this.socket.on('ride:cancelled', (payload) => {
-      this.notifyListeners('ride:cancelled', payload);
+    const coreEvents = [
+      'ride:status_changed',
+      'ride:driver_bid',
+      'ride:updated',
+      'driver:telematics',
+      'safety:sos_alert',
+      'ride:cancelled',
+      'ride:completed'
+    ];
+    coreEvents.forEach((evt) => {
+      this.socket.on(evt, (payload) => {
+        this.notifyListeners(evt, payload);
+      });
     });
 
     return this.socket;

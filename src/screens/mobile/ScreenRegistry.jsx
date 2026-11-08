@@ -28,10 +28,10 @@ import { FirebaseAuthService, isFirebaseConfigured } from '../../services/fireba
 // Global Bargaining State & Location Coordinates
 export let GLOBAL_BARGAIN_FARE = 198;
 export let GLOBAL_SELECTED_PAYMENT = 'pm-upi';
-export let GLOBAL_PICKUP_LOCATION = 'Dindigul Junction';
+export let GLOBAL_PICKUP_LOCATION = '';
 export let GLOBAL_PICKUP_COORDS = [10.3644, 77.9702];
 export let GLOBAL_USER_GPS_COORDS = null;
-export let GLOBAL_DESTINATION_LOCATION = 'Palani Road, Dindigul';
+export let GLOBAL_DESTINATION_LOCATION = '';
 export let GLOBAL_PAYMENT_RETURN_SCREEN = 's13_fare_estimate';
 export let GLOBAL_USER_PHONE = '';
 export let GLOBAL_USER_NAME = '';
@@ -40,6 +40,56 @@ export let GLOBAL_USER_DOB = '';
 export let GLOBAL_AUTH_MODE = 'signup';
 export let GLOBAL_FIREBASE_CONFIRMATION = null;
 export let GLOBAL_LATEST_OTP = '';
+export let GLOBAL_ACTIVE_RIDE = null;
+export let GLOBAL_ACTIVE_DRIVER = null;
+
+export function setGlobalActiveDriver(driver) {
+  if (!driver) return;
+  GLOBAL_ACTIVE_DRIVER = {
+    id: driver.id || driver.driverId || 'DRV-1234',
+    name: driver.name || driver.driverName || 'Driver Partner',
+    phone: driver.phone || '+91 98765 43210',
+    rating: Number(driver.rating) || 4.8,
+    tripsCount: driver.tripsCount || 150,
+    avatar: driver.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    vehicle: driver.vehicle && typeof driver.vehicle === 'object' ? driver.vehicle : {
+      model: driver.vehicleModel || driver.vehicleType || 'SUV',
+      category: (driver.vehicleModel || 'suv').toLowerCase(),
+      licensePlate: driver.vehicleNumber || driver.licensePlate || 'KA 01 AB 1234',
+    },
+    vehicleModel: (driver.vehicle && typeof driver.vehicle === 'object' ? driver.vehicle.model : null) || driver.vehicleModel || driver.vehicleType || 'SUV',
+    vehicleNumber: (driver.vehicle && typeof driver.vehicle === 'object' ? driver.vehicle.licensePlate : null) || driver.vehicleNumber || driver.licensePlate || 'KA 01 AB 1234',
+  };
+  try {
+    localStorage.setItem('fg_active_driver', JSON.stringify(GLOBAL_ACTIVE_DRIVER));
+  } catch (e) {}
+}
+
+export function getActiveDriver() {
+  if (GLOBAL_ACTIVE_DRIVER) return GLOBAL_ACTIVE_DRIVER;
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('fg_active_driver') : null;
+    if (raw) {
+      GLOBAL_ACTIVE_DRIVER = JSON.parse(raw);
+      return GLOBAL_ACTIVE_DRIVER;
+    }
+  } catch (e) {}
+  return {
+    id: 'DRV-1234',
+    name: 'Driver Partner',
+    phone: '+91 98765 43210',
+    rating: 4.8,
+    tripsCount: 150,
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    vehicle: {
+      model: 'SUV',
+      category: 'suv',
+      licensePlate: 'KA 01 AB 1234',
+    },
+    vehicleModel: 'SUV',
+    vehicleNumber: 'KA 01 AB 1234',
+  };
+}
 
 export function getStoredUser() {
   try {
@@ -3153,7 +3203,7 @@ export function Screen07Home({ onNavigate }) {
 
 // Screen 08 — Pickup Location
 export function Screen08Pickup({ onNavigate }) {
-  const [pickup, setPickup] = useState(GLOBAL_PICKUP_LOCATION || 'Dindigul Junction');
+  const [pickup, setPickup] = useState(GLOBAL_PICKUP_LOCATION || '');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('map'); // 'map' | 'list'
 
@@ -4374,12 +4424,14 @@ export function Screen13FareEstimate({ onNavigate, selectedVehicle = 'sedan' }) 
             sounds.playTick();
             RideXAPI.bookRide({
               category: selectedVehicle,
-              pickup: GLOBAL_PICKUP_LOCATION || 'Dindigul Junction',
-              destination: GLOBAL_DESTINATION_LOCATION || 'Palani Road, Dindigul',
+              pickup: GLOBAL_PICKUP_LOCATION || 'Current Location',
+              destination: GLOBAL_DESTINATION_LOCATION || 'Destination Point',
+              fare: total,
               paymentMethod: payment.title,
             })
               .then((res) => {
                 if (res && res.ride) {
+                  GLOBAL_ACTIVE_RIDE = res.ride;
                   socketService.subscribeToRide(res.ride.id);
                 }
               })
@@ -4414,59 +4466,58 @@ export function Screen13FareEstimate({ onNavigate, selectedVehicle = 'sedan' }) 
 export const Screen12FareEstimate = Screen13FareEstimate;
 export const Screen13BookingConfirm = Screen12BookingConfirm;
 
-// Screen 14 — Finding Driver (Animated State with Driver Bids)
+// Screen 14 — Finding Driver (Real-time Live Sockets, No Fake Timers)
 export function Screen14FindingDriver({ onNavigate }) {
   const [bids, setBids] = useState([]);
   const offeredFare = GLOBAL_BARGAIN_FARE || 198;
 
   useEffect(() => {
-    // Driver 1 accepts the offer after 1.2s
-    const t1 = setTimeout(() => {
-      setBids([
-        {
-          id: 'bid-1',
-          driverName: 'Ramesh K.',
-          rating: 4.9,
-          vehicle: 'Maruti Suzuki Dzire (TN 57 BJ 4421)',
-          eta: '2 min away',
-          fare: offeredFare,
-          type: 'accepted',
-        }
-      ]);
-    }, 1200);
-
-    // Driver 2 counter-offers after 2.8s
-    const t2 = setTimeout(() => {
-      setBids(prev => [
-        ...prev,
-        {
-          id: 'bid-2',
-          driverName: 'Murugan V.',
-          rating: 4.8,
-          vehicle: 'Hyundai Aura (TN 57 AK 8812)',
-          eta: '1 min away (Immediate)',
-          fare: offeredFare + 15,
-          type: 'counter',
-        }
-      ]);
-    }, 2800);
-
-    // Fallback auto-connect to driver after 5.5s
-    const t3 = setTimeout(() => {
-      onNavigate('s15_driver_assigned');
-    }, 5500);
+    // Listen for real driver bid emitted when driver taps Accept in Driver App
+    const unsubBid = socketService.on('ride:driver_bid', (data) => {
+      console.log('[Screen14] Real driver bid received:', data);
+      if (data) {
+        setBids((prev) => {
+          if (prev.some((b) => (b.driverId && b.driverId === data.driverId) || b.id === data.driverId)) return prev;
+          return [
+            ...prev,
+            {
+              id: data.driverId || 'bid-real',
+              driverId: data.driverId,
+              driverName: data.driverName || 'Driver Partner',
+              rating: Number(data.rating) || 4.8,
+              vehicle: data.vehicle || 'SUV (KA 01 AB 1234)',
+              eta: data.eta || '2 min away',
+              fare: data.fare || offeredFare,
+              type: data.type || 'accepted',
+              driver: data.driver,
+            },
+          ];
+        });
+      }
+    });
 
     const unsubSocket = socketService.on('ride:status_changed', (data) => {
-      if (data && (data.status === 'driver_assigned' || data.status === 'driver_arriving')) {
-        onNavigate('s15_driver_assigned');
+      if (data && data.ride) {
+        GLOBAL_ACTIVE_RIDE = data.ride;
+        if (data.ride.driver) {
+          setGlobalActiveDriver(data.ride.driver);
+        }
+      }
+    });
+
+    const unsubUpdated = socketService.on('ride:updated', (ride) => {
+      if (ride) {
+        GLOBAL_ACTIVE_RIDE = ride;
+        if (ride.driver) {
+          setGlobalActiveDriver(ride.driver);
+        }
       }
     });
 
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
+      unsubBid();
       unsubSocket();
+      unsubUpdated();
     };
   }, [onNavigate, offeredFare]);
 
@@ -4515,7 +4566,7 @@ export function Screen14FindingDriver({ onNavigate }) {
               Finding drivers for ₹{offeredFare}...
             </h2>
             <p style={{ fontSize: '12px', color: '#6B5B7D', marginBottom: '16px' }}>
-              Nearby drivers in Dindigul are reviewing your fare.
+              Nearby drivers in Dindigul are reviewing your fare. Open the Driver App to accept!
             </p>
           </div>
         ) : (
@@ -4558,7 +4609,19 @@ export function Screen14FindingDriver({ onNavigate }) {
                   </div>
 
                   <button
-                    onClick={() => onNavigate('s15_driver_assigned')}
+                    onClick={() => {
+                      const selDriver = b.driver || {
+                        id: b.driverId || 'DRV-1234',
+                        name: b.driverName || 'Driver Partner',
+                        rating: b.rating || 4.8,
+                        vehicle: {
+                          model: (b.vehicle || 'SUV').split('(')[0].trim() || 'SUV',
+                          licensePlate: (b.vehicle || '').includes('(') ? b.vehicle.split('(')[1].replace(')', '').trim() : 'KA 01 AB 1234',
+                        },
+                      };
+                      setGlobalActiveDriver(selDriver);
+                      onNavigate('s15_driver_assigned');
+                    }}
                     style={{
                       width: '100%',
                       height: '38px',
@@ -4568,6 +4631,7 @@ export function Screen14FindingDriver({ onNavigate }) {
                       fontSize: '13px',
                       borderRadius: '10px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      cursor: 'pointer',
                     }}
                   >
                     Accept Driver • ₹{b.fare}
@@ -4593,6 +4657,21 @@ export function Screen14FindingDriver({ onNavigate }) {
 export function Screen15DriverAssigned({ onNavigate }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isCallOpen, setIsCallOpen] = useState(false);
+  const activeDriver = getActiveDriver();
+
+  useEffect(() => {
+    const unsub = socketService.on('ride:status_changed', (data) => {
+      if (data && data.status === 'driver_arrived') {
+        sounds.playDriverArrived();
+        onNavigate('s17_driver_arrived');
+      } else if (data && (data.status === 'trip_started' || data.status === 'trip_in_progress')) {
+        onNavigate('s19_trip_in_progress');
+      } else if (data && data.status === 'driver_arriving') {
+        onNavigate('s16_driver_arriving');
+      }
+    });
+    return () => unsub();
+  }, [onNavigate]);
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative' }}>
@@ -4612,21 +4691,21 @@ export function Screen15DriverAssigned({ onNavigate }) {
 
         {/* Driver Card */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', backgroundColor: '#F8F6FD', borderRadius: '16px', padding: '14px', marginBottom: '14px', border: '1px solid #E5DFF0' }}>
-          <div style={{ width: '50px', height: '50px', borderRadius: '50%', backgroundImage: `url(${MOCK_DRIVER.avatar})`, backgroundSize: 'cover', border: '2px solid #5427A8' }} />
+          <div style={{ width: '50px', height: '50px', borderRadius: '50%', backgroundImage: `url(${activeDriver.avatar})`, backgroundSize: 'cover', border: '2px solid #5427A8' }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '16px', fontWeight: 800, color: '#24153F' }}>{MOCK_DRIVER.name}</div>
+            <div style={{ fontSize: '16px', fontWeight: 800, color: '#24153F' }}>{activeDriver.name}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#D4A000', fontWeight: 700 }}>
               <Star size={13} fill="#F5C400" color="#F5C400" />
-              <span>{MOCK_DRIVER.rating}</span>
-              <span style={{ color: '#6B5B7D', fontWeight: 500 }}>({MOCK_DRIVER.tripsCount} trips)</span>
+              <span>{activeDriver.rating}</span>
+              <span style={{ color: '#6B5B7D', fontWeight: 500 }}>({activeDriver.tripsCount} trips)</span>
             </div>
             <div style={{ fontSize: '12px', color: '#5427A8', fontWeight: 600, marginTop: '2px' }}>
-              {MOCK_DRIVER.vehicle.model}
+              {activeDriver.vehicle.model}
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ backgroundColor: '#F5C400', color: '#24153F', fontSize: '11px', fontWeight: 800, padding: '4px 8px', borderRadius: '6px' }}>
-              {MOCK_DRIVER.vehicle.licensePlate}
+              {activeDriver.vehicle.licensePlate}
             </div>
           </div>
         </div>
@@ -4680,7 +4759,7 @@ export function Screen15DriverAssigned({ onNavigate }) {
       <DriverChatDrawer
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
-        driver={MOCK_DRIVER}
+        driver={activeDriver}
         onOpenCall={() => { setIsChatOpen(false); setIsCallOpen(true); }}
       />
 
@@ -4688,7 +4767,7 @@ export function Screen15DriverAssigned({ onNavigate }) {
       <DriverCallModal
         isOpen={isCallOpen}
         onClose={() => setIsCallOpen(false)}
-        driver={MOCK_DRIVER}
+        driver={activeDriver}
       />
     </div>
   );
@@ -4700,10 +4779,10 @@ export function Screen15DriverAssigned({ onNavigate }) {
 
 // Screen 16 — Driver Arriving
 export function Screen16DriverArriving({ onNavigate }) {
-  // Real-time countdown starting at 2 minutes 45 seconds (165s)
   const [countdown, setCountdown] = useState(165);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isCallOpen, setIsCallOpen] = useState(false);
+  const activeDriver = getActiveDriver();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -4740,8 +4819,8 @@ export function Screen16DriverArriving({ onNavigate }) {
           tripState="arriving"
           showRoute={true}
           progress={arrivalProgress}
-          driverName={MOCK_DRIVER.name}
-          carModel={MOCK_DRIVER.vehicle.model}
+          driverName={activeDriver.name}
+          carModel={activeDriver.vehicle.model}
         />
       </div>
 
@@ -4778,18 +4857,18 @@ export function Screen16DriverArriving({ onNavigate }) {
 
         {/* Driver Card with Quick Chat & Call Triggers */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#F8F6FD', borderRadius: '14px', padding: '12px', marginBottom: '14px', border: '1px solid #E5DFF0' }}>
-          <div style={{ width: '46px', height: '46px', borderRadius: '50%', backgroundImage: `url(${MOCK_DRIVER.avatar})`, backgroundSize: 'cover', border: '2px solid #5427A8', flexShrink: 0 }} />
+          <div style={{ width: '46px', height: '46px', borderRadius: '50%', backgroundImage: `url(${activeDriver.avatar})`, backgroundSize: 'cover', border: '2px solid #5427A8', flexShrink: 0 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '15px', fontWeight: 800, color: '#24153F', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{MOCK_DRIVER.name}</div>
+            <div style={{ fontSize: '15px', fontWeight: 800, color: '#24153F', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeDriver.name}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: '#6B5B7D' }}>
-              <span>{MOCK_DRIVER.vehicle.model}</span>
+              <span>{activeDriver.vehicle.model}</span>
               <span>•</span>
-              <span style={{ color: '#D4A000', fontWeight: 700 }}>★ {MOCK_DRIVER.rating}</span>
+              <span style={{ color: '#D4A000', fontWeight: 700 }}>★ {activeDriver.rating}</span>
             </div>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             <div style={{ backgroundColor: '#F5C400', color: '#24153F', fontSize: '11px', fontWeight: 800, padding: '4px 8px', borderRadius: '6px' }}>
-              {MOCK_DRIVER.vehicle.licensePlate}
+              {activeDriver.vehicle.licensePlate}
             </div>
           </div>
         </div>
@@ -4813,7 +4892,7 @@ export function Screen16DriverArriving({ onNavigate }) {
               cursor: 'pointer'
             }}
           >
-            <Phone size={15} color="#5427A8" /> Call Arjun
+            <Phone size={15} color="#5427A8" /> Call {activeDriver.name}
           </button>
           <button
             onClick={() => setIsChatOpen(true)}
@@ -4869,7 +4948,7 @@ export function Screen16DriverArriving({ onNavigate }) {
       <DriverChatDrawer
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
-        driver={MOCK_DRIVER}
+        driver={activeDriver}
         onOpenCall={() => { setIsChatOpen(false); setIsCallOpen(true); }}
       />
 
@@ -4877,7 +4956,7 @@ export function Screen16DriverArriving({ onNavigate }) {
       <DriverCallModal
         isOpen={isCallOpen}
         onClose={() => setIsCallOpen(false)}
-        driver={MOCK_DRIVER}
+        driver={activeDriver}
       />
     </div>
   );
@@ -4887,6 +4966,7 @@ export function Screen16DriverArriving({ onNavigate }) {
 export function Screen17DriverArrived({ onNavigate }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isCallOpen, setIsCallOpen] = useState(false);
+  const activeDriver = getActiveDriver();
 
   useEffect(() => {
     sounds.playDriverArrived();
@@ -4905,8 +4985,8 @@ export function Screen17DriverArrived({ onNavigate }) {
           tripState="arrived"
           showRoute={true}
           progress={1}
-          driverName={MOCK_DRIVER.name}
-          carModel={MOCK_DRIVER.vehicle.model}
+          driverName={activeDriver.name}
+          carModel={activeDriver.vehicle.model}
         />
       </div>
 
@@ -4916,18 +4996,18 @@ export function Screen17DriverArrived({ onNavigate }) {
           <h2 style={{ fontSize: '19px', fontWeight: 800, color: '#24153F' }}>Your driver has arrived!</h2>
         </div>
         <p style={{ fontSize: '13px', color: '#6B5B7D', marginBottom: '14px' }}>
-          Arjun is waiting at <span style={{ color: '#24153F', fontWeight: 700 }}>Skyline Residency Gate 1</span> with hazard lights on.
+          {activeDriver.name} is waiting at <span style={{ color: '#24153F', fontWeight: 700 }}>{(GLOBAL_PICKUP_LOCATION || 'Pickup Point').split(',')[0]}</span> with hazard lights on.
         </p>
 
         {/* OTP + License Plate Card */}
         <div style={{ backgroundColor: '#F8F6FD', border: '1.5px solid #5427A8', borderRadius: '12px', padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div>
             <div style={{ fontSize: '11px', color: '#6B5B7D', fontWeight: 600 }}>START PIN / OTP</div>
-            <div style={{ fontSize: '20px', fontWeight: 900, color: '#5427A8', letterSpacing: '2px' }}>4819</div>
+            <div style={{ fontSize: '20px', fontWeight: 900, color: '#5427A8', letterSpacing: '2px' }}>{GLOBAL_ACTIVE_RIDE?.otp || '4819'}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ backgroundColor: '#F5C400', color: '#24153F', fontSize: '11px', fontWeight: 800, padding: '4px 8px', borderRadius: '6px' }}>
-              {MOCK_DRIVER.vehicle.licensePlate}
+              {activeDriver.vehicle.licensePlate}
             </div>
             <div style={{ fontSize: '11px', color: '#6B5B7D', marginTop: '3px' }}>White Dzire</div>
           </div>
@@ -4939,7 +5019,7 @@ export function Screen17DriverArrived({ onNavigate }) {
             onClick={() => setIsCallOpen(true)}
             style={{ height: '40px', backgroundColor: '#F6F1FF', border: '1px solid #E5DFF0', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px', color: '#24153F', fontWeight: 700, cursor: 'pointer' }}
           >
-            <Phone size={14} color="#5427A8" /> Call Arjun
+            <Phone size={14} color="#5427A8" /> Call {activeDriver.name}
           </button>
           <button
             onClick={() => setIsChatOpen(true)}
@@ -4960,13 +5040,13 @@ export function Screen17DriverArrived({ onNavigate }) {
       <DriverChatDrawer
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
-        driver={MOCK_DRIVER}
+        driver={activeDriver}
         onOpenCall={() => { setIsChatOpen(false); setIsCallOpen(true); }}
       />
       <DriverCallModal
         isOpen={isCallOpen}
         onClose={() => setIsCallOpen(false)}
-        driver={MOCK_DRIVER}
+        driver={activeDriver}
       />
     </div>
   );
@@ -4976,6 +5056,19 @@ export function Screen17DriverArrived({ onNavigate }) {
 export function Screen18TripStarted({ onNavigate }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isCallOpen, setIsCallOpen] = useState(false);
+  const activeDriver = getActiveDriver();
+
+  useEffect(() => {
+    const unsub = socketService.on('ride:status_changed', (data) => {
+      if (data && data.status === 'completed') {
+        sounds.playTripCompleted();
+        onNavigate('s20_trip_completed');
+      } else if (data && data.status === 'trip_in_progress') {
+        onNavigate('s19_trip_in_progress');
+      }
+    });
+    return () => unsub();
+  }, [onNavigate]);
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative' }}>
@@ -4984,8 +5077,8 @@ export function Screen18TripStarted({ onNavigate }) {
           tripState="in_progress"
           showRoute={true}
           progress={0.15}
-          driverName={MOCK_DRIVER.name}
-          carModel={MOCK_DRIVER.vehicle.model}
+          driverName={activeDriver.name}
+          carModel={activeDriver.vehicle.model}
         />
       </div>
 
@@ -5018,7 +5111,7 @@ export function Screen18TripStarted({ onNavigate }) {
             onClick={() => setIsCallOpen(true)}
             style={{ height: '40px', backgroundColor: '#F6F1FF', border: '1px solid #E5DFF0', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px', color: '#5427A8', fontWeight: 700, cursor: 'pointer' }}
           >
-            <Phone size={14} color="#5427A8" /> Call Arjun
+            <Phone size={14} color="#5427A8" /> Call {activeDriver.name}
           </button>
         </div>
 
@@ -5033,13 +5126,13 @@ export function Screen18TripStarted({ onNavigate }) {
       <DriverChatDrawer
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
-        driver={MOCK_DRIVER}
+        driver={activeDriver}
         onOpenCall={() => { setIsChatOpen(false); setIsCallOpen(true); }}
       />
       <DriverCallModal
         isOpen={isCallOpen}
         onClose={() => setIsCallOpen(false)}
-        driver={MOCK_DRIVER}
+        driver={activeDriver}
       />
     </div>
   );
@@ -5047,10 +5140,10 @@ export function Screen18TripStarted({ onNavigate }) {
 
 // Screen 19 — Trip In Progress (Midway) with Animated GPS, Speedometer & Chat/Call
 export function Screen19TripInProgress({ onNavigate }) {
-  // Live trip countdown timer: 12 minutes down
   const [tripSeconds, setTripSeconds] = useState(720);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isCallOpen, setIsCallOpen] = useState(false);
+  const activeDriver = getActiveDriver();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -5087,8 +5180,8 @@ export function Screen19TripInProgress({ onNavigate }) {
           tripState="in_progress"
           showRoute={true}
           progress={tripProgress}
-          driverName={MOCK_DRIVER.name}
-          carModel={MOCK_DRIVER.vehicle.model}
+          driverName={activeDriver.name}
+          carModel={activeDriver.vehicle.model}
         />
       </div>
 
@@ -5207,7 +5300,7 @@ export function Screen19TripInProgress({ onNavigate }) {
       <DriverChatDrawer
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
-        driver={MOCK_DRIVER}
+        driver={activeDriver}
         onOpenCall={() => { setIsChatOpen(false); setIsCallOpen(true); }}
       />
 
@@ -5215,7 +5308,7 @@ export function Screen19TripInProgress({ onNavigate }) {
       <DriverCallModal
         isOpen={isCallOpen}
         onClose={() => setIsCallOpen(false)}
-        driver={MOCK_DRIVER}
+        driver={activeDriver}
       />
     </div>
   );
@@ -5246,7 +5339,7 @@ export function Screen20TripCompleted({ onNavigate }) {
           You Have Arrived!
         </h1>
         <p style={{ fontSize: '13px', color: '#6B5B7D', marginBottom: '24px' }}>
-          Hope you enjoyed your ride with {MOCK_DRIVER.name}.
+          Hope you enjoyed your ride with {getActiveDriver().name}.
         </p>
 
         {/* Fare Card */}
@@ -5373,7 +5466,7 @@ export function Screen21ConfirmPayment({ onNavigate }) {
         {!isPaid && (
           <div style={{ backgroundColor: '#F8F6FD', borderRadius: '16px', border: '1px solid #E5DFF0', padding: '14px', marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 800, color: '#24153F' }}>Tip Your Driver {MOCK_DRIVER.name}?</span>
+              <span style={{ fontSize: '12px', fontWeight: 800, color: '#24153F' }}>Tip Your Driver {getActiveDriver().name}?</span>
               <span style={{ fontSize: '11px', color: '#6B5B7D' }}>100% goes to driver</span>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -5406,10 +5499,10 @@ export function Screen21ConfirmPayment({ onNavigate }) {
 
         {/* Trip & Driver Mini Info */}
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', border: '1px solid #E5DFF0', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundImage: `url(${MOCK_DRIVER.avatar})`, backgroundSize: 'cover', border: '2px solid #5427A8' }} />
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundImage: `url(${activeDriver.avatar})`, backgroundSize: 'cover', border: '2px solid #5427A8' }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '13px', fontWeight: 800, color: '#24153F' }}>{MOCK_DRIVER.name}</div>
-            <div style={{ fontSize: '11px', color: '#6B5B7D' }}>{MOCK_DRIVER.vehicleModel} • {MOCK_DRIVER.vehicleNumber}</div>
+            <div style={{ fontSize: '13px', fontWeight: 800, color: '#24153F' }}>{getActiveDriver().name}</div>
+            <div style={{ fontSize: '11px', color: '#6B5B7D' }}>{getActiveDriver().vehicle.model} • {getActiveDriver().vehicle.licensePlate}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '11px', color: '#6B5B7D' }}>TRIP DISTANCE</div>
@@ -5514,9 +5607,9 @@ export function Screen22Rating({ onNavigate }) {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundImage: `url(${MOCK_DRIVER.avatar})`, backgroundSize: 'cover', margin: '0 auto 12px', border: '2.5px solid #5427A8', boxShadow: '0 4px 12px rgba(84,39,168,0.2)' }} />
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundImage: `url(${activeDriver.avatar})`, backgroundSize: 'cover', margin: '0 auto 12px', border: '2.5px solid #5427A8', boxShadow: '0 4px 12px rgba(84,39,168,0.2)' }} />
           <h1 style={{ fontSize: '22px', fontWeight: 900, color: '#24153F' }}>How was your ride?</h1>
-          <p style={{ fontSize: '13px', color: '#6B5B7D' }}>Rate your experience with {MOCK_DRIVER.name}</p>
+          <p style={{ fontSize: '13px', color: '#6B5B7D' }}>Rate your experience with {getActiveDriver().name}</p>
         </div>
 
         {/* 5-star selector */}
@@ -5558,7 +5651,7 @@ export function Screen22Rating({ onNavigate }) {
         </div>
 
         <textarea
-          placeholder="Leave an optional tip or feedback for Arjun..."
+          placeholder="Leave an optional tip or feedback for your driver..."
           rows={3}
           style={{ width: '100%', backgroundColor: '#F8F6FD', border: '1.5px solid #E5DFF0', borderRadius: '12px', padding: '12px', fontSize: '13px', color: '#24153F', outline: 'none', resize: 'none' }}
         />
@@ -5856,7 +5949,7 @@ export function Screen24RideDetails({ onNavigate }) {
 
         {/* Driver Card */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#F8F6FD', borderRadius: '14px', padding: '12px', marginBottom: '16px', border: '1.5px solid #E5DFF0' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundImage: `url(${MOCK_DRIVER.avatar})`, backgroundSize: 'cover', border: '2px solid #5427A8' }} />
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundImage: `url(${activeDriver.avatar})`, backgroundSize: 'cover', border: '2px solid #5427A8' }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '14px', fontWeight: 800, color: '#24153F' }}>Vikram Rathore</div>
             <div style={{ fontSize: '12px', color: '#6B5B7D' }}>Hyundai Verna (KA 01 MJ 3321)</div>

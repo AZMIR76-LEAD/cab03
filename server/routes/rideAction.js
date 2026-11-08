@@ -10,23 +10,26 @@ const router = Router();
 // Accept offer
 router.post('/:rideId/accept', (req, res) => {
   const { rideId } = req.params;
-  const { ph, name, vehicleType, vehicleNumber, coords } = req.body;
+  const { ph, name, vehicleType, vehicleNumber, rating, coords, fare } = req.body;
 
   RideSimulationService.stopSimulation();
   const activeRide = db.get('activeRide');
   if (activeRide) {
     activeRide.status = RIDE_STATUSES.DRIVER_ASSIGNED;
-    activeRide.driver = {
-      id: `DRV-${(ph || '8821').slice(-4)}`,
-      name: name || 'Murugan K',
+    const realDriver = {
+      id: `DRV-${(ph || '1234').slice(-4)}`,
+      name: name || 'Driver Partner',
       phone: ph ? (ph.startsWith('+91') ? ph : `+91 ${ph}`) : '+91 98765 43210',
-      rating: 4.88,
+      rating: Number(rating) || 4.8,
+      tripsCount: 150,
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
       vehicle: {
-        model: vehicleType || 'Honda City',
-        category: (vehicleType || 'sedan').toLowerCase(),
-        licensePlate: vehicleNumber || 'TN 57 AZ 4821',
+        model: vehicleType || 'SUV',
+        category: (vehicleType || 'suv').toLowerCase(),
+        licensePlate: vehicleNumber || 'TN 57',
       },
     };
+    activeRide.driver = realDriver;
     if (coords && coords.lat) {
       activeRide.telematics = {
         ...activeRide.telematics,
@@ -35,6 +38,22 @@ router.post('/:rideId/accept', (req, res) => {
       };
     }
     db.save();
+
+    console.log(`\x1b[32m[RideAction]\x1b[0m Driver ${realDriver.name} accepted ride ${rideId}`);
+
+    // Emit real driver bid to the passenger finding screen
+    emitRideEvent(activeRide.id, 'ride:driver_bid', {
+      rideId: activeRide.id,
+      driverId: realDriver.id,
+      driverName: realDriver.name,
+      rating: realDriver.rating,
+      vehicle: `${realDriver.vehicle.model} (${realDriver.vehicle.licensePlate})`,
+      eta: '2 min away',
+      fare: activeRide.fare,
+      type: 'accepted',
+      driver: realDriver,
+    });
+
     emitRideEvent(activeRide.id, 'ride:status_changed', {
       rideId: activeRide.id,
       status: activeRide.status,

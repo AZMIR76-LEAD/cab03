@@ -7,8 +7,21 @@ describe('Integration Tests: Customer-Driver Full Trip Lifecycle', () => {
   it('should execute end-to-end booking dispatch, acceptance, arrival, OTP, and completion', async () => {
     // 1. Initial State: Driver goes online
     const driverId = 'DRV-8821';
-    const drivers = db.get('drivers');
-    const driver = drivers.find((d) => d.id === driverId);
+    let drivers = db.get('drivers') || [];
+    let driver = drivers.find((d) => d.id === driverId);
+    if (!driver) {
+      driver = {
+        id: driverId,
+        name: 'dhaya',
+        phone: '+91 98765 43210',
+        rating: 4.88,
+        tripsCount: 150,
+        vehicle: { model: 'SUV', licensePlate: 'KA 01 AB 1234' },
+        status: 'available',
+      };
+      drivers.push(driver);
+      db.set('drivers', drivers);
+    }
     assert.ok(driver, 'Driver record must exist');
     driver.status = 'available';
     db.save();
@@ -51,7 +64,7 @@ describe('Integration Tests: Customer-Driver Full Trip Lifecycle', () => {
     db.save();
 
     assert.strictEqual(db.get('activeRide').status, RIDE_STATUSES.DRIVER_ASSIGNED);
-    assert.strictEqual(db.get('activeRide').driver.name, 'Arjun Verma');
+    assert.strictEqual(db.get('activeRide').driver.name, driver.name);
 
     // 4. Driver navigates and marks arrived at pickup
     activeRide.status = RIDE_STATUSES.DRIVER_ARRIVED;
