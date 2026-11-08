@@ -1,17 +1,17 @@
 {
   "user": {
-    "id": "USR-5875",
-    "phone": "+91 9998887771",
-    "name": "Ashfar Thami",
-    "greetingName": "Ashfar",
-    "email": "ashfarthami@fgdrivo.com",
+    "id": "USR-3069",
+    "phone": "+91 6385675007",
+    "name": "thamir",
+    "greetingName": "thamir",
+    "email": "thamir@fgdrivo.com",
     "rating": 5,
     "walletBalance": 0,
     "totalRides": 0,
     "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
   },
   "activeRide": {
-    "id": "RX-TEST-7829",
+    "id": "RX-TEST-1381",
     "status": "completed",
     "category": "Sedan",
     "pickup": "Dindigul Railway Junction",
@@ -42,9 +42,9 @@
       },
       "heading": 135
     },
-    "arrivedAt": "2026-11-05T14:22:22.207Z",
-    "startedAt": "2026-11-05T14:22:22.209Z",
-    "completedAt": "2026-11-05T14:22:22.212Z",
+    "arrivedAt": "2026-11-08T16:03:46.978Z",
+    "startedAt": "2026-11-08T16:03:46.982Z",
+    "completedAt": "2026-11-08T16:03:46.983Z",
     "fareBreakdown": {
       "grossFare": 232,
       "platformFee": 27.84,
@@ -136,7 +136,7 @@
   ],
   "rides": [],
   "wallet": {
-    "balance": 500,
+    "balance": 0,
     "currency": "₹",
     "cashbackEarned": 0,
     "paymentMethods": [
@@ -173,18 +173,7 @@
         "icon": "banknote"
       }
     ],
-    "transactions": [
-      {
-        "id": "TXN-4420",
-        "title": "Wallet Top-up (UPI: arjun@okaxis)",
-        "date": "Today, 06:31 pm",
-        "amount": 500,
-        "type": "credit",
-        "status": "Successful",
-        "upiId": "arjun@okaxis",
-        "utr": "UPI/442977271617"
-      }
-    ]
+    "transactions": []
   },
   "savedPlaces": [
     {

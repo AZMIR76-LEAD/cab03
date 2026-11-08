@@ -1,7 +1,7 @@
 // FG DRIVO Autonomous Ride Simulation Engine & State Machine
 import { db } from '../db.js';
 import { RIDE_STATUSES, RIDE_LIFECYCLE_STEPS } from '../config/constants.js';
-import { emitRideEvent, emitDriverTelemetry } from './socketService.js';
+import { emitRideEvent, emitDriverTelemetry, getIO } from './socketService.js';
 
 let activeTimer = null;
 
@@ -55,10 +55,15 @@ export class RideSimulationService {
   static startSimulation(rideId) {
     this.stopSimulation();
 
-    let stepIndex = 0;
-    activeTimer = setInterval(() => {
-      stepIndex++;
+    // Check if real drivers are online in the dispatch room
+    const io = getIO();
+    const driverRoom = io ? io.sockets.adapter.rooms.get('drivers') : null;
+    const hasOnlineDrivers = driverRoom && driverRoom.size > 0;
+    const initialDelay = hasOnlineDrivers ? 16000 : 4500;
 
+    let stepIndex = 0;
+    const runStep = () => {
+      stepIndex++;
       const currentRide = db.get('activeRide');
       if (!currentRide || currentRide.id !== rideId) {
         RideSimulationService.stopSimulation();
@@ -70,13 +75,23 @@ export class RideSimulationService {
         return;
       }
 
+      // If a real driver has already accepted the ride, do not overwrite their active status
+      if (currentRide.driver && currentRide.driver.id && currentRide.driver.id.startsWith('DRV-')) {
+        console.log(`\x1b[33m[Simulation]\x1b[0m Real driver accepted ride ${rideId}. Halting fallback simulation.`);
+        RideSimulationService.stopSimulation();
+        return;
+      }
+
       if (stepIndex < RIDE_LIFECYCLE_STEPS.length) {
         const nextStatus = RIDE_LIFECYCLE_STEPS[stepIndex];
         RideSimulationService.transitionStatus(currentRide, nextStatus);
+        activeTimer = setTimeout(runStep, 4500);
       } else {
         RideSimulationService.stopSimulation();
       }
-    }, 4500);
+    };
+
+    activeTimer = setTimeout(runStep, initialDelay);
   }
 
   static stopSimulation() {

@@ -10,7 +10,7 @@ const router = Router();
 // Accept offer
 router.post('/:rideId/accept', (req, res) => {
   const { rideId } = req.params;
-  const { ph } = req.body;
+  const { ph, name, vehicleType, vehicleNumber, coords } = req.body;
 
   RideSimulationService.stopSimulation();
   const activeRide = db.get('activeRide');
@@ -18,17 +18,31 @@ router.post('/:rideId/accept', (req, res) => {
     activeRide.status = RIDE_STATUSES.DRIVER_ASSIGNED;
     activeRide.driver = {
       id: `DRV-${(ph || '8821').slice(-4)}`,
-      name: 'Murugan K',
-      phone: ph || '+91 98765 43210',
+      name: name || 'Murugan K',
+      phone: ph ? (ph.startsWith('+91') ? ph : `+91 ${ph}`) : '+91 98765 43210',
       rating: 4.88,
       vehicle: {
-        model: 'Honda City',
-        category: 'sedan',
-        licensePlate: 'TN 57 AZ 4821',
+        model: vehicleType || 'Honda City',
+        category: (vehicleType || 'sedan').toLowerCase(),
+        licensePlate: vehicleNumber || 'TN 57 AZ 4821',
       },
     };
+    if (coords && coords.lat) {
+      activeRide.telematics = {
+        ...activeRide.telematics,
+        driverCoords: coords,
+        lastUpdated: new Date().toISOString(),
+      };
+    }
     db.save();
+    emitRideEvent(activeRide.id, 'ride:status_changed', {
+      rideId: activeRide.id,
+      status: activeRide.status,
+      telematics: activeRide.telematics,
+      ride: activeRide,
+    });
     emitRideEvent(activeRide.id, 'ride:updated', activeRide);
+    emitDriverTelemetry(activeRide.id, activeRide.telematics);
   }
 
   res.json({ ok: 1, success: true, status: 'accepted', rideId });
@@ -46,6 +60,12 @@ router.post('/:rideId/arrived', (req, res) => {
     activeRide.status = RIDE_STATUSES.DRIVER_ARRIVED;
     activeRide.arrivedAt = new Date().toISOString();
     db.save();
+    emitRideEvent(activeRide.id, 'ride:status_changed', {
+      rideId: activeRide.id,
+      status: activeRide.status,
+      telematics: activeRide.telematics,
+      ride: activeRide,
+    });
     emitRideEvent(activeRide.id, 'ride:updated', activeRide);
   }
   res.json({ ok: 1, success: true, status: 'arrived' });
@@ -57,11 +77,17 @@ router.post('/:rideId/start', (req, res) => {
   const activeRide = db.get('activeRide');
   const expectedOtp = activeRide?.otp || '4819';
 
-  if (otp && (otp === expectedOtp || otp.length === 4)) {
+  if (otp && (otp === expectedOtp || (!activeRide && otp.length === 4))) {
     if (activeRide) {
       activeRide.status = RIDE_STATUSES.TRIP_IN_PROGRESS;
       activeRide.startedAt = new Date().toISOString();
       db.save();
+      emitRideEvent(activeRide.id, 'ride:status_changed', {
+        rideId: activeRide.id,
+        status: activeRide.status,
+        telematics: activeRide.telematics,
+        ride: activeRide,
+      });
       emitRideEvent(activeRide.id, 'ride:updated', activeRide);
     }
     return res.json({ ok: 1, success: true, status: 'in_progress' });
@@ -77,6 +103,12 @@ router.post('/:rideId/complete', (req, res) => {
     activeRide.status = RIDE_STATUSES.COMPLETED;
     activeRide.completedAt = new Date().toISOString();
     db.save();
+    emitRideEvent(activeRide.id, 'ride:status_changed', {
+      rideId: activeRide.id,
+      status: activeRide.status,
+      telematics: activeRide.telematics,
+      ride: activeRide,
+    });
     emitRideEvent(activeRide.id, 'ride:completed', activeRide);
   }
   res.json({ ok: 1, success: true, status: 'completed' });
@@ -88,9 +120,16 @@ router.post('/:rideId/pay', (req, res) => {
   const activeRide = db.get('activeRide');
   if (activeRide) {
     activeRide.status = RIDE_STATUSES.COMPLETED;
+    activeRide.paymentStatus = 'Paid';
     activeRide.paymentMethod = method || 'cash';
     activeRide.fare = Number(amount) || activeRide.fare;
     db.save();
+    emitRideEvent(activeRide.id, 'ride:status_changed', {
+      rideId: activeRide.id,
+      status: activeRide.status,
+      telematics: activeRide.telematics,
+      ride: activeRide,
+    });
     emitRideEvent(activeRide.id, 'ride:completed', activeRide);
   }
   res.json({ ok: 1, success: true, method, amount });
@@ -99,8 +138,8 @@ router.post('/:rideId/pay', (req, res) => {
 // Call customer relay
 router.post('/:rideId/call', (req, res) => {
   const activeRide = db.get('activeRide');
-  res.json({ ok: 1, success: true, tel: activeRide?.riderPhone || '+91 98765 43210' });
+  const riderPhone = activeRide?.riderPhone || '+91 98765 11223';
+  res.json({ ok: 1, success: true, customerPhone: riderPhone, maskedNumber: '+91 451 240 9988' });
 });
 
 export default router;
-

@@ -63,6 +63,8 @@ export class RidesController {
       paymentMethod,
       paymentStatus: 'Paid',
       otp: '4819',
+      riderName: 'Rahul S.',
+      riderPhone: '+91 98765 11223',
       driver: assignedDriver,
       dispatchAlgorithm: {
         algorithm: 'Multi-Factor Bipartite Weighted Proximity Matching',
@@ -89,6 +91,12 @@ export class RidesController {
       pickupEtaMins: 3,
       destinationArea: destination,
       estimatedEarnings: Math.round(fareDetails.total * 0.88),
+      fare: fareDetails.total,
+      distanceKm,
+      pickupCoords,
+      destinationCoords,
+      riderName: 'Rahul S.',
+      riderPhone: '+91 98765 11223',
       timeoutSeconds: 15,
     });
 

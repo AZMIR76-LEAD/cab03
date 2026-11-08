@@ -10,6 +10,7 @@
 <title>FG DRIVO | Drivers</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>var LF=window.L;</script>
 <style>
 html,body,#app{touch-action:manipulation;-webkit-user-select:none;user-select:none}input,select{-webkit-user-select:text;user-select:text}
@@ -495,7 +496,7 @@ input,select{border-color:#dfdeea;background:#fff}input:focus,select:focus{borde
  </div>
  <div class="locg" id="locg"><div class="lc"><div class="lic">&#128205;</div><h3 data-t>Allow Location Access</h3>
   <p data-t>FG DRIVO needs your location to find nearby rides and confirm your service area.</p>
-  <div id="loc-e"></div><button class="btn" id="loc-b" data-t>Allow Location</button><button class="btn out" id="demo-loc" data-t>Try Demo</button><div class="lnk" id="loc-sk" data-t>Skip for now</div></div></div>
+  <div id="loc-e"></div><button class="btn" id="loc-b" data-t>Allow Location</button><div class="lnk" id="loc-sk" data-t>Skip for now</div></div></div>
  <div class="locg hide" id="lp" style="z-index:6"><div class="lc"><div class="lic">&#128205;</div><h3 data-t>Allow FG DRIVO to access this device's location?</h3><p data-t>Used to find nearby rides and confirm your service area.</p>
   <button class="btn" id="lp1" data-t>While using the app</button><button class="btn out" id="lp2" data-t>Only this time</button><button class="btn red" id="lp3" data-t>Don't allow</button></div></div>
 </section>
@@ -620,7 +621,7 @@ $("lp").onclick=function(e){if(e.target==this)this.classList.add("hide")};
 $("b-start").onclick=function(){go("s-lang")};
 qa(".lo").forEach(function(o){o.onclick=function(){qa(".lo").forEach(function(x){x.classList.remove("sel")});o.classList.add("sel");L=o.dataset.l;refresh()}});
 $("b-lang").onclick=function(){go("s-auth")};
-function startDemo(){window.DEMO_MODE=true;S.demo=1;S.ph="9876543210";S.me=CO[S.ph];S.st="approved";S.loc={lat:10.3673,lng:77.9803};S.on=false;S.trip=null;enter()}$("b-login").onclick=function(){openPhone("login")};$("b-reg").onclick=function(){openPhone("reg")};$("demo-btn").onclick=startDemo;$("demo-loc").onclick=startDemo;
+$("b-login").onclick=function(){openPhone("login")};$("b-reg").onclick=function(){openPhone("reg")};
 $("p-bk").onclick=function(){go("s-auth")};$("o-bk").onclick=function(){clearInterval(S.rt);go("s-phone")};
 /* ---------- contact number + OTP ---------- */
 function dg(){var v=$("ph").value,r=v.indexOf("+91 ")==0?v.slice(4):("+91 ".indexOf(v)==0?"":v);return r.replace(/\D/g,"").slice(0,10)}
@@ -689,7 +690,7 @@ function txt(){var v=S.on;$("go").innerHTML=v?t("ONLINE")+"<br><small style='fon
 function online(v){S.on=v;$("go").className="go"+(v?" on":"");$("pill").className="pill"+(v?" on":"");txt();clearTimeout(S.ask);clearInterval(S.pl);pushLoc();if(v&&!S.trip)startPoll()}
 function req(){if(!S.on||S.trip)return;var r=S.offer,n=15;S.r=r;
  sheet('<div class="row"><b>'+t("New ride request")+'</b><b id="cd">15'+t("s")+'</b></div><div class="bar" style="margin:8px 0"><i id="br"></i></div><div class="route"><div>'+t(r[0])+'<small>'+t("Pickup \u00B7 {n} km away",S.rd||1.2)+'</small></div><div>'+t(r[1])+'<small>'+t("Drop \u00B7 {n} km",r[2])+'</small></div></div><div class="row"><div class="fare">'+inr(r[3])+'</div><small style="color:#7a6c94">'+t("Cash \u00B7 Est. {n} min",Math.round(r[2]*1.6))+'</small></div><div class="btns"><button class="btn red" id="no">'+t("Decline")+'</button><button class="btn" id="yes">'+t("Accept")+'</button></div>');
- $("no").onclick=function(){api("POST","/api/ride/"+S.rid+"/decline",{ph:S.ph},function(){});clearInterval(S.tm);sheet("");online(true)};$("yes").onclick=function(){clearInterval(S.tm);trip(0)};
+ $("no").onclick=function(){api("POST","/api/ride/"+S.rid+"/decline",{ph:S.ph},function(){});clearInterval(S.tm);sheet("");online(true)};$("yes").onclick=function(){clearInterval(S.tm);api("POST","/api/ride/"+S.rid+"/accept",{ph:S.ph,name:S.me?S.me.n:"Murugan K",vehicleType:S.me?S.me.vt:"Sedan",vehicleNumber:S.me?S.me.vn:"TN 57 AZ 4821",coords:S.loc},function(){});trip(0);};
  clearInterval(S.tm);S.tm=setInterval(function(){n--;$("cd").textContent=n+t("s");$("br").style.width=n/15*100+"%";if(n<=0){clearInterval(S.tm);sheet("");online(true)}},1000)}
 function trip(i){var r=S.r;S.trip=1;
  if(i==2){sheet('<b>'+t("Enter customer OTP")+'</b><input id="o" placeholder="'+t("4-digit OTP")+'" inputmode="numeric" maxlength="4" style="margin-top:10px"><button class="btn" id="ok">'+t("Start Trip")+'</button>');$("ok").onclick=function(){if($("o").value.length==4)api("POST","/api/ride/"+S.rid+"/start",{ph:S.ph,otp:$("o").value},function(r){if(r.ok)trip(3);else $("o").style.borderColor="#e0262d"});else $("o").style.borderColor="#e0262d"};return}
@@ -940,14 +941,14 @@ st.textContent+="#otpv .dmo{background:#fff6d6;border:1.5px dashed #e0b400;color
 document.head.appendChild(st);
 var TT={"Start Trip":"பயணத்தைத் தொடங்கு","Verify the customer OTP to begin the trip":"பயணத்தைத் தொடங்க பயணியின் OTP-ஐ சரிபார்க்கவும்","Ask customer for OTP":"பயணியிடம் OTP கேளுங்கள்","Enter the 4-digit code shown in the customer's app":"பயணியின் செயலியில் காட்டப்படும் 4 இலக்க எண்ணை உள்ளிடவும்","VERIFY & START TRIP":"சரிபார்த்து பயணத்தைத் தொடங்கு","Verifying...":"சரிபார்க்கிறது...","Incorrect OTP. Please check and try again.":"தவறான OTP. சரிபார்த்து மீண்டும் முயற்சிக்கவும்.","Could not reach server. Check internet and retry.":"சேவையகத்தை அடைய முடியவில்லை. இணையத்தை சரிபார்க்கவும்.","Fare":"கட்டணம்","Pickup":"பிக்அப்","Do not start the trip without verifying the OTP":"OTP சரிபார்க்காமல் பயணத்தைத் தொடங்க வேண்டாம்"};
 for(var k in TT)TA[k]=TT[k];
-window.DEMO_MODE=new URLSearchParams(window.location.search).get("demo")==="1";
+window.DEMO_MODE=false;
 var cur="",busy=0;
 function close(){var o=$("otpv");if(o)o.remove();busy=0}
 function paint(){var bx=$("obx");if(!bx)return;var h="";for(var i=0;i<4;i++)h+='<i class="'+(cur[i]?"f":i==cur.length?"a":"")+'">'+(cur[i]?"\u25CF":"")+"</i>";bx.innerHTML=h;$("overify").disabled=cur.length<4||busy}
 function press(d){if(busy)return;var bx=$("obx");bx.classList.remove("bad");$("oerr").textContent="";if(d=="x")cur=cur.slice(0,-1);else if(cur.length<4)cur+=d;paint()}
 function submit(){
  if(cur.length<4||busy)return;busy=1;var b=$("overify");b.disabled=true;b.textContent=t("Verifying...");
- var go=function(cb){if(DEMO_MODE&&S.demo)setTimeout(function(){cb({ok:cur.length==4})},600);else api("POST","/api/ride/"+S.rid+"/start",{ph:S.ph,otp:cur},function(r){cb(DEMO_MODE&&S.demo&&cur.length==4?{ok:1}:r)})};
+ var go=function(cb){api("POST","/api/ride/"+S.rid+"/start",{ph:S.ph,otp:cur},cb);};
  go(function(r){
   busy=0;
   if(r&&r.ok){close();_trip(3);return}
@@ -974,31 +975,85 @@ var _trip=trip;
 trip=function(i){if(i==2){S.trip=1;sheet("");return otpUI()}return _trip(i)};
 })();
 
-/* demo: 3 sec after GO ONLINE a customer ride request pops up (UI preview only) */
-var CU=["Priya M.","Arun K.","Divya R.","Karthik S.","Meena L.","Suresh B.","Lakshmi N.","Vignesh T.","Rahul S.","Anitha P.","Mohan D.","Kavitha G."],
- DI=Math.floor(Math.random()*CU.length),FBK=["Bus Stand","Railway Station","Main Road","Market Area","Govt Hospital","College Road","Temple Street","Collector Office","Town Centre","Old Town"];
-function dOff(c,km,deg){var r=Math.PI/180;return[+(c[0]+km*Math.cos(deg*r)/111).toFixed(6),+(c[1]+km*Math.sin(deg*r)/(111*Math.cos(c[0]*r))).toFixed(6)]}
-function dHav(a,b){var R=6371,r=Math.PI/180,x=(b[0]-a[0])*r,y=(b[1]-a[1])*r,h=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(y/2)*Math.sin(y/2);return 2*R*Math.asin(Math.sqrt(h))}
-function dPlace(c,fb,cb){var done=0,fin=function(n){if(done)return;done=1;cb(n||fb)};setTimeout(fin,2500);
- try{fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&accept-language=en&lat="+c[0]+"&lon="+c[1]).then(function(r){return r.json()}).then(function(j){var a=(j&&j.address)||{},f=a.neighbourhood||a.suburb||a.hamlet||a.road,s=a.village||a.town||a.city||a.county,n=f&&s&&f!=s?f+", "+s:(f||s);fin(n?String(n).slice(0,34):"")}).catch(function(){fin()})}catch(e){fin()}}
-/* demo routes: only Dindigul (DGL), Kodaikanal & Chinnalapatti  [pickup,drop,km,fare,pickupLatLng,dropLatLng] */
-var DR=[
- ["Dindigul Bus Stand","Chinnalapatti",14,320,[10.3673,77.9803],[10.2833,77.9167]],
- ["Dindigul Bus Stand","Kodaikanal",92,2350,[10.3673,77.9803],[10.2392,77.4876]],
- ["Chinnalapatti","Dindigul Railway Stn",15,340,[10.2833,77.9167],[10.3629,77.9722]],
- ["Kodaikanal Lake","Dindigul Bus Stand",90,2300,[10.2358,77.4896],[10.3673,77.9803]],
- ["Dindigul Railway Stn","Kodaikanal Bus Stand",93,2380,[10.3629,77.9722],[10.2392,77.4876]],
- ["Chinnalapatti","Kodaikanal Lake",78,1980,[10.2833,77.9167],[10.2358,77.4896]],
- ["Kodaikanal Bus Stand","Chinnalapatti",79,2000,[10.2392,77.4876],[10.2833,77.9167]],
- ["Dindigul Bus Stand","Chinnalapatti Handloom",15,340,[10.3673,77.9803],[10.2833,77.9167]]
-];
-Object.assign(TA,{"Kodaikanal Bus Stand":"\u0b95\u0bca\u0b9f\u0bc8\u0b95\u0bcd\u0b95\u0bbe\u0ba9\u0bb2\u0bcd \u0baa\u0bc7\u0bb0\u0bc1\u0ba8\u0bcd\u0ba4\u0bc1 \u0ba8\u0bbf\u0bb2\u0bc8\u0baf\u0bae\u0bcd"});
-function fireDemo(){
- if(!S.on||S.trip||S.dpend||$("sheet").classList.contains("up"))return;
- var i=DI++,d=DR[i%DR.length],cust=CU[i%CU.length];
- S.demo=1;S.rid="demo";S.rn=cust;S.rd=Math.round((.8+(i*.7)%1.8)*10)/10;S.cp="";S.pk=d[4];S.dk=d[5];S.offer=[d[0],d[1],d[2],d[3]];req()}
-(function(){var _on=online;online=function(v){_on(v);clearTimeout(S.dt);if(v&&window.DEMO_MODE&&!S.trip)S.dt=setTimeout(fireDemo,3000)}})();
-(function(){var _t=trip;trip=function(i){if(i==4)setTimeout(function(){S.demo=0},0);return _t(i)}})();
+/* ===== FULL-STACK REAL-TIME DISPATCH & TELEMATICS GATEWAY ===== */
+var socket=null;
+function getDriverSocket(){
+  if(socket)return socket;
+  if(typeof io!=="undefined"){
+    socket=io({transports:["websocket","polling"],reconnection:true,reconnectionAttempts:15,reconnectionDelay:1000});
+    socket.on("connect",function(){
+      console.log("%c[FG DRIVO Driver]%c Connected to dispatch server: "+socket.id,"color:#10b981;font-weight:bold;","color:inherit;");
+      if(S.on)registerWithDispatch();
+    });
+    socket.on("ride:offer_broadcast",function(offer){
+      console.log("[Driver Dispatch] Broadcast offer received:",offer);
+      if(!S.on||S.trip||$("sheet").classList.contains("up"))return;
+      var pkArea=offer.pickupArea||offer.pickup||"Pickup Location";
+      var dkArea=offer.destinationArea||offer.destination||"Drop Location";
+      var dist=Number(offer.distanceKm||offer.pickupDistanceKm||7.8);
+      var fare=Number(offer.fare||Math.round(dist*28+60));
+      S.offer=[pkArea,dkArea,dist,fare];
+      S.rid=offer.tripId||offer.rideId||offer.id;
+      S.rn=offer.riderName||"Rahul S.";
+      S.rd=offer.pickupDistanceKm||1.2;
+      S.cp=offer.riderPhone||"+91 98765 11223";
+      if(offer.pickupCoords)S.pk=[offer.pickupCoords.lat||10.3644,offer.pickupCoords.lng||77.9702];
+      else S.pk=[10.3644,77.9702];
+      if(offer.destinationCoords)S.dk=[offer.destinationCoords.lat||10.3812,offer.destinationCoords.lng||77.9480];
+      else S.dk=[10.3812,77.9480];
+      req();
+    });
+    socket.on("ride:cancelled",function(data){
+      if(S.rid&&(data?.rideId===S.rid||data?.id===S.rid)){
+        sheet("");
+        ringStop();
+        S.trip=null;
+        S.rid=null;
+        alert(t("Ride has been cancelled by passenger."));
+        online(true);
+      }
+    });
+  }
+  return socket;
+}
+
+function registerWithDispatch(){
+  var s=getDriverSocket();
+  if(s&&s.connected){
+    s.emit("driver:register",{
+      driverId:S.ph?"DRV-"+S.ph.slice(-4):"DRV-8821",
+      phone:S.ph||"9876543210",
+      name:S.me?S.me.n:"Murugan K",
+      coords:S.loc||{lat:10.3673,lng:77.9803}
+    });
+  }
+}
+
+function sendDriverTelemetry(){
+  var s=getDriverSocket();
+  if(s&&s.connected&&S.loc&&S.loc.lat){
+    s.emit("driver:telemetry",{
+      rideId:S.rid,
+      coords:{
+        lat:S.loc.lat,
+        lng:S.loc.lng,
+        heading:S.heading||135,
+        speed:35
+      }
+    });
+  }
+}
+
+(function(){
+  var _on=online;
+  online=function(v){
+    _on(v);
+    if(v){
+      getDriverSocket();
+      registerWithDispatch();
+    }
+  };
+})();
 
 /* ---------- v10: in-app live navigation (driver <-> customer on map) ---------- */
 (function(){
@@ -1034,8 +1089,9 @@ navGo=function(isDrop){
  if(!(S.loc&&S.loc.lat)){alert(t("Location is off"));return}
  var c=isDrop?S.dk:S.pk;
  if(!(c&&c[0]&&c[1])){
-  if(window.DEMO_MODE&&S.demo){c=isDrop?[S.loc.lat+.045,S.loc.lng+.035]:[S.loc.lat+.009,S.loc.lng+.007];if(isDrop)S.dk=c;else S.pk=c}
-  else return _nav(isDrop)}
+  c=isDrop?[10.3812,77.9480]:[10.3644,77.9702];
+  if(isDrop)S.dk=c;else S.pk=c;
+  }
  mapLib(function(){
   if(!window.LF)return _nav(isDrop);
   nclose();drop=!!isDrop;NP=[+c[0],+c[1]];LR=0;
@@ -1153,13 +1209,12 @@ function payUI(){
   var er=sel=="upi"?vUpi():vCard();if(er){$("perr").textContent=t(er);return}
   busy=1;var b=$("pgo");b.disabled=true;b.innerHTML='<span class="spn"></span>'+t("Waiting for customer payment...");
   var done=function(r){busy=0;if(r&&r.ok)ok();else{b.disabled=false;b.textContent=t("REQUEST PAYMENT")+" \u00B7 "+inr(fare);$("pnote").textContent=t("Payment not received yet. Please try again.");$("pnote").style.color="#e0262d"}};
-  if(window.DEMO_MODE&&S.demo)setTimeout(function(){done({ok:1})},2500);
-  else api("POST","/api/ride/"+S.rid+"/pay",{ph:S.ph,method:sel,amount:fare,upi:sel=="upi"?UV:undefined,last4:sel=="card"?CD.n.slice(-4):undefined},done)}
+  api("POST","/api/ride/"+S.rid+"/pay",{ph:S.ph,method:sel,amount:fare,upi:sel=="upi"?UV:undefined,last4:sel=="card"?CD.n.slice(-4):undefined},done)}
  function ok(){
   if(paid)return;paid=1;var before=S.earn,l4=CD.n.slice(-4),uv=UV;CD={n:"",nm:"",ex:"",cv:""};
   ES.trips.push({id:Date.now(),a:r[0],b:r[1],km:r[2],f:fare,m:sel,ts:Date.now(),d:dk()});eSave();
   S.earn+=fare;S.n++;S.trip=null;H=ES.trips.slice().reverse();stats();hist();
-  if(sel=="cash"&&!(window.DEMO_MODE&&S.demo))api("POST","/api/ride/"+S.rid+"/pay",{ph:S.ph,method:"cash",amount:fare},function(){});
+  if(sel=="cash")api("POST","/api/ride/"+S.rid+"/pay",{ph:S.ph,method:"cash",amount:fare},function(){});
   var pct=Math.min(100,S.earn/GOAL*100),hit=before<GOAL&&S.earn>=GOAL,left=Math.max(0,GOAL-S.earn);
   $("payv").innerHTML='<div class="ok"><div class="ck">&#10003;</div><h2>'+t("Payment received")+'</h2><div class="pa">'+inr(fare)+'</div><small style="color:#7a6c94">'+M[sel][0]+' '+t(M[sel][1])+(sel=="card"&&l4?" \u2022\u2022\u2022\u2022 "+l4:"")+(sel=="upi"&&uv?" \u00B7 "+esc(uv):"")+'</small></div>'+
   '<div class="gl"><div class="row"><span>&#127919; '+t("Daily goal")+'</span><span>'+inr(S.earn)+' / '+inr(GOAL)+'</span></div><div class="gb"><i style="width:'+(before/GOAL*100>100?100:before/GOAL*100)+'%"></i></div><small style="color:#7a6c94">'+(hit||!left?"&#127881; "+t("Daily goal achieved!"):inr(left)+" "+t("to go"))+'</small></div>'+
@@ -1328,74 +1383,6 @@ window.FGSUM=open;
 
 refresh();
 
-// ===== DRIVER DASHBOARD UI DEMO =====
-function toggleDriverUI() {
-  S.on = !S.on;
-
-  const btn = document.getElementById("driverToggleBtn");
-  const status = document.getElementById("driverStatusText");
-  const pill = document.getElementById("pill");
-
-  if (S.on) {
-    btn.textContent = "GO OFFLINE";
-    btn.classList.add("online");
-    status.textContent = "You're online and available for rides";
-    pill.textContent = "ONLINE";
-    pill.className = "pill on";
-
-    showBookingDemo();
-  } else {
-    btn.textContent = "GO ONLINE";
-    btn.classList.remove("online");
-    status.textContent = "You're currently offline";
-    pill.textContent = "OFFLINE";
-    pill.className = "pill";
-
-    document.getElementById("bookingUiRequest").classList.add("hide");
-    document.getElementById("bookingUiEmpty").classList.remove("hide");
-    document.getElementById("bookingUiMessage").classList.remove("show");
-  }
-}
-
-// Sample booking for UI testing only
-function showBookingDemo() {
-  document.getElementById("bookingUiName").textContent = "Rahul S.";
-  document.getElementById("bookingUiPickup").textContent =
-    "Dindigul Bus Stand";
-  document.getElementById("bookingUiDrop").textContent =
-    "Chinnalapatti";
-  document.getElementById("bookingUiFare").textContent = "₹320";
-
-  document.getElementById("bookingUiEmpty").classList.add("hide");
-  document.getElementById("bookingUiRequest").classList.remove("hide");
-
-  const msg = document.getElementById("bookingUiMessage");
-  msg.classList.remove("show");
-  msg.textContent = "";
-}
-
-// Demo Accept / Reject buttons
-function respondBookingUI(accepted) {
-  const msg = document.getElementById("bookingUiMessage");
-
-  msg.textContent = accepted
-    ? "✓ Ride accepted! (UI demo only)"
-    : "Booking rejected. (UI demo only)";
-
-  msg.classList.add("show");
-  document.getElementById("bookingUiRequest").classList.add("hide");
-  document.getElementById("bookingUiEmpty").classList.remove("hide");
-
-  if (accepted) {
-    document.getElementById("bookingUiEmpty").querySelector("strong")
-      .textContent = "Ride accepted!";
-    document.getElementById("bookingUiEmpty").querySelector("p")
-      .textContent = "Your active ride screen can be designed next.";
-  } else {
-    document.getElementById("bookingUiEmpty").querySelector("strong")
-      .textContent = "No new bookings yet";
-    document.getElementById("bookingUiEmpty").querySelector("p")
-      .textContent = "Stay online to receive ride requests.";
-  }
-}
+// Ready for production driver dispatch
+getDriverSocket();
 </script></body></html>
