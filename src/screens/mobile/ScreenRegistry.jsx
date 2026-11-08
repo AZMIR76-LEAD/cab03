@@ -66,15 +66,7 @@ export function setGlobalActiveDriver(driver) {
 }
 
 export function getActiveDriver() {
-  if (GLOBAL_ACTIVE_DRIVER) return GLOBAL_ACTIVE_DRIVER;
-  try {
-    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('fg_active_driver') : null;
-    if (raw) {
-      GLOBAL_ACTIVE_DRIVER = JSON.parse(raw);
-      return GLOBAL_ACTIVE_DRIVER;
-    }
-  } catch (e) {}
-  return {
+  const fallback = {
     id: 'DRV-1234',
     name: 'Driver Partner',
     phone: '+91 98765 43210',
@@ -88,6 +80,25 @@ export function getActiveDriver() {
     },
     vehicleModel: 'SUV',
     vehicleNumber: 'KA 01 AB 1234',
+  };
+  let d = GLOBAL_ACTIVE_DRIVER;
+  if (!d) {
+    try {
+      const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('fg_active_driver') : null;
+      if (raw) d = JSON.parse(raw);
+    } catch (e) {}
+  }
+  if (!d) return fallback;
+  return {
+    ...fallback,
+    ...d,
+    avatar: d.avatar || fallback.avatar,
+    vehicle: {
+      ...fallback.vehicle,
+      ...(d.vehicle && typeof d.vehicle === 'object' ? d.vehicle : {}),
+      model: (d.vehicle && typeof d.vehicle === 'object' ? d.vehicle.model : null) || d.vehicleModel || d.vehicleType || fallback.vehicle.model,
+      licensePlate: (d.vehicle && typeof d.vehicle === 'object' ? d.vehicle.licensePlate : null) || d.vehicleNumber || d.licensePlate || fallback.vehicle.licensePlate,
+    },
   };
 }
 
@@ -5583,6 +5594,7 @@ export function Screen19TripInProgress({ onNavigate }) {
 
 // Screen 20 — Trip Completed
 export function Screen20TripCompleted({ onNavigate }) {
+  const activeDriver = getActiveDriver();
   const fare = GLOBAL_BARGAIN_FARE || 284;
   const payment = WALLET_DATA.paymentMethods.find(m => m.id === GLOBAL_SELECTED_PAYMENT) || WALLET_DATA.paymentMethods[0];
 
@@ -5602,7 +5614,7 @@ export function Screen20TripCompleted({ onNavigate }) {
           You Have Arrived!
         </h1>
         <p style={{ fontSize: '13px', color: '#6B5B7D', marginBottom: '24px' }}>
-          Hope you enjoyed your ride with {getActiveDriver().name}.
+          Hope you enjoyed your ride with {activeDriver.name}.
         </p>
 
         {/* Fare Card */}
@@ -5639,6 +5651,7 @@ export function Screen20TripCompleted({ onNavigate }) {
 
 // Screen 21 — Confirm Payment
 export function Screen21ConfirmPayment({ onNavigate }) {
+  const activeDriver = getActiveDriver();
   const fare = GLOBAL_BARGAIN_FARE || 284;
   const payment = WALLET_DATA.paymentMethods.find(m => m.id === GLOBAL_SELECTED_PAYMENT) || WALLET_DATA.paymentMethods[0];
   const [isPaid, setIsPaid] = useState(false);
@@ -5848,6 +5861,7 @@ export function Screen21ConfirmPayment({ onNavigate }) {
 
 // Screen 22 — Rating & Feedback (Shifted from 21)
 export function Screen22Rating({ onNavigate }) {
+  const activeDriver = getActiveDriver();
   const [stars, setStars] = useState(5);
   const [selectedTags, setSelectedTags] = useState(['Clean vehicle', 'Friendly driver', 'Smooth ride']);
   const tags = ['Clean vehicle', 'Friendly driver', 'Smooth ride', 'On time', 'Safe driving', 'Great music'];
@@ -6181,6 +6195,7 @@ export function Screen23RideHistory({ onNavigate }) {
 
 // Screen 24 — Ride Details
 export function Screen24RideDetails({ onNavigate }) {
+  const activeDriver = getActiveDriver();
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
       <div style={{ padding: '16px 20px', backgroundColor: '#5427A8', color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 12px rgba(84, 39, 168, 0.2)' }}>

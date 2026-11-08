@@ -42,6 +42,50 @@ import {
   Screen35Settings,
 } from './screens/mobile/ScreenRegistry';
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('[FG DRIVO Screen Error]', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', padding: '32px 24px', textAlign: 'center', minHeight: '100%' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#FEF2F2', border: '2px solid #EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+            <span style={{ fontSize: '32px' }}>⚠️</span>
+          </div>
+          <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#24153F', marginBottom: '8px' }}>
+            Screen Notice
+          </h2>
+          <p style={{ fontSize: '13px', color: '#6B5B7D', marginBottom: '24px', lineHeight: 1.5 }}>
+            An unexpected issue occurred while rendering this screen.
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              if (this.props.onReset) this.props.onReset();
+              else window.location.hash = '#s07_home';
+            }}
+            style={{ width: '100%', height: '48px', backgroundColor: '#F5C400', color: '#24153F', fontWeight: 800, fontSize: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(245, 196, 0, 0.4)' }}
+          >
+            Return to Home
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function getInitialScreen() {
   try {
     if (typeof window !== 'undefined') {
@@ -252,7 +296,9 @@ export default function App() {
     <div className="fg-drivo-app-wrapper">
       {/* Native Edge-to-Edge Android Screen Container */}
       <div className="fg-drivo-android-viewport">
-        {renderMobileScreen()}
+        <ErrorBoundary onReset={() => handleNavigate('s07_home')}>
+          {renderMobileScreen()}
+        </ErrorBoundary>
       </div>
     </div>
   );
