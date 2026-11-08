@@ -74,6 +74,10 @@ export class RidesController {
 
     db.set('activeRide', newRide);
 
+    const drivers = db.get('drivers') || [];
+    const onlineDrivers = drivers.filter((d) => d.isOnline);
+    const hasOnlineDrivers = onlineDrivers.length > 0;
+
     // Broadcast ride offer to real connected driver partners via WebSocket
     broadcastRideOffer({
       offerId: 'OFFER-' + Math.floor(1000 + Math.random() * 9000),
@@ -92,12 +96,24 @@ export class RidesController {
       timeoutSeconds: 30,
     });
 
-    console.log(`\x1b[32m[Dispatch]\x1b[0m New ride ${rideId} broadcasted to driver pool: ${newRide.pickup} -> ${newRide.destination} (₹${totalFare})`);
+    console.log(`\x1b[32m[Dispatch]\x1b[0m New ride ${rideId} broadcasted to driver pool: ${newRide.pickup} -> ${newRide.destination} (₹${totalFare}) [Online: ${onlineDrivers.length}]`);
+
+    if (!hasOnlineDrivers) {
+      console.log(`\x1b[33m[Dispatch]\x1b[0m 0 drivers currently online for ride ${rideId}`);
+      setTimeout(() => {
+        emitRideEvent(rideId, 'ride:no_drivers_available', {
+          rideId,
+          message: "Drivers couldn't be reached at this moment",
+        });
+      }, 3000);
+    }
 
     return res.status(201).json({
       success: true,
       message: 'Ride request dispatched. Waiting for active driver partner.',
       ride: newRide,
+      hasOnlineDrivers,
+      onlineDriversCount: onlineDrivers.length,
     });
   }
 

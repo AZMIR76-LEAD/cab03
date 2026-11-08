@@ -107,6 +107,7 @@ export const RideXAPI = {
 
   // Drivers
   getNearbyDrivers: () => request('/drivers/nearby'),
+  getOnlineDriversCount: () => request('/drivers/online-count'),
 
   // Wallet
   getWallet: () => request('/wallet'),

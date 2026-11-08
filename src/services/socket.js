@@ -63,7 +63,8 @@ class SocketClient {
       'driver:telematics',
       'safety:sos_alert',
       'ride:cancelled',
-      'ride:completed'
+      'ride:completed',
+      'ride:no_drivers_available'
     ];
     coreEvents.forEach((evt) => {
       this.socket.on(evt, (payload) => {

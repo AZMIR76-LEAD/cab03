@@ -81,8 +81,27 @@ export function initSocketServer(httpServer) {
       }
     });
 
+    socket.on('driver:status', (data) => {
+      const drivers = db.get('drivers') || [];
+      const dIdx = drivers.findIndex((d) => d.socketId === socket.id || d.id === data?.driverId);
+      if (dIdx >= 0) {
+        drivers[dIdx].isOnline = Boolean(data?.isOnline);
+        db.set('drivers', drivers);
+        console.log(`\x1b[33m[Socket.IO]\x1b[0m Driver ${drivers[dIdx].name} set isOnline=${data?.isOnline}`);
+      }
+    });
+
     socket.on('disconnect', (reason) => {
       console.log(`\x1b[36m[Socket.IO]\x1b[0m Client disconnected: ${socket.id} (${reason})`);
+      if (socket.driverData) {
+        const drivers = db.get('drivers') || [];
+        const dIdx = drivers.findIndex((d) => d.socketId === socket.id || d.id === socket.driverData?.driverId);
+        if (dIdx >= 0) {
+          drivers[dIdx].isOnline = false;
+          db.set('drivers', drivers);
+          console.log(`\x1b[33m[Socket.IO]\x1b[0m Driver ${drivers[dIdx].name} marked offline on disconnect`);
+        }
+      }
     });
   });
 

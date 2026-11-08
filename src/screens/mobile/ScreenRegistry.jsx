@@ -4466,16 +4466,49 @@ export function Screen13FareEstimate({ onNavigate, selectedVehicle = 'sedan' }) 
 export const Screen12FareEstimate = Screen13FareEstimate;
 export const Screen13BookingConfirm = Screen12BookingConfirm;
 
-// Screen 14 — Finding Driver (Real-time Live Sockets, No Fake Timers)
+// Screen 14 — Finding Driver (Real-time Live Sockets, No Fake Timers, Unreachable State)
 export function Screen14FindingDriver({ onNavigate }) {
   const [bids, setBids] = useState([]);
+  const [isUnreachable, setIsUnreachable] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const offeredFare = GLOBAL_BARGAIN_FARE || 198;
 
   useEffect(() => {
+    let searchTimer = null;
+
+    // Check live if any driver is online right now
+    RideXAPI.getOnlineDriversCount()
+      .then((res) => {
+        if (res && res.count === 0) {
+          // If no driver is online, show radar for 3 seconds, then show unreachable
+          searchTimer = setTimeout(() => {
+            setIsUnreachable(true);
+          }, 3000);
+        } else {
+          // If drivers are online, give 18 seconds for any driver to review & accept
+          searchTimer = setTimeout(() => {
+            setIsUnreachable(true);
+          }, 18000);
+        }
+      })
+      .catch(() => {
+        searchTimer = setTimeout(() => {
+          setIsUnreachable(true);
+        }, 5000);
+      });
+
+    // Listen for backend notifying that no drivers are available
+    const unsubNoDrivers = socketService.on('ride:no_drivers_available', () => {
+      console.log('[Screen14] No drivers available event received');
+      setIsUnreachable(true);
+    });
+
     // Listen for real driver bid emitted when driver taps Accept in Driver App
     const unsubBid = socketService.on('ride:driver_bid', (data) => {
       console.log('[Screen14] Real driver bid received:', data);
       if (data) {
+        setIsUnreachable(false);
+        if (searchTimer) clearTimeout(searchTimer);
         setBids((prev) => {
           if (prev.some((b) => (b.driverId && b.driverId === data.driverId) || b.id === data.driverId)) return prev;
           return [
@@ -4515,11 +4548,34 @@ export function Screen14FindingDriver({ onNavigate }) {
     });
 
     return () => {
+      if (searchTimer) clearTimeout(searchTimer);
+      unsubNoDrivers();
       unsubBid();
       unsubSocket();
       unsubUpdated();
     };
-  }, [onNavigate, offeredFare]);
+  }, [onNavigate, offeredFare, isRetrying]);
+
+  const handleRetrySearch = () => {
+    setIsUnreachable(false);
+    setBids([]);
+    setIsRetrying((prev) => !prev);
+    sounds.playTick();
+    RideXAPI.bookRide({
+      category: 'sedan',
+      pickup: GLOBAL_PICKUP_LOCATION || 'Current Location',
+      destination: GLOBAL_DESTINATION_LOCATION || 'Destination Point',
+      fare: offeredFare,
+      paymentMethod: 'Cash',
+    })
+      .then((res) => {
+        if (res && res.ride) {
+          GLOBAL_ACTIVE_RIDE = res.ride;
+          socketService.subscribeToRide(res.ride.id);
+        }
+      })
+      .catch((err) => console.warn('Retry booking error:', err));
+  };
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative' }}>
@@ -4528,18 +4584,53 @@ export function Screen14FindingDriver({ onNavigate }) {
       </div>
 
       {/* Floating Offer Badge at Top of Map */}
-      <div style={{ position: 'absolute', top: '16px', left: '16px', right: '16px', zIndex: 30, backgroundColor: '#5427A8', borderRadius: '16px', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 16px rgba(84,39,168,0.3)', border: '1.5px solid #F5C400' }}>
+      <div
+        style={{
+          position: 'absolute',
+          top: '16px',
+          left: '16px',
+          right: '16px',
+          zIndex: 30,
+          backgroundColor: '#5427A8',
+          borderRadius: '16px',
+          padding: '10px 16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 4px 16px rgba(84,39,168,0.3)',
+          border: isUnreachable && bids.length === 0 ? '1.5px solid #EF4444' : '1.5px solid #F5C400',
+        }}
+      >
         <div>
           <div style={{ fontSize: '10px', color: '#E8DFF5', fontWeight: 700 }}>BARGAINED OFFER</div>
           <div style={{ fontSize: '18px', fontWeight: 900, color: '#F5C400' }}>₹{offeredFare}</div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#FFFFFF', backgroundColor: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '10px' }}>
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#22C55E' }} />
-          <span>Broadcasting to drivers...</span>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '11px',
+            color: '#FFFFFF',
+            backgroundColor: isUnreachable && bids.length === 0 ? 'rgba(239,68,68,0.25)' : 'rgba(255,255,255,0.15)',
+            padding: '5px 12px',
+            borderRadius: '10px',
+            border: isUnreachable && bids.length === 0 ? '1px solid rgba(239,68,68,0.5)' : 'none',
+          }}
+        >
+          <span
+            style={{
+              width: '7px',
+              height: '7px',
+              borderRadius: '50%',
+              backgroundColor: isUnreachable && bids.length === 0 ? '#EF4444' : '#22C55E',
+            }}
+          />
+          <span>{isUnreachable && bids.length === 0 ? "No drivers available" : "Broadcasting to drivers..."}</span>
         </div>
       </div>
 
-      {/* Bottom Sheet Details & Incoming Driver Bids */}
+      {/* Bottom Sheet Details & Incoming Driver Bids / Unreachable Status */}
       <div
         style={{
           position: 'absolute',
@@ -4553,23 +4644,11 @@ export function Screen14FindingDriver({ onNavigate }) {
           borderTop: '1.5px solid #E5DFF0',
           boxShadow: '0 -8px 24px rgba(36, 21, 63, 0.12)',
           zIndex: 20,
-          maxHeight: '380px',
+          maxHeight: '410px',
           overflowY: 'auto',
         }}
       >
-        {bids.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '10px 0' }}>
-            <div style={{ width: '52px', height: '52px', borderRadius: '50%', backgroundColor: '#F6F1FF', border: '2px solid #5427A8', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Car size={24} color="#5427A8" />
-            </div>
-            <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#24153F', marginBottom: '4px' }}>
-              Finding drivers for ₹{offeredFare}...
-            </h2>
-            <p style={{ fontSize: '12px', color: '#6B5B7D', marginBottom: '16px' }}>
-              Nearby drivers in Dindigul are reviewing your fare. Open the Driver App to accept!
-            </p>
-          </div>
-        ) : (
+        {bids.length > 0 ? (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <span style={{ fontSize: '15px', fontWeight: 800, color: '#24153F' }}>
@@ -4639,15 +4718,122 @@ export function Screen14FindingDriver({ onNavigate }) {
                 </div>
               ))}
             </div>
+
+            <button
+              onClick={() => onNavigate('s11_route_preview')}
+              style={{ width: '100%', height: '42px', backgroundColor: '#FFF0F0', color: '#EF4444', fontWeight: 700, fontSize: '13px', borderRadius: '12px', border: '1px solid #FFD0D0', cursor: 'pointer' }}
+            >
+              Cancel Search / Re-bargain
+            </button>
+          </div>
+        ) : isUnreachable ? (
+          <div style={{ textAlign: 'center', padding: '6px 0' }}>
+            <div
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                backgroundColor: '#FEF2F2',
+                border: '2px solid #EF4444',
+                margin: '0 auto 12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(239,68,68,0.15)',
+              }}
+            >
+              <AlertTriangle size={28} color="#EF4444" />
+            </div>
+
+            <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#24153F', marginBottom: '6px' }}>
+              Drivers couldn't be reached at this moment
+            </h2>
+
+            <p style={{ fontSize: '12.5px', color: '#6B5B7D', lineHeight: 1.45, marginBottom: '16px' }}>
+              No drivers are currently online or available nearby in Dindigul. Please try again shortly or increase your offered fare.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                onClick={handleRetrySearch}
+                style={{
+                  width: '100%',
+                  height: '46px',
+                  backgroundColor: '#F5C400',
+                  color: '#24153F',
+                  fontWeight: 800,
+                  fontSize: '14px',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 14px rgba(245, 196, 0, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  border: 'none',
+                }}
+              >
+                <RotateCcw size={16} />
+                <span>Retry Search</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('s13_fare_estimate')}
+                style={{
+                  width: '100%',
+                  height: '44px',
+                  backgroundColor: '#F6F1FF',
+                  color: '#5427A8',
+                  fontWeight: 800,
+                  fontSize: '13.5px',
+                  borderRadius: '12px',
+                  border: '1.5px solid #5427A8',
+                  cursor: 'pointer',
+                }}
+              >
+                Increase Fare / Re-bargain
+              </button>
+
+              <button
+                onClick={() => {
+                  RideXAPI.cancelRide().catch(() => {});
+                  onNavigate('s07_home');
+                }}
+                style={{
+                  width: '100%',
+                  height: '40px',
+                  backgroundColor: '#FFF0F0',
+                  color: '#EF4444',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  borderRadius: '12px',
+                  border: '1px solid #FFD0D0',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel Search
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '10px 0' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '50%', backgroundColor: '#F6F1FF', border: '2px solid #5427A8', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Car size={24} color="#5427A8" />
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#24153F', marginBottom: '4px' }}>
+              Finding drivers for ₹{offeredFare}...
+            </h2>
+            <p style={{ fontSize: '12px', color: '#6B5B7D', marginBottom: '16px' }}>
+              Nearby drivers in Dindigul are reviewing your fare. Open the Driver App to accept!
+            </p>
+            <button
+              onClick={() => onNavigate('s11_route_preview')}
+              style={{ width: '100%', height: '42px', backgroundColor: '#FFF0F0', color: '#EF4444', fontWeight: 700, fontSize: '13px', borderRadius: '12px', border: '1px solid #FFD0D0', cursor: 'pointer' }}
+            >
+              Cancel Search / Re-bargain
+            </button>
           </div>
         )}
-
-        <button
-          onClick={() => onNavigate('s11_route_preview')}
-          style={{ width: '100%', height: '42px', backgroundColor: '#FFF0F0', color: '#EF4444', fontWeight: 700, fontSize: '13px', borderRadius: '12px', border: '1px solid #FFD0D0' }}
-        >
-          Cancel Search / Re-bargain
-        </button>
       </div>
     </div>
   );

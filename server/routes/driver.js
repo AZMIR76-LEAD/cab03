@@ -203,6 +203,13 @@ router.post('/:phone/location', (req, res) => {
   }
   if (online !== undefined) {
     driverOnlineState.isOnline = Boolean(online);
+    const drivers = db.get('drivers') || [];
+    const cleanPh = (req.params.phone || '').replace(/\D/g, '').slice(-10);
+    const dIdx = drivers.findIndex((d) => (d.phone || '').replace(/\D/g, '').includes(cleanPh));
+    if (dIdx >= 0) {
+      drivers[dIdx].isOnline = Boolean(online);
+      db.set('drivers', drivers);
+    }
   }
   res.json({ success: true, isOnline: driverOnlineState.isOnline });
 });
