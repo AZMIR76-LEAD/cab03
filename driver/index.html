@@ -693,14 +693,15 @@ function req(){if(!S.on||S.trip)return;var r=S.offer,n=15;S.r=r;
  $("no").onclick=function(){api("POST","/api/ride/"+S.rid+"/decline",{ph:S.ph},function(){});clearInterval(S.tm);sheet("");online(true)};$("yes").onclick=function(){clearInterval(S.tm);var dName=(S.me&&S.me.n)||"dhaya",dVehType=(S.me&&S.me.vt)||"SUV",dVehNo=(S.me&&S.me.vn)||"KA 01 AB 1234";api("POST","/api/ride/"+S.rid+"/accept",{ph:S.ph,name:dName,vehicleType:dVehType,vehicleNumber:dVehNo,rating:4.8,coords:S.loc||{lat:10.3673,lng:77.9803}},function(){});trip(0);};
  clearInterval(S.tm);S.tm=setInterval(function(){n--;$("cd").textContent=n+t("s");$("br").style.width=n/15*100+"%";if(n<=0){clearInterval(S.tm);sheet("");online(true)}},1000)}
 function trip(i){var r=S.r;S.trip=1;
+ if(i==1&&S.rid){api("POST","/api/ride/"+S.rid+"/arrived",{},function(){});}
  if(i==2){sheet('<b>'+t("Enter customer OTP")+'</b><input id="o" placeholder="'+t("4-digit OTP")+'" inputmode="numeric" maxlength="4" style="margin-top:10px"><button class="btn" id="ok">'+t("Start Trip")+'</button>');$("ok").onclick=function(){if($("o").value.length==4)api("POST","/api/ride/"+S.rid+"/start",{ph:S.ph,otp:$("o").value},function(r){if(r.ok)trip(3);else $("o").style.borderColor="#e0262d"});else $("o").style.borderColor="#e0262d"};return}
- if(i==4){S.earn+=r[3];S.n++;H.unshift({a:r[0],b:r[1],w:"Today",km:r[2],f:r[3]});S.trip=null;stats();hist();
+ if(i==4){if(S.rid){api("POST","/api/ride/"+S.rid+"/complete",{},function(){});}S.earn+=r[3];S.n++;H.unshift({a:r[0],b:r[1],w:"Today",km:r[2],f:r[3]});S.trip=null;stats();hist();
   sheet('<div style="text-align:center"><div style="font-size:42px">\u2705</div><b>'+t("Trip completed")+'</b><div class="fare">'+inr(r[3])+'</div><small style="color:#7a6c94">'+t("Collect cash from customer")+'</small><button class="btn" id="dn" style="margin-top:14px">'+t("Done")+'</button></div>');$("dn").onclick=function(){sheet("");online(true)};return}
  var s=ST[i];sheet('<div class="row"><b>'+t(s[0])+'</b><span class="pill on">'+t("Trip")+'</span></div><div class="route"><div>'+t(r[0])+'</div><div>'+t(r[1])+'</div></div><div class="row"><b>'+(S.rn||t("Rahul S."))+'</b><span>&#128222; &#9733; 4.9</span></div><div class="btns"><button class="btn alt" id="nx">'+t(s[1])+'</button></div>');$("nx").onclick=function(){trip(i+1)}}
 $("go").onclick=function(){if(S.trip)return;if(!S.loc||!S.loc.lat){S.loc={lat:10.3673,lng:77.9803};}online(!S.on);};
 $("langrow").onclick=function(){L=L=="ta"?"en":"ta";qa(".lo").forEach(function(o){o.classList.toggle("sel",o.dataset.l==L)});refresh()};
 $("out").onclick=function(){online(false);sheet("");S.me=null;S.trip=null;S.demo=0;window.DEMO_MODE=false;$("home").classList.add("hide");go("s-auth")};
-$("nav").onclick=function(e){var b=e.target.closest("button");if(!b)return;qa("#nav button").forEach(function(x){x.className=x==b?"act":""});qa(".tab").forEach(function(x){x.className="tab"});$("t-"+b.dataset.t2).className="tab show"};
+$("nav").onclick=function(e){var b=e.target.closest("button");if(!b)return;var tab=b.dataset.t2;qa("#nav button").forEach(function(x){x.className=x==b?"act":""});qa(".tab").forEach(function(x){x.className="tab"});$("t-"+tab).className="tab show";if(tab=="earn"){chart();stats();}else if(tab=="trips"){hist();}else if(tab=="me"){prof();}};
 /* ---------- backend + fixes ---------- */
 function api(m,u,b,cb){if(location.protocol=="file:")return setTimeout(function(){cb({err:1})},0);fetch(u,{method:m,headers:{"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined}).then(function(r){return r.json()}).then(cb,function(){cb({err:1})})}
 function shrink(f,cb){var r=new FileReader();r.onload=function(){var i=new Image();i.onload=function(){var k=Math.min(1,900/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=i.width*k;c.height=i.height*k;c.getContext("2d").drawImage(i,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",.8))};i.src=r.result};r.readAsDataURL(f)}
@@ -773,7 +774,7 @@ var _pl=pushLoc;pushLoc=function(){_pl();mapMove()};
 var _on=online;online=function(v){_on(v);hot(v)};
 var _en=enter;enter=function(){_en();mapInit();mapMove();loadRt();clearInterval(S.rtp);S.rtp=setInterval(loadRt,30000);setTimeout(function(){MP&&MP.invalidateSize()},300)};
 $("nav").addEventListener("click",function(){setTimeout(function(){MP&&MP.invalidateSize()},60)});
-$("q-loc").onclick=function(){if(S.loc&&S.loc.lat&&MP)MP.setView([S.loc.lat,S.loc.lng],16);else alert(t("Location is off"))};
+$("q-loc").onclick=function(){if(!S.loc||!S.loc.lat)S.loc={lat:10.3673,lng:77.9803};if(navigator.geolocation){navigator.geolocation.getCurrentPosition(function(p){S.loc={lat:p.coords.latitude,lng:p.coords.longitude};if(MP){MP.setView([S.loc.lat,S.loc.lng],16);if(MK)MK.setLatLng([S.loc.lat,S.loc.lng]);}},function(){if(MP)MP.setView([S.loc.lat,S.loc.lng],16);},{enableHighAccuracy:true,timeout:5000});}else if(MP){MP.setView([S.loc.lat,S.loc.lng],16);}};
 $("q-sup").onclick=function(){if(typeof modal==="function"){modal(t("Support"),"<div style='text-align:center;padding:12px 0'><div style='font-size:38px;margin-bottom:8px'>📞</div><b>FG DRIVO Driver Partner Help</b><p style='color:#7a6c94;margin:8px 0 16px'>24x7 Dedicated Partner Support Helpline</p><a href='tel:180036376486' class='btn' style='display:block;text-decoration:none;text-align:center;padding:12px'>Call 1800-363-76486</a></div>");}else{location.href="tel:180036376486";}};
 $("q-sos").onclick=function(){if(confirm(t("Send emergency SOS alert to FG DRIVO & 112 nationwide network?"))){api("POST","/api/driver/"+S.ph+"/sos",{lat:S.loc&&S.loc.lat,lng:S.loc&&S.loc.lng},function(){});alert(t("Emergency alert dispatched to 112 nationwide network!"));}};
 var _st=stats;stats=function(){_st();var g=2000;if($("gt")){$("gt").textContent=inr(S.earn)+" / "+inr(g);$("gb").style.width=Math.min(100,S.earn/g*100)+"%"}};
@@ -1095,7 +1096,7 @@ function route(){
   RL.setLatLngs(r.geometry.coordinates.map(function(c){return[c[1],c[0]]}));RL.setStyle({dashArray:null});info(r.distance/1000,r.duration/60)}).catch(fb)}catch(e){fb()}}
 var _nav=navGo;
 navGo=function(isDrop){
- if(!(S.loc&&S.loc.lat)){alert(t("Location is off"));return}
+ if(!(S.loc&&S.loc.lat)){S.loc={lat:10.3673,lng:77.9803};}
  var c=isDrop?S.dk:S.pk;
  if(!(c&&c[0]&&c[1])){
   c=isDrop?[10.3812,77.9480]:[10.3644,77.9702];

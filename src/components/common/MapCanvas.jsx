@@ -38,7 +38,7 @@ export default function MapCanvas({
   return (
     <div
       className={`relative w-full overflow-hidden select-none ${className}`}
-      style={{ height, minHeight: '220px', position: 'relative' }}
+      style={{ height, minHeight: '220px', position: 'relative', cursor: onMapClick ? 'pointer' : 'default' }}
       onClick={onMapClick}
     >
       <GoogleMapCanvas
@@ -50,6 +50,15 @@ export default function MapCanvas({
         tripState={tripState}
         height="100%"
       />
+      {onMapClick && (
+        <div
+          style={{ position: 'absolute', inset: 0, zIndex: 15, cursor: 'pointer' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onMapClick();
+          }}
+        />
+      )}
     </div>
   );
 }

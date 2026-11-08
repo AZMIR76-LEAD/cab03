@@ -4719,12 +4719,23 @@ export function Screen14FindingDriver({ onNavigate }) {
               ))}
             </div>
 
-            <button
-              onClick={() => onNavigate('s11_route_preview')}
-              style={{ width: '100%', height: '42px', backgroundColor: '#FFF0F0', color: '#EF4444', fontWeight: 700, fontSize: '13px', borderRadius: '12px', border: '1px solid #FFD0D0', cursor: 'pointer' }}
-            >
-              Cancel Search / Re-bargain
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => onNavigate('s11_route_preview')}
+                style={{ flex: 1, height: '42px', backgroundColor: '#F6F1FF', color: '#5427A8', fontWeight: 700, fontSize: '13px', borderRadius: '12px', border: '1.5px solid #5427A8', cursor: 'pointer' }}
+              >
+                Re-bargain Fare
+              </button>
+              <button
+                onClick={() => {
+                  RideXAPI.cancelRide().catch(() => {});
+                  onNavigate('s07_home');
+                }}
+                style={{ flex: 1, height: '42px', backgroundColor: '#FFF0F0', color: '#EF4444', fontWeight: 700, fontSize: '13px', borderRadius: '12px', border: '1px solid #FFD0D0', cursor: 'pointer' }}
+              >
+                Cancel Ride
+              </button>
+            </div>
           </div>
         ) : isUnreachable ? (
           <div style={{ textAlign: 'center', padding: '6px 0' }}>
@@ -4778,7 +4789,7 @@ export function Screen14FindingDriver({ onNavigate }) {
               </button>
 
               <button
-                onClick={() => onNavigate('s13_fare_estimate')}
+                onClick={() => onNavigate('s11_route_preview')}
                 style={{
                   width: '100%',
                   height: '44px',
@@ -4826,12 +4837,23 @@ export function Screen14FindingDriver({ onNavigate }) {
             <p style={{ fontSize: '12px', color: '#6B5B7D', marginBottom: '16px' }}>
               Nearby drivers in Dindigul are reviewing your fare. Open the Driver App to accept!
             </p>
-            <button
-              onClick={() => onNavigate('s11_route_preview')}
-              style={{ width: '100%', height: '42px', backgroundColor: '#FFF0F0', color: '#EF4444', fontWeight: 700, fontSize: '13px', borderRadius: '12px', border: '1px solid #FFD0D0', cursor: 'pointer' }}
-            >
-              Cancel Search / Re-bargain
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => onNavigate('s11_route_preview')}
+                style={{ flex: 1, height: '42px', backgroundColor: '#F6F1FF', color: '#5427A8', fontWeight: 700, fontSize: '13px', borderRadius: '12px', border: '1.5px solid #5427A8', cursor: 'pointer' }}
+              >
+                Re-bargain Fare
+              </button>
+              <button
+                onClick={() => {
+                  RideXAPI.cancelRide().catch(() => {});
+                  onNavigate('s07_home');
+                }}
+                style={{ flex: 1, height: '42px', backgroundColor: '#FFF0F0', color: '#EF4444', fontWeight: 700, fontSize: '13px', borderRadius: '12px', border: '1px solid #FFD0D0', cursor: 'pointer' }}
+              >
+                Cancel Ride
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -4846,17 +4868,30 @@ export function Screen15DriverAssigned({ onNavigate }) {
   const activeDriver = getActiveDriver();
 
   useEffect(() => {
-    const unsub = socketService.on('ride:status_changed', (data) => {
-      if (data && data.status === 'driver_arrived') {
+    const handleStatus = (st) => {
+      if (!st) return;
+      if (st === 'driver_arrived') {
         sounds.playDriverArrived();
         onNavigate('s17_driver_arrived');
-      } else if (data && (data.status === 'trip_started' || data.status === 'trip_in_progress')) {
+      } else if (st === 'trip_started' || st === 'trip_in_progress') {
         onNavigate('s19_trip_in_progress');
-      } else if (data && data.status === 'driver_arriving') {
+      } else if (st === 'driver_arriving') {
         onNavigate('s16_driver_arriving');
+      } else if (st === 'completed') {
+        sounds.playTripCompleted();
+        onNavigate('s20_trip_completed');
       }
+    };
+    const unsub1 = socketService.on('ride:status_changed', (data) => {
+      if (data && data.status) handleStatus(data.status);
     });
-    return () => unsub();
+    const unsub2 = socketService.on('ride:updated', (ride) => {
+      if (ride && ride.status) handleStatus(ride.status);
+    });
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, [onNavigate]);
 
   return (
@@ -4975,18 +5010,29 @@ export function Screen16DriverArriving({ onNavigate }) {
       setCountdown((prev) => (prev > 1 ? prev - 1 : 1));
     }, 1000);
 
-    const unsub = socketService.on('ride:status_changed', (data) => {
-      if (data && data.status === 'driver_arrived') {
+    const handleStatus = (st) => {
+      if (!st) return;
+      if (st === 'driver_arrived') {
         sounds.playDriverArrived();
         onNavigate('s17_driver_arrived');
-      } else if (data && (data.status === 'trip_started' || data.status === 'trip_in_progress')) {
+      } else if (st === 'trip_started' || st === 'trip_in_progress') {
         onNavigate('s19_trip_in_progress');
+      } else if (st === 'completed') {
+        sounds.playTripCompleted();
+        onNavigate('s20_trip_completed');
       }
+    };
+    const unsub1 = socketService.on('ride:status_changed', (data) => {
+      if (data && data.status) handleStatus(data.status);
+    });
+    const unsub2 = socketService.on('ride:updated', (ride) => {
+      if (ride && ride.status) handleStatus(ride.status);
     });
 
     return () => {
       clearInterval(timer);
-      unsub();
+      unsub1();
+      unsub2();
     };
   }, [onNavigate]);
 
@@ -5156,12 +5202,25 @@ export function Screen17DriverArrived({ onNavigate }) {
 
   useEffect(() => {
     sounds.playDriverArrived();
-    const unsub = socketService.on('ride:status_changed', (data) => {
-      if (data && (data.status === 'trip_started' || data.status === 'trip_in_progress')) {
+    const handleStatus = (st) => {
+      if (!st) return;
+      if (st === 'trip_started' || st === 'trip_in_progress') {
         onNavigate('s19_trip_in_progress');
+      } else if (st === 'completed') {
+        sounds.playTripCompleted();
+        onNavigate('s20_trip_completed');
       }
+    };
+    const unsub1 = socketService.on('ride:status_changed', (data) => {
+      if (data && data.status) handleStatus(data.status);
     });
-    return () => unsub();
+    const unsub2 = socketService.on('ride:updated', (ride) => {
+      if (ride && ride.status) handleStatus(ride.status);
+    });
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, [onNavigate]);
 
   return (
@@ -5245,15 +5304,25 @@ export function Screen18TripStarted({ onNavigate }) {
   const activeDriver = getActiveDriver();
 
   useEffect(() => {
-    const unsub = socketService.on('ride:status_changed', (data) => {
-      if (data && data.status === 'completed') {
+    const handleStatus = (st) => {
+      if (!st) return;
+      if (st === 'completed') {
         sounds.playTripCompleted();
         onNavigate('s20_trip_completed');
-      } else if (data && data.status === 'trip_in_progress') {
+      } else if (st === 'trip_in_progress') {
         onNavigate('s19_trip_in_progress');
       }
+    };
+    const unsub1 = socketService.on('ride:status_changed', (data) => {
+      if (data && data.status) handleStatus(data.status);
     });
-    return () => unsub();
+    const unsub2 = socketService.on('ride:updated', (ride) => {
+      if (ride && ride.status) handleStatus(ride.status);
+    });
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, [onNavigate]);
 
   return (
@@ -5336,16 +5405,24 @@ export function Screen19TripInProgress({ onNavigate }) {
       setTripSeconds((prev) => (prev > 1 ? prev - 1 : 1));
     }, 1000);
 
-    const unsub = socketService.on('ride:status_changed', (data) => {
-      if (data && data.status === 'completed') {
+    const handleStatus = (st) => {
+      if (!st) return;
+      if (st === 'completed') {
         sounds.playTripCompleted();
         onNavigate('s20_trip_completed');
       }
+    };
+    const unsub1 = socketService.on('ride:status_changed', (data) => {
+      if (data && data.status) handleStatus(data.status);
+    });
+    const unsub2 = socketService.on('ride:updated', (ride) => {
+      if (ride && ride.status) handleStatus(ride.status);
     });
 
     return () => {
       clearInterval(timer);
-      unsub();
+      unsub1();
+      unsub2();
     };
   }, [onNavigate]);
 
@@ -5989,7 +6066,12 @@ export function Screen23RideHistory({ onNavigate }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
       <div style={{ padding: '16px 20px', backgroundColor: '#5427A8', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(84, 39, 168, 0.2)' }}>
-        <span style={{ fontSize: '18px', fontWeight: 800 }}>Your Rides</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={() => onNavigate('s07_home')} style={{ color: '#FFFFFF', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
+            <ArrowLeft size={20} />
+          </button>
+          <span style={{ fontSize: '18px', fontWeight: 800 }}>Your Rides</span>
+        </div>
         <span style={{ fontSize: '12px', backgroundColor: '#F5C400', color: '#24153F', fontWeight: 800, padding: '3px 8px', borderRadius: '8px' }}>
           {rides.length} Total
         </span>
@@ -6576,7 +6658,12 @@ export function Screen28Wallet({ onNavigate }) {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF', position: 'relative' }}>
       {/* Top Header */}
       <div style={{ padding: '16px 20px', backgroundColor: '#5427A8', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(84, 39, 168, 0.2)' }}>
-        <span style={{ fontSize: '18px', fontWeight: 800 }}>FG DRIVO Wallet</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={() => onNavigate('s07_home')} style={{ color: '#FFFFFF', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
+            <ArrowLeft size={20} />
+          </button>
+          <span style={{ fontSize: '18px', fontWeight: 800 }}>FG DRIVO Wallet</span>
+        </div>
         <button onClick={() => onNavigate('s26_payment_methods')} style={{ color: '#24153F', backgroundColor: '#F5C400', fontSize: '12px', fontWeight: 800, padding: '4px 10px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>
           Manage
         </button>

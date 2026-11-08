@@ -153,6 +153,7 @@ export default function GoogleMapCanvas({
               height: '100%',
               border: 0,
               display: 'block',
+              pointerEvents: 'none',
             }}
             allowFullScreen
             loading="lazy"
