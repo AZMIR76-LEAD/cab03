@@ -820,9 +820,16 @@ nav button b{font-size:19px}
 .dmb{position:absolute;top:10px;right:10px;border:1.5px dashed #e0b400;background:#fff9e0;color:#7a5a00;font-size:11px;font-weight:800;padding:5px 10px;border-radius:14px;cursor:pointer;opacity:.9}.dmb:active{transform:scale(.96)}
 
 /* ===== side menu (drawer) ===== */
-.hl{display:flex;align-items:center;gap:10px}
-.hb{width:40px;height:40px;border:0;border-radius:12px;background:rgba(255,255,255,.18);color:#fff;font-size:22px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;flex:none}
-.hb u{position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:var(--red);border:2px solid #3b1a80;text-decoration:none}
+.hl{display:flex;align-items:center;gap:12px}
+.hb{width:42px;height:42px;border:1.5px solid #ede8f5;border-radius:12px;background:#f4effa;color:#5427a8;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;flex:none;box-shadow:0 2px 8px rgba(84,39,168,.08);transition:transform .15s,background .15s}
+.hb:active{transform:scale(0.96);background:#ebe3f7}
+.hb svg{display:block;width:22px;height:22px;stroke:#5427a8}
+.hb u{position:absolute;top:4px;right:4px;width:10px;height:10px;border-radius:50%;background:var(--red);border:2px solid #fff;text-decoration:none;box-shadow:0 0 4px rgba(224,38,45,.5)}
+.hr{display:flex;align-items:center;gap:8px;margin-left:auto}
+.gp{background:#fff9e3!important;border:1.5px solid #f5d84a!important;color:#24153f!important;border-radius:16px;padding:5px 10px;font-size:11.5px;font-weight:800;min-width:98px;text-align:center;box-shadow:0 2px 8px rgba(245,196,0,.15);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gp #gpt{color:#24153f!important;font-weight:800;font-size:11px;letter-spacing:-0.2px;display:flex;align-items:center;gap:3px}
+.gp i{display:block;width:100%;height:4px;background:rgba(226,193,90,.35)!important;border-radius:4px;margin-top:3px;overflow:hidden}
+.gp b{display:block;height:100%;width:0;background:#f5c400!important;transition:.4s}
 header .logo{font-size:22px}
 .dw{position:absolute;inset:0;z-index:40;visibility:hidden;transition:visibility .3s}
 .dw.open{visibility:visible}
@@ -871,7 +878,7 @@ header .logo{font-size:22px}
 
 
 /* FG DRIVO brand refresh: clearer hierarchy, warmer contrast, and consistent controls */
-:root{--p:#4b478c;--y:#d7ad36;--ink:#211f3b;--bg:#f5f5fa;--red:#cf3f49;--g:#16875d}
+:root{--p:#5427a8;--y:#f5c400;--ink:#24153f;--bg:#f8f6fd;--red:#e0262d;--g:#1fa463}
 html,body{background:#e8e8f0;color:var(--ink)}
 #app{background:var(--bg);box-shadow:0 18px 60px rgba(29,25,62,.18)}
 .logo{display:block!important;width:106px;height:44px;font-size:0!important;color:transparent!important;background:#fff url("fg-logo.png") center/contain no-repeat;border-radius:8px;flex:none}
@@ -880,10 +887,12 @@ html,body{background:#e8e8f0;color:var(--ink)}
 .lgc .logo{width:100%;height:122px;border-radius:10px}
 .tb .logo{width:96px;height:40px}
 .rh .logo{width:88px;height:36px}
-header{height:68px;padding:0 14px;background:#fff!important;box-shadow:0 4px 20px rgba(31,28,62,.08)!important;border-bottom:1px solid #e9e8f0}
+header{height:68px;padding:0 14px;background:#fff!important;box-shadow:0 4px 20px rgba(31,28,62,.08)!important;border-bottom:1px solid #e9e8f0;display:flex;align-items:center;justify-content:space-between}
 header .logo{width:96px;height:40px}
-header .pill{background:#f0eff5!important;color:#615d78!important;border:1px solid #e4e2ec}
-header .pill.on{background:#e4f4eb!important;color:#16875d!important;border-color:#c8e9d8}
+header .pill{font-size:11px;font-weight:800;padding:6px 12px;border-radius:20px;background:#f0eff5!important;color:#5a5470!important;border:1.5px solid #e2dfec!important;display:inline-flex!important;align-items:center;gap:5px}
+header .pill.on{background:#e4f4eb!important;color:#16875d!important;border-color:#aae0c4!important}
+header .hb{width:42px;height:42px;border:1.5px solid #ede8f5!important;border-radius:12px;background:#f4effa!important;color:#5427a8!important;cursor:pointer;display:flex!important;align-items:center;justify-content:center}
+header .hb svg{display:block;stroke:#5427a8!important}
 main{padding:16px 16px 92px;background:linear-gradient(180deg,#f7f7fb,#f2f2f8)}
 .card,.stat,.booking-ui-card{border:1px solid #ebeaf2;border-radius:20px;box-shadow:0 5px 18px rgba(35,32,67,.06)}
 .hcard{border-radius:24px;background:linear-gradient(135deg,#37356e,#514d96 65%,#6f6ba9);box-shadow:0 14px 30px rgba(61,57,128,.22)}
@@ -1160,7 +1169,23 @@ input,select{border-color:#dfdeea;background:#fff}input:focus,select:focus{borde
 
 
 <div id="home" class="hide">
-<header><div class="hl"><button class="hb" id="hb" aria-label="Menu">&#9776;<u id="hbd"></u></button><div class="logo">FG <span>DRIVO</span></div></div><div class="pill" id="pill">OFFLINE</div><div class="gp" id="gpill"><span id="gpt">🎯 ₹0 / ₹2,000</span><i><b id="gpb"></b></i></div></header>
+<header>
+  <div class="hl">
+    <button class="hb" id="hb" aria-label="Menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+      <u id="hbd"></u>
+    </button>
+    <div class="logo">FG <span>DRIVO</span></div>
+  </div>
+  <div class="hr">
+    <div class="pill" id="pill">OFFLINE</div>
+    <div class="gp" id="gpill"><span id="gpt">🎯 ₹0 / ₹2,000</span><i><b id="gpb"></b></i></div>
+  </div>
+</header>
 <main>
  <section class="tab show" id="t-home">
   <div class="hcard"><div class="row"><div><small data-t>Welcome back</small><b id="hgn"></b><small id="hgc"></small></div><div class="rp" id="hrp">&#9733; --</div></div></div>
@@ -1685,8 +1710,8 @@ function live(){if(WID||!navigator.geolocation||!(S.loc&&S.loc.lat))return;if(!S
   if(first){first=0;MP.setView(ll,17);$("mfol").style.background="#f5c400"}else if(fol)MP.panTo(ll,{animate:true})},function(){},{enableHighAccuracy:true,maximumAge:2000,timeout:20000})}
 setInterval(function(){if(!window.LF||!MP||!MK)return;if(cur!==MP){cur=MP;setup()}live()},700);
 })();
-/* ---------- v4: daily goal in header, status pill hidden ---------- */
-(function(){var e=document.createElement("style");e.textContent="#pill{display:none!important}.gp{background:rgba(255,255,255,.18);color:#fff;border-radius:16px;padding:6px 12px;font-size:12px;font-weight:700;min-width:104px;text-align:center}.gp i{display:block;height:4px;background:rgba(255,255,255,.25);border-radius:4px;margin-top:4px;overflow:hidden}.gp b{display:block;height:100%;width:0;background:#f5c400;transition:.4s}";document.head.appendChild(e)})();
+/* ---------- v4: daily goal in header ---------- */
+(function(){var e=document.createElement("style");e.textContent=".gp{background:#fff9e3!important;border:1.5px solid #f5d84a!important;color:#24153f!important;border-radius:16px;padding:5px 10px;font-size:11.5px;font-weight:800;min-width:98px;text-align:center}.gp #gpt{color:#24153f!important;font-weight:800}.gp i{display:block;width:100%;height:4px;background:rgba(226,193,90,.35)!important;border-radius:4px;margin-top:3px;overflow:hidden}.gp b{display:block;height:100%;width:0;background:#f5c400!important;transition:.4s}";document.head.appendChild(e)})();
 var _st4=stats;stats=function(){_st4();var g=2000;$("gpt").textContent="\uD83C\uDFAF "+inr(S.earn)+" / "+inr(g);$("gpb").style.width=Math.min(100,S.earn/g*100)+"%"};
 /* ---------- v5: ratings inside Profile, compact map credit ---------- */
 (function(){var e=document.createElement("style");e.textContent=".sec{font-size:15px;margin:2px 4px 10px}.rhero{background:linear-gradient(150deg,#241052,#5427a8 65%,#7e52d6);color:#fff;border-radius:26px;padding:20px;display:flex;gap:18px;align-items:center;margin-bottom:14px;box-shadow:0 14px 34px rgba(84,39,168,.35);position:relative;overflow:hidden}.rhero::after{content:'';position:absolute;right:-50px;top:-60px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,rgba(245,196,0,.35),transparent 70%)}.rl{text-align:center;min-width:92px;position:relative;z-index:1}.rbig{font-size:54px;font-weight:900;line-height:1;color:#f5c400}.rl small{display:block;font-size:11px;opacity:.8;margin-top:4px}.st2{color:#f5c400;letter-spacing:2px;font-size:14px;margin-top:6px}.rr{flex:1;position:relative;z-index:1}.rbp{display:flex;align-items:center;gap:8px;font-size:11px;margin:5px 0}.rbp>div{flex:1;height:6px;background:rgba(255,255,255,.2);border-radius:6px;overflow:hidden}.rbp i{display:block;height:100%;background:#f5c400}.rbp span:first-child{width:22px}.rbp span:last-child{width:18px;text-align:right}.rv2{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #f0ebf8}.rv2:last-child{border:0}.rav{flex:none;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#5427a8,#7e52d6);color:#f5c400;font-weight:900;display:flex;align-items:center;justify-content:center}.rbd{flex:1}.rbd p{margin:5px 0;font-size:14px;line-height:1.45}.rbd small{color:#7a6c94;font-size:11px}.rchip{background:#fff6d6;color:#9a6b00;font-size:12px;font-weight:800;padding:3px 9px;border-radius:12px}.leaflet-control-attribution{font-size:0!important;background:rgba(255,255,255,.85)!important;border-radius:12px 0 0 0;padding:0 8px!important;line-height:22px;cursor:pointer}.leaflet-control-attribution::before{content:'\\24D8';font-size:15px;color:#5427a8}.leaflet-control-attribution svg{display:none!important}.leaflet-control-attribution.open{font-size:10px!important}.leaflet-control-attribution.open::before{content:''}.leaflet-control-attribution.open svg{display:inline!important}";document.head.appendChild(e)})();
