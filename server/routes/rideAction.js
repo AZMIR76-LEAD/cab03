@@ -13,7 +13,7 @@ router.post('/:rideId/accept', (req, res) => {
   const { ph, name, vehicleType, vehicleNumber, rating, coords, fare } = req.body;
 
   RideSimulationService.stopSimulation();
-  const activeRide = db.get('activeRide');
+  const activeRide = db.getActiveRide(rideId);
   if (activeRide) {
     activeRide.status = RIDE_STATUSES.DRIVER_ASSIGNED;
     const realDriver = {
@@ -30,6 +30,7 @@ router.post('/:rideId/accept', (req, res) => {
       },
     };
     activeRide.driver = realDriver;
+    if (fare) activeRide.fare = Number(fare);
     if (coords && coords.lat) {
       activeRide.telematics = {
         ...activeRide.telematics,
@@ -37,11 +38,11 @@ router.post('/:rideId/accept', (req, res) => {
         lastUpdated: new Date().toISOString(),
       };
     }
-    db.save();
+    db.saveActiveRide(activeRide);
 
-    console.log(`\x1b[32m[RideAction]\x1b[0m Driver ${realDriver.name} accepted ride ${rideId}`);
+    console.log(`\x1b[32m[RideAction]\x1b[0m Driver ${realDriver.name} accepted ride ${activeRide.id} (Fare: ₹${activeRide.fare})`);
 
-    // Emit real driver bid to the passenger finding screen
+    // Emit real driver bid to the passenger finding screen (Targeted room)
     emitRideEvent(activeRide.id, 'ride:driver_bid', {
       rideId: activeRide.id,
       driverId: realDriver.id,
@@ -64,21 +65,33 @@ router.post('/:rideId/accept', (req, res) => {
     emitDriverTelemetry(activeRide.id, activeRide.telematics);
   }
 
-  res.json({ ok: 1, success: true, status: 'accepted', rideId });
+  res.json({ ok: 1, success: true, status: 'accepted', rideId, ride: activeRide });
 });
 
 // Decline offer
 router.post('/:rideId/decline', (req, res) => {
-  res.json({ ok: 1, success: true, status: 'declined', rideId: req.params.rideId });
+  const { rideId } = req.params;
+  const cleanPhone = (req.body.ph || '').replace(/\D/g, '').slice(-10);
+  const ride = db.getActiveRide(rideId);
+  if (ride && cleanPhone) {
+    if (!ride.declinedBy) ride.declinedBy = [];
+    if (!ride.declinedBy.includes(cleanPhone)) {
+      ride.declinedBy.push(cleanPhone);
+      db.save();
+    }
+    console.log(`\x1b[33m[RideAction]\x1b[0m Driver ${cleanPhone} declined ride ${rideId}`);
+  }
+  res.json({ ok: 1, success: true, status: 'declined', rideId });
 });
 
 // Arrived at pickup
 router.post('/:rideId/arrived', (req, res) => {
-  const activeRide = db.get('activeRide');
+  const { rideId } = req.params;
+  const activeRide = db.getActiveRide(rideId);
   if (activeRide) {
     activeRide.status = RIDE_STATUSES.DRIVER_ARRIVED;
     activeRide.arrivedAt = new Date().toISOString();
-    db.save();
+    db.saveActiveRide(activeRide);
     emitRideEvent(activeRide.id, 'ride:status_changed', {
       rideId: activeRide.id,
       status: activeRide.status,
@@ -87,20 +100,21 @@ router.post('/:rideId/arrived', (req, res) => {
     });
     emitRideEvent(activeRide.id, 'ride:updated', activeRide);
   }
-  res.json({ ok: 1, success: true, status: 'arrived' });
+  res.json({ ok: 1, success: true, status: 'arrived', rideId });
 });
 
 // Start trip with passenger OTP
 router.post('/:rideId/start', (req, res) => {
+  const { rideId } = req.params;
   const { otp } = req.body;
-  const activeRide = db.get('activeRide');
+  const activeRide = db.getActiveRide(rideId);
   const expectedOtp = activeRide?.otp || '4819';
 
   if (otp && (otp === expectedOtp || (!activeRide && otp.length === 4))) {
     if (activeRide) {
       activeRide.status = RIDE_STATUSES.TRIP_IN_PROGRESS;
       activeRide.startedAt = new Date().toISOString();
-      db.save();
+      db.saveActiveRide(activeRide);
       emitRideEvent(activeRide.id, 'ride:status_changed', {
         rideId: activeRide.id,
         status: activeRide.status,
@@ -109,7 +123,7 @@ router.post('/:rideId/start', (req, res) => {
       });
       emitRideEvent(activeRide.id, 'ride:updated', activeRide);
     }
-    return res.json({ ok: 1, success: true, status: 'in_progress' });
+    return res.json({ ok: 1, success: true, status: 'in_progress', rideId });
   }
 
   res.status(400).json({ ok: 0, error: 'Incorrect passenger OTP' });
@@ -117,11 +131,12 @@ router.post('/:rideId/start', (req, res) => {
 
 // Complete trip
 router.post('/:rideId/complete', (req, res) => {
-  const activeRide = db.get('activeRide');
+  const { rideId } = req.params;
+  const activeRide = db.getActiveRide(rideId);
   if (activeRide) {
     activeRide.status = RIDE_STATUSES.COMPLETED;
     activeRide.completedAt = new Date().toISOString();
-    db.save();
+    db.saveActiveRide(activeRide);
     emitRideEvent(activeRide.id, 'ride:status_changed', {
       rideId: activeRide.id,
       status: activeRide.status,
@@ -130,19 +145,20 @@ router.post('/:rideId/complete', (req, res) => {
     });
     emitRideEvent(activeRide.id, 'ride:completed', activeRide);
   }
-  res.json({ ok: 1, success: true, status: 'completed' });
+  res.json({ ok: 1, success: true, status: 'completed', rideId });
 });
 
 // Pay / Settle trip
 router.post('/:rideId/pay', (req, res) => {
+  const { rideId } = req.params;
   const { method, amount } = req.body;
-  const activeRide = db.get('activeRide');
+  const activeRide = db.getActiveRide(rideId);
   if (activeRide) {
     activeRide.status = RIDE_STATUSES.COMPLETED;
     activeRide.paymentStatus = 'Paid';
     activeRide.paymentMethod = method || 'cash';
     activeRide.fare = Number(amount) || activeRide.fare;
-    db.save();
+    db.saveActiveRide(activeRide);
     emitRideEvent(activeRide.id, 'ride:status_changed', {
       rideId: activeRide.id,
       status: activeRide.status,
@@ -151,12 +167,13 @@ router.post('/:rideId/pay', (req, res) => {
     });
     emitRideEvent(activeRide.id, 'ride:completed', activeRide);
   }
-  res.json({ ok: 1, success: true, method, amount });
+  res.json({ ok: 1, success: true, method, amount, rideId });
 });
 
 // Call customer relay
 router.post('/:rideId/call', (req, res) => {
-  const activeRide = db.get('activeRide');
+  const { rideId } = req.params;
+  const activeRide = db.getActiveRide(rideId);
   const riderPhone = activeRide?.riderPhone || '+91 98765 11223';
   res.json({ ok: 1, success: true, customerPhone: riderPhone, maskedNumber: '+91 451 240 9988' });
 });

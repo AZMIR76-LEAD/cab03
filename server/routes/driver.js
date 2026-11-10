@@ -215,62 +215,67 @@ router.post('/:phone/location', (req, res) => {
 });
 
 router.get('/:phone/ride', (req, res) => {
-  const activeRide = db.get('activeRide');
-  if (activeRide && (activeRide.status === RIDE_STATUSES.FINDING_DRIVER || activeRide.status === 'offered')) {
-    const cleanPhone = (req.params.phone || '').replace(/\D/g, '').slice(-10);
-    const existing = driverStore.get(cleanPhone);
-    const dbDrivers = db.get('drivers') || [];
-    const dbDriver = dbDrivers.find(
-      (d) => (d.phone || '').replace(/\D/g, '').includes(cleanPhone) || (d.id || '').includes(cleanPhone)
-    );
+  const cleanPhone = (req.params.phone || '').replace(/\D/g, '').slice(-10);
+  const existing = driverStore.get(cleanPhone);
+  const dbDrivers = db.get('drivers') || [];
+  const dbDriver = dbDrivers.find(
+    (d) => (d.phone || '').replace(/\D/g, '').includes(cleanPhone) || (d.id || '').includes(cleanPhone)
+  );
 
-    const driverVtRaw =
-      existing?.D?.city?.vt ||
-      dbDriver?.vehicle?.category ||
-      dbDriver?.vehicle?.model ||
-      dbDriver?.vehicleType ||
-      '';
-    const rideCatRaw = activeRide.vehicleType || activeRide.category || '';
+  const driverVtRaw =
+    existing?.D?.city?.vt ||
+    dbDriver?.vehicle?.category ||
+    dbDriver?.vehicle?.model ||
+    dbDriver?.vehicleType ||
+    '';
 
-    const normalizeCat = (c) => {
-      if (!c) return '';
-      const s = String(c).toLowerCase();
-      if (s.includes('suv')) return 'suv';
-      if (s.includes('mini')) return 'mini';
-      if (s.includes('premium')) return 'premium';
-      if (s.includes('sedan')) return 'sedan';
-      return s.trim();
-    };
+  const normalizeCat = (c) => {
+    if (!c) return '';
+    const s = String(c).toLowerCase();
+    if (s.includes('suv')) return 'suv';
+    if (s.includes('mini')) return 'mini';
+    if (s.includes('premium')) return 'premium';
+    if (s.includes('sedan')) return 'sedan';
+    return s.trim();
+  };
 
-    const dCat = normalizeCat(driverVtRaw);
-    const rCat = normalizeCat(rideCatRaw);
+  const dCat = normalizeCat(driverVtRaw);
 
-    // If both driver vehicle category and ride category are known, enforce exact match
-    if (dCat && rCat && dCat !== rCat) {
-      return res.json({ success: true, ride: null });
-    }
+  const allRides = db.getAllActiveRides();
+  // Find first active ride matching category and NOT declined by this driver
+  const targetRide = allRides.find((r) => {
+    if (!r) return false;
+    if (r.status !== RIDE_STATUSES.FINDING_DRIVER && r.status !== 'offered') return false;
+    if (Array.isArray(r.declinedBy) && r.declinedBy.includes(cleanPhone)) return false;
+    const rCat = normalizeCat(r.vehicleType || r.category || '');
+    if (dCat && rCat && dCat !== rCat) return false;
+    return true;
+  });
 
+  if (targetRide) {
+    const rCat = normalizeCat(targetRide.vehicleType || targetRide.category || '');
     return res.json({
       success: true,
       ride: {
-        id: activeRide.id,
+        id: targetRide.id,
         status: 'offered',
-        category: rCat || activeRide.category,
-        vehicleType: rCat || activeRide.vehicleType,
-        pickup: activeRide.pickup,
-        drop: activeRide.destination,
-        km: parseFloat(activeRide.distance) || 14,
-        fare: activeRide.fare || 320,
-        rn: activeRide.riderName || 'Rahul S.',
+        category: rCat || targetRide.category,
+        vehicleType: rCat || targetRide.vehicleType,
+        pickup: targetRide.pickup,
+        drop: targetRide.destination,
+        km: parseFloat(targetRide.distanceKm || targetRide.distance) || 14,
+        fare: targetRide.fare || 320,
+        rn: targetRide.riderName || 'Rahul S.',
         pd: 1.2,
-        cp: '+91 98765 43210',
-        plat: activeRide.pickupCoords?.lat || 10.3673,
-        plng: activeRide.pickupCoords?.lng || 77.9803,
-        dlat: activeRide.destinationCoords?.lat || 10.2833,
-        dlng: activeRide.destinationCoords?.lng || 77.9167,
+        cp: targetRide.riderPhone || '+91 98765 43210',
+        plat: targetRide.pickupCoords?.lat || 10.3673,
+        plng: targetRide.pickupCoords?.lng || 77.9803,
+        dlat: targetRide.destinationCoords?.lat || 10.2833,
+        dlng: targetRide.destinationCoords?.lng || 77.9167,
       },
     });
   }
+
   res.json({ success: true, ride: null });
 });
 

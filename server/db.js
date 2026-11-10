@@ -25,6 +25,7 @@ export const initialSeedData = {
     goldTier: false,
   },
   activeRide: null,
+  activeRides: {},
   drivers: [
     {
       id: "DRV-8821",
@@ -871,10 +872,68 @@ class DatabaseManager {
       } else {
         this.save();
       }
+      if (!this.data.activeRides) {
+        this.data.activeRides = {};
+      }
+      // Populate activeRides from legacy activeRide if present
+      if (this.data.activeRide && this.data.activeRide.id) {
+        this.data.activeRides[this.data.activeRide.id] = this.data.activeRide;
+      }
     } catch (err) {
       console.warn('[DB Engine] Using fallback in-memory store:', err.message);
       this.data = { ...initialSeedData };
+      if (!this.data.activeRides) this.data.activeRides = {};
     }
+  }
+
+  getActiveRide(rideId) {
+    if (!this.data.activeRides) this.data.activeRides = {};
+    if (rideId && this.data.activeRides[rideId]) {
+      return this.data.activeRides[rideId];
+    }
+    if (rideId && this.data.activeRide && this.data.activeRide.id === rideId) {
+      return this.data.activeRide;
+    }
+    if (!rideId) {
+      if (this.data.activeRide) return this.data.activeRide;
+      const all = Object.values(this.data.activeRides);
+      return all.length > 0 ? all[0] : null;
+    }
+    return null;
+  }
+
+  getAllActiveRides() {
+    if (!this.data.activeRides) this.data.activeRides = {};
+    const rides = Object.values(this.data.activeRides);
+    if (rides.length === 0 && this.data.activeRide) {
+      return [this.data.activeRide];
+    }
+    return rides;
+  }
+
+  saveActiveRide(ride) {
+    if (!ride || !ride.id) return;
+    if (!this.data.activeRides) this.data.activeRides = {};
+    this.data.activeRides[ride.id] = ride;
+    this.data.activeRide = ride;
+    this.save();
+
+    if (this.isPostgresConnected) {
+      this.syncRideToPostgres(ride);
+    }
+    return ride;
+  }
+
+  removeActiveRide(rideId) {
+    if (!rideId) return;
+    if (this.data.activeRides && this.data.activeRides[rideId]) {
+      delete this.data.activeRides[rideId];
+    }
+    if (this.data.activeRide && this.data.activeRide.id === rideId) {
+      const remaining = Object.values(this.data.activeRides || {});
+      this.data.activeRide = remaining.length > 0 ? remaining[0] : null;
+    }
+    this.save();
   }
 
   save() {
@@ -896,6 +955,10 @@ class DatabaseManager {
 
   set(key, value) {
     this.data[key] = value;
+    if (key === 'activeRide' && value && value.id) {
+      if (!this.data.activeRides) this.data.activeRides = {};
+      this.data.activeRides[value.id] = value;
+    }
     this.save();
 
     // Asynchronous write-through to PostgreSQL when connected

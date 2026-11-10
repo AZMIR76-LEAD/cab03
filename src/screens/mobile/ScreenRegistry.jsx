@@ -4509,13 +4509,20 @@ export function Screen14FindingDriver({ onNavigate, selectedVehicle }) {
       });
 
     // Listen for backend notifying that no drivers are available
-    const unsubNoDrivers = socketService.on('ride:no_drivers_available', () => {
+    const unsubNoDrivers = socketService.on('ride:no_drivers_available', (data) => {
+      const myRideId = GLOBAL_ACTIVE_RIDE?.id;
+      if (data && data.rideId && myRideId && data.rideId !== myRideId) return;
       console.log('[Screen14] No drivers available event received');
       setIsUnreachable(true);
     });
 
     // Listen for real driver bid emitted when driver taps Accept in Driver App
     const unsubBid = socketService.on('ride:driver_bid', (data) => {
+      const myRideId = GLOBAL_ACTIVE_RIDE?.id;
+      if (data && data.rideId && myRideId && data.rideId !== myRideId) {
+        console.log('[Screen14] Ignored driver bid for different ride:', data.rideId, 'myRideId:', myRideId);
+        return;
+      }
       console.log('[Screen14] Real driver bid received:', data);
       if (data) {
         setIsUnreachable(false);
@@ -4541,6 +4548,8 @@ export function Screen14FindingDriver({ onNavigate, selectedVehicle }) {
     });
 
     const unsubSocket = socketService.on('ride:status_changed', (data) => {
+      const myRideId = GLOBAL_ACTIVE_RIDE?.id;
+      if (data && data.rideId && myRideId && data.rideId !== myRideId) return;
       if (data && data.ride) {
         GLOBAL_ACTIVE_RIDE = data.ride;
         if (data.ride.driver) {
@@ -4550,6 +4559,8 @@ export function Screen14FindingDriver({ onNavigate, selectedVehicle }) {
     });
 
     const unsubUpdated = socketService.on('ride:updated', (ride) => {
+      const myRideId = GLOBAL_ACTIVE_RIDE?.id;
+      if (ride && ride.id && myRideId && ride.id !== myRideId) return;
       if (ride) {
         GLOBAL_ACTIVE_RIDE = ride;
         if (ride.driver) {
@@ -4894,9 +4905,11 @@ export function Screen15DriverAssigned({ onNavigate }) {
       }
     };
     const unsub1 = socketService.on('ride:status_changed', (data) => {
+      if (data?.rideId && GLOBAL_ACTIVE_RIDE?.id && data.rideId !== GLOBAL_ACTIVE_RIDE.id) return;
       if (data && data.status) handleStatus(data.status);
     });
     const unsub2 = socketService.on('ride:updated', (ride) => {
+      if (ride?.id && GLOBAL_ACTIVE_RIDE?.id && ride.id !== GLOBAL_ACTIVE_RIDE.id) return;
       if (ride && ride.status) handleStatus(ride.status);
     });
     return () => {
@@ -5034,9 +5047,11 @@ export function Screen16DriverArriving({ onNavigate }) {
       }
     };
     const unsub1 = socketService.on('ride:status_changed', (data) => {
+      if (data?.rideId && GLOBAL_ACTIVE_RIDE?.id && data.rideId !== GLOBAL_ACTIVE_RIDE.id) return;
       if (data && data.status) handleStatus(data.status);
     });
     const unsub2 = socketService.on('ride:updated', (ride) => {
+      if (ride?.id && GLOBAL_ACTIVE_RIDE?.id && ride.id !== GLOBAL_ACTIVE_RIDE.id) return;
       if (ride && ride.status) handleStatus(ride.status);
     });
 
@@ -5223,9 +5238,11 @@ export function Screen17DriverArrived({ onNavigate }) {
       }
     };
     const unsub1 = socketService.on('ride:status_changed', (data) => {
+      if (data?.rideId && GLOBAL_ACTIVE_RIDE?.id && data.rideId !== GLOBAL_ACTIVE_RIDE.id) return;
       if (data && data.status) handleStatus(data.status);
     });
     const unsub2 = socketService.on('ride:updated', (ride) => {
+      if (ride?.id && GLOBAL_ACTIVE_RIDE?.id && ride.id !== GLOBAL_ACTIVE_RIDE.id) return;
       if (ride && ride.status) handleStatus(ride.status);
     });
     return () => {
@@ -5325,9 +5342,11 @@ export function Screen18TripStarted({ onNavigate }) {
       }
     };
     const unsub1 = socketService.on('ride:status_changed', (data) => {
+      if (data?.rideId && GLOBAL_ACTIVE_RIDE?.id && data.rideId !== GLOBAL_ACTIVE_RIDE.id) return;
       if (data && data.status) handleStatus(data.status);
     });
     const unsub2 = socketService.on('ride:updated', (ride) => {
+      if (ride?.id && GLOBAL_ACTIVE_RIDE?.id && ride.id !== GLOBAL_ACTIVE_RIDE.id) return;
       if (ride && ride.status) handleStatus(ride.status);
     });
     return () => {
@@ -5424,9 +5443,11 @@ export function Screen19TripInProgress({ onNavigate }) {
       }
     };
     const unsub1 = socketService.on('ride:status_changed', (data) => {
+      if (data?.rideId && GLOBAL_ACTIVE_RIDE?.id && data.rideId !== GLOBAL_ACTIVE_RIDE.id) return;
       if (data && data.status) handleStatus(data.status);
     });
     const unsub2 = socketService.on('ride:updated', (ride) => {
+      if (ride?.id && GLOBAL_ACTIVE_RIDE?.id && ride.id !== GLOBAL_ACTIVE_RIDE.id) return;
       if (ride && ride.status) handleStatus(ride.status);
     });
 

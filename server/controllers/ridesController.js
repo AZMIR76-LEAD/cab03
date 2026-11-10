@@ -25,7 +25,7 @@ export class RidesController {
     });
   }
 
-  static bookRide(req, res) {
+  static async bookRide(req, res) {
     const {
       category = 'sedan',
       pickup = '',
@@ -34,7 +34,14 @@ export class RidesController {
       paymentMethod = 'Cash',
       pickupCoords = { lat: 10.3673, lng: 77.9803 },
       destinationCoords = { lat: 10.2833, lng: 77.9167 },
+      riderName,
+      riderPhone,
     } = req.body;
+
+    const currentUser = (await db.getUserFromReq(req)) || db.get('user');
+    const finalRiderName = riderName || currentUser?.name || 'Passenger';
+    const finalRiderPhone = riderPhone || currentUser?.phone || '+91 98765 11223';
+    const userId = currentUser ? currentUser.id : null;
 
     const pricing = VEHICLE_PRICING[category] || VEHICLE_PRICING.sedan;
     const distanceKm = 7.8;
@@ -58,6 +65,7 @@ export class RidesController {
 
     const newRide = {
       id: rideId,
+      userId,
       createdAt: new Date().toISOString(),
       status: RIDE_STATUSES.FINDING_DRIVER,
       category: pricing.name,
@@ -73,8 +81,9 @@ export class RidesController {
       paymentMethod,
       paymentStatus: 'Pending',
       otp: String(Math.floor(1000 + Math.random() * 9000)),
-      riderName: 'Passenger',
-      riderPhone: '+91 98765 11223',
+      riderName: finalRiderName,
+      riderPhone: finalRiderPhone,
+      declinedBy: [],
       driver: null, // NO DEFAULT DRIVER - Waiting for real driver in Driver App
       telematics: {
         etaMinutes: 3,
@@ -85,7 +94,7 @@ export class RidesController {
       },
     };
 
-    db.set('activeRide', newRide);
+    db.saveActiveRide(newRide);
 
     const drivers = db.get('drivers') || [];
     const onlineDrivers = drivers.filter((d) => {
@@ -99,6 +108,7 @@ export class RidesController {
     broadcastRideOffer({
       offerId: 'OFFER-' + Math.floor(1000 + Math.random() * 9000),
       tripId: rideId,
+      rideId,
       category: targetCategory,
       vehicleType: targetCategory,
       categoryName: pricing.name,
@@ -138,8 +148,21 @@ export class RidesController {
     });
   }
 
-  static getActiveRide(req, res) {
-    const activeRide = db.get('activeRide');
+  static async getActiveRide(req, res) {
+    const { rideId } = req.query;
+    let activeRide = null;
+    if (rideId) {
+      activeRide = db.getActiveRide(rideId);
+    } else {
+      const currentUser = await db.getUserFromReq(req);
+      if (currentUser && currentUser.id) {
+        const allRides = db.getAllActiveRides();
+        activeRide = allRides.find((r) => r.userId === currentUser.id && r.status !== 'Completed' && r.status !== 'cancelled') || null;
+      }
+      if (!activeRide) {
+        activeRide = db.getActiveRide();
+      }
+    }
     return res.json({
       active: !!activeRide,
       ride: activeRide,
@@ -159,7 +182,22 @@ export class RidesController {
   }
 
   static cancelRide(req, res) {
-    RideSimulationService.cancel();
+    const { rideId } = req.body || req.query || {};
+    if (rideId) {
+      const ride = db.getActiveRide(rideId);
+      if (ride) {
+        ride.status = 'cancelled';
+        emitRideEvent(rideId, 'ride:cancelled', { rideId, id: rideId, message: 'Ride cancelled' });
+      }
+      db.removeActiveRide(rideId);
+    } else {
+      RideSimulationService.cancel();
+      const current = db.getActiveRide();
+      if (current && current.id) {
+        emitRideEvent(current.id, 'ride:cancelled', { rideId: current.id, id: current.id, message: 'Ride cancelled' });
+        db.removeActiveRide(current.id);
+      }
+    }
     return res.json({
       success: true,
       message: 'Active ride request cancelled successfully.',
@@ -169,7 +207,7 @@ export class RidesController {
   static rateRide(req, res) {
     const { id } = req.params;
     const { stars = 5, feedbackTags = [], comment = '' } = req.body;
-    const activeRide = db.get('activeRide');
+    const activeRide = db.getActiveRide(id);
 
     if (activeRide && activeRide.id === id) {
       activeRide.ratingGiven = stars;
@@ -197,6 +235,7 @@ export class RidesController {
       db.update('rides', (list) => [
         {
           id: activeRide.id,
+          userId: activeRide.userId,
           date: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           status: 'Completed',
           category: activeRide.category,
@@ -213,7 +252,7 @@ export class RidesController {
         ...list,
       ]);
 
-      db.set('activeRide', null);
+      db.removeActiveRide(id);
     } else {
       // Find in existing history if already concluded
       db.update('rides', (list) =>

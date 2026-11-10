@@ -114,11 +114,12 @@ export function getIO() {
 
 export function emitRideEvent(rideId, eventName, data) {
   if (!ioInstance) return;
-  // Broadcast to room if rideId present, and also emit globally for dashboard listeners
+  // STRICT ROOM ISOLATION: Only broadcast to clients subscribed to this ride's specific room
   if (rideId) {
     ioInstance.to(`ride:${rideId}`).emit(eventName, data);
+  } else {
+    ioInstance.emit(eventName, data);
   }
-  ioInstance.emit(eventName, data);
 }
 
 export function emitDriverTelemetry(rideId, telemetry) {
