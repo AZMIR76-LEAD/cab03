@@ -281,14 +281,10 @@ router.post('/:phone/sos', (req, res) => {
 });
 
 router.get('/:phone/feedback', (req, res) => {
-  const feedback = [
-    { n: 'Rahul S.', s: 5, c: 'Smooth ride and very polite driver.', w: 'Today', a: 'Dindigul', b: 'Chinnalapatti' },
-    { n: 'Priya M.', s: 5, c: 'On time pickup. Clean car.', w: 'Yesterday', a: 'Madurai', b: 'Dindigul' },
-    { n: 'Arun K.', s: 4, c: 'Good driving, took a slightly longer route.', w: 'Yesterday', a: 'Dindigul', b: 'Palani' },
-    { n: 'Divya R.', s: 5, c: 'Felt very safe. Thank you!', w: 'Mon', a: 'Dindigul', b: 'Kodaikanal' },
-    { n: 'Suresh B.', s: 3, c: 'Car AC was not cool enough.', w: 'Sun', a: 'Palani', b: 'Dindigul' },
-  ];
-  res.json({ success: true, feedback });
+  const cleanPhone = (req.params.phone || '').replace(/\D/g, '').slice(-10);
+  const feedbacks = db.get('driverFeedback') || {};
+  const driverFeedbacks = feedbacks[cleanPhone] || [];
+  res.json({ success: true, feedback: driverFeedbacks });
 });
 
 // 6. Offer Acceptance / Decline

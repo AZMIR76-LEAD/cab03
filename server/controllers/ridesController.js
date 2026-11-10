@@ -177,6 +177,22 @@ export class RidesController {
       activeRide.comment = comment;
       activeRide.status = 'Completed';
 
+      // Record real customer review in driver feedback directory
+      if (activeRide.driver) {
+        const cleanPhone = (activeRide.driver.phone || '').replace(/\D/g, '').slice(-10);
+        const feedbacks = db.get('driverFeedback') || {};
+        if (!feedbacks[cleanPhone]) feedbacks[cleanPhone] = [];
+        feedbacks[cleanPhone].unshift({
+          n: activeRide.riderName || 'Customer',
+          s: Number(stars) || 5,
+          c: comment || (feedbackTags.length > 0 ? feedbackTags.join(', ') : 'Smooth and safe ride.'),
+          w: 'Today',
+          a: activeRide.pickup || 'Pickup',
+          b: activeRide.destination || 'Destination',
+        });
+        db.set('driverFeedback', feedbacks);
+      }
+
       // Insert into ride history
       db.update('rides', (list) => [
         {
