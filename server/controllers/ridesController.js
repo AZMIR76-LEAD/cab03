@@ -44,11 +44,24 @@ export class RidesController {
 
     const rideId = 'RX-' + Math.floor(10000 + Math.random() * 90000);
 
+    const normalizeCat = (cat) => {
+      if (!cat) return '';
+      const c = String(cat).toLowerCase();
+      if (c.includes('suv')) return 'suv';
+      if (c.includes('mini')) return 'mini';
+      if (c.includes('premium')) return 'premium';
+      if (c.includes('sedan')) return 'sedan';
+      return c.trim();
+    };
+
+    const targetCategory = normalizeCat(category);
+
     const newRide = {
       id: rideId,
       createdAt: new Date().toISOString(),
       status: RIDE_STATUSES.FINDING_DRIVER,
       category: pricing.name,
+      vehicleType: targetCategory,
       pickup: pickup || 'Pickup Point',
       destination: destination || 'Destination Point',
       pickupCoords,
@@ -75,13 +88,20 @@ export class RidesController {
     db.set('activeRide', newRide);
 
     const drivers = db.get('drivers') || [];
-    const onlineDrivers = drivers.filter((d) => d.isOnline);
+    const onlineDrivers = drivers.filter((d) => {
+      if (!d.isOnline) return false;
+      const driverCat = normalizeCat(d.vehicle?.category || d.vehicle?.model || d.vehicleType);
+      return !driverCat || driverCat === targetCategory;
+    });
     const hasOnlineDrivers = onlineDrivers.length > 0;
 
-    // Broadcast ride offer to real connected driver partners via WebSocket
+    // Broadcast ride offer to real connected driver partners matching this vehicle category
     broadcastRideOffer({
       offerId: 'OFFER-' + Math.floor(1000 + Math.random() * 9000),
       tripId: rideId,
+      category: targetCategory,
+      vehicleType: targetCategory,
+      categoryName: pricing.name,
       pickupArea: newRide.pickup,
       pickupDistanceKm: 1.2,
       pickupEtaMins: 3,
@@ -96,13 +116,14 @@ export class RidesController {
       timeoutSeconds: 30,
     });
 
-    console.log(`\x1b[32m[Dispatch]\x1b[0m New ride ${rideId} broadcasted to driver pool: ${newRide.pickup} -> ${newRide.destination} (₹${totalFare}) [Online: ${onlineDrivers.length}]`);
+    console.log(`\x1b[32m[Dispatch]\x1b[0m New ride ${rideId} (${targetCategory}) broadcasted to driver pool: ${newRide.pickup} -> ${newRide.destination} (₹${totalFare}) [Matching Online: ${onlineDrivers.length}]`);
 
     if (!hasOnlineDrivers) {
-      console.log(`\x1b[33m[Dispatch]\x1b[0m 0 drivers currently online for ride ${rideId}`);
+      console.log(`\x1b[33m[Dispatch]\x1b[0m 0 drivers currently online for ${targetCategory} ride ${rideId}`);
       setTimeout(() => {
         emitRideEvent(rideId, 'ride:no_drivers_available', {
           rideId,
+          category: targetCategory,
           message: "Drivers couldn't be reached at this moment",
         });
       }, 3000);

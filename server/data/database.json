@@ -1,17 +1,17 @@
 {
   "user": {
-    "id": "USR-3069",
-    "phone": "+91 6385675007",
-    "name": "thamir",
-    "greetingName": "thamir",
-    "email": "thamir@fgdrivo.com",
+    "id": "USR-3257",
+    "phone": "+91 9487169726",
+    "name": "azmir",
+    "greetingName": "azmir",
+    "email": "azmir@fgdrivo.com",
     "rating": 5,
     "walletBalance": 0,
     "totalRides": 0,
     "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
   },
   "activeRide": {
-    "id": "RX-TEST-8413",
+    "id": "RX-TEST-2251",
     "status": "completed",
     "category": "Sedan",
     "pickup": "Dindigul Railway Junction",
@@ -40,9 +40,9 @@
       },
       "heading": 135
     },
-    "arrivedAt": "2026-11-08T18:19:06.436Z",
-    "startedAt": "2026-11-08T18:19:06.438Z",
-    "completedAt": "2026-11-08T18:19:06.439Z",
+    "arrivedAt": "2026-11-10T17:08:08.297Z",
+    "startedAt": "2026-11-10T17:08:08.308Z",
+    "completedAt": "2026-11-10T17:08:08.318Z",
     "fareBreakdown": {
       "grossFare": 232,
       "platformFee": 27.84,
@@ -75,11 +75,10 @@
         "licensePlate": "KA 01 AB 1234"
       },
       "coords": {
-        "lat": 10.909448,
-        "lng": 79.34087725
+        "na": 1
       },
       "isOnline": false,
-      "socketId": "avVsu3gmIh34Vrz0AAAG"
+      "socketId": "cFoKBFy74CdSufBrAAAQ"
     }
   ],
   "rides": [],

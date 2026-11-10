@@ -1615,7 +1615,7 @@ $("loc-sk").onclick=function(){S.loc={na:1};locGate()};
 /* ---------- live location + real rides ---------- */
 function pushLoc(){if(S.ph&&S.loc&&S.loc.lat)api("POST","/api/driver/"+S.ph+"/location",{lat:S.loc.lat,lng:S.loc.lng,online:S.on},function(){})}
 function watchLoc(){if(S.wid||!navigator.geolocation)return;S.wid=navigator.geolocation.watchPosition(function(p){S.loc={lat:p.coords.latitude,lng:p.coords.longitude};var n=Date.now();if(n-(S.lp||0)>4000){S.lp=n;pushLoc()}},function(){},{enableHighAccuracy:true,maximumAge:5000})}
-function startPoll(){clearInterval(S.pl);S.pl=setInterval(function(){api("GET","/api/driver/"+S.ph+"/ride",null,function(r){var x=r.ride;if(x&&x.status=="offered"&&!S.trip&&!$("sheet").classList.contains("up")){S.offer=[x.pickup,x.drop,x.km,x.fare];S.rid=x.id;S.rn=x.rn;S.rd=x.pd;S.cp=x.cp;S.pk=[x.plat,x.plng];S.dk=[x.dlat,x.dlng];req()}})},3000)}
+function startPoll(){clearInterval(S.pl);S.pl=setInterval(function(){api("GET","/api/driver/"+S.ph+"/ride",null,function(r){var x=r.ride;if(x&&x.status=="offered"&&!S.trip&&!$("sheet").classList.contains("up")){var myVt=((S.me&&S.me.vt)||(D.city&&D.city.vt)||"").toLowerCase();var rideCat=(x.category||x.vehicleType||"").toLowerCase();function catNorm(c){if(!c)return "";if(c.indexOf("suv")!==-1)return "suv";if(c.indexOf("mini")!==-1)return "mini";if(c.indexOf("premium")!==-1)return "premium";if(c.indexOf("sedan")!==-1)return "sedan";return c;}var dC=catNorm(myVt),rC=catNorm(rideCat);if(dC&&rC&&dC!==rC)return;S.offer=[x.pickup,x.drop,x.km,x.fare];S.rid=x.id;S.rn=x.rn;S.rd=x.pd;S.cp=x.cp;S.pk=[x.plat,x.plng];S.dk=[x.dlat,x.dlng];req()}})},3000)}
 var _t=trip;trip=function(i){var a={0:"accept",1:"arrived",4:"complete"}[i];if(a&&S.rid)api("POST","/api/ride/"+S.rid+"/"+a,{ph:S.ph},function(){});if(i==4){var f=S.rid;S.rid=null}_t(i)};
 if(S.loc&&S.loc.lat)watchLoc();
 
@@ -1870,6 +1870,21 @@ function getDriverSocket(){
     socket.on("ride:offer_broadcast",function(offer){
       console.log("[Driver Dispatch] Broadcast offer received:",offer);
       if(!S.on||S.trip||$("sheet").classList.contains("up"))return;
+      var myVt=((S.me&&S.me.vt)||(D.city&&D.city.vt)||"").toLowerCase();
+      var offerCat=(offer.category||offer.vehicleType||offer.categoryName||"").toLowerCase();
+      function catNorm(c){
+        if(!c)return "";
+        if(c.indexOf("suv")!==-1)return "suv";
+        if(c.indexOf("mini")!==-1)return "mini";
+        if(c.indexOf("premium")!==-1)return "premium";
+        if(c.indexOf("sedan")!==-1)return "sedan";
+        return c;
+      }
+      var dC=catNorm(myVt),oC=catNorm(offerCat);
+      if(dC&&oC&&dC!==oC){
+        console.log("[Driver Dispatch] Ignored offer for different category:",offerCat,"(My vehicle:",myVt,")");
+        return;
+      }
       var pkArea=offer.pickupArea||offer.pickup||"Pickup Location";
       var dkArea=offer.destinationArea||offer.destination||"Drop Location";
       var dist=Number(offer.distanceKm||offer.pickupDistanceKm||7.8);

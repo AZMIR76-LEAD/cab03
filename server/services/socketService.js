@@ -128,6 +128,38 @@ export function emitDriverTelemetry(rideId, telemetry) {
 
 export function broadcastRideOffer(offerData) {
   if (!ioInstance) return;
-  ioInstance.to('drivers').emit('ride:offer_broadcast', offerData);
-  ioInstance.emit('ride:offer_broadcast', offerData);
+
+  const normalizeCat = (cat) => {
+    if (!cat) return '';
+    const c = String(cat).toLowerCase();
+    if (c.includes('suv')) return 'suv';
+    if (c.includes('mini')) return 'mini';
+    if (c.includes('premium')) return 'premium';
+    if (c.includes('sedan')) return 'sedan';
+    return c.trim();
+  };
+
+  const offerCat = normalizeCat(offerData.category || offerData.vehicleType || offerData.categoryName);
+  let matchedCount = 0;
+
+  ioInstance.sockets.sockets.forEach((s) => {
+    if (s.rooms.has('drivers')) {
+      const driverVt = normalizeCat(
+        s.driverData?.vehicleType ||
+        s.driverData?.vehicle?.category ||
+        s.driverData?.vehicle?.model
+      );
+
+      // Category matching filter: If both offer category and driver vehicle type are defined, match them
+      if (offerCat && driverVt && driverVt !== offerCat) {
+        console.log(`\x1b[33m[Dispatch Gateway]\x1b[0m Skipping offer ${offerData.offerId} (${offerCat}) for driver ${s.driverData?.name || s.id} (${driverVt})`);
+        return;
+      }
+
+      s.emit('ride:offer_broadcast', offerData);
+      matchedCount++;
+    }
+  });
+
+  console.log(`\x1b[32m[Dispatch Gateway]\x1b[0m Offer ${offerData.offerId} (${offerCat || 'all'}) sent to ${matchedCount} matching driver socket(s).`);
 }

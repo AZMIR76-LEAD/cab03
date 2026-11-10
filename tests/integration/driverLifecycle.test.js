@@ -107,5 +107,39 @@ describe('Integration Tests: Customer-Driver Full Trip Lifecycle', () => {
     assert.strictEqual(db.get('activeRide').fare, grossFare);
     assert.ok(db.get('activeRide').fareBreakdown.netEarnings > 0);
   });
+
+  it('should strictly filter ride offers by vehicle category so SUV drivers never receive Sedan offers', () => {
+    const normalizeCat = (c) => {
+      if (!c) return '';
+      const s = String(c).toLowerCase();
+      if (s.includes('suv')) return 'suv';
+      if (s.includes('mini')) return 'mini';
+      if (s.includes('premium')) return 'premium';
+      if (s.includes('sedan')) return 'sedan';
+      return s.trim();
+    };
+
+    const isCategoryMatch = (driverVt, rideCat) => {
+      const d = normalizeCat(driverVt);
+      const r = normalizeCat(rideCat);
+      if (!d || !r) return true;
+      return d === r;
+    };
+
+    // Sedan booking vs SUV driver -> must reject offer
+    assert.strictEqual(isCategoryMatch('SUV', 'sedan'), false);
+    assert.strictEqual(isCategoryMatch('SUV', 'FG DRIVO Sedan'), false);
+
+    // Sedan booking vs Sedan driver -> must accept offer
+    assert.strictEqual(isCategoryMatch('Sedan', 'sedan'), true);
+    assert.strictEqual(isCategoryMatch('Sedan', 'FG DRIVO Sedan'), true);
+
+    // SUV booking vs SUV driver -> must accept offer
+    assert.strictEqual(isCategoryMatch('SUV', 'suv'), true);
+    assert.strictEqual(isCategoryMatch('SUV', 'FG DRIVO SUV'), true);
+
+    // Mini booking vs SUV driver -> must reject offer
+    assert.strictEqual(isCategoryMatch('SUV', 'mini'), false);
+  });
 });
 

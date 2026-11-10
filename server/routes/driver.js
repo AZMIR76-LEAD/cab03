@@ -217,11 +217,46 @@ router.post('/:phone/location', (req, res) => {
 router.get('/:phone/ride', (req, res) => {
   const activeRide = db.get('activeRide');
   if (activeRide && (activeRide.status === RIDE_STATUSES.FINDING_DRIVER || activeRide.status === 'offered')) {
+    const cleanPhone = (req.params.phone || '').replace(/\D/g, '').slice(-10);
+    const existing = driverStore.get(cleanPhone);
+    const dbDrivers = db.get('drivers') || [];
+    const dbDriver = dbDrivers.find(
+      (d) => (d.phone || '').replace(/\D/g, '').includes(cleanPhone) || (d.id || '').includes(cleanPhone)
+    );
+
+    const driverVtRaw =
+      existing?.D?.city?.vt ||
+      dbDriver?.vehicle?.category ||
+      dbDriver?.vehicle?.model ||
+      dbDriver?.vehicleType ||
+      '';
+    const rideCatRaw = activeRide.vehicleType || activeRide.category || '';
+
+    const normalizeCat = (c) => {
+      if (!c) return '';
+      const s = String(c).toLowerCase();
+      if (s.includes('suv')) return 'suv';
+      if (s.includes('mini')) return 'mini';
+      if (s.includes('premium')) return 'premium';
+      if (s.includes('sedan')) return 'sedan';
+      return s.trim();
+    };
+
+    const dCat = normalizeCat(driverVtRaw);
+    const rCat = normalizeCat(rideCatRaw);
+
+    // If both driver vehicle category and ride category are known, enforce exact match
+    if (dCat && rCat && dCat !== rCat) {
+      return res.json({ success: true, ride: null });
+    }
+
     return res.json({
       success: true,
       ride: {
         id: activeRide.id,
         status: 'offered',
+        category: rCat || activeRide.category,
+        vehicleType: rCat || activeRide.vehicleType,
         pickup: activeRide.pickup,
         drop: activeRide.destination,
         km: parseFloat(activeRide.distance) || 14,

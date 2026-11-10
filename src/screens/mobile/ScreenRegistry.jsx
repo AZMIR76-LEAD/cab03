@@ -4478,7 +4478,7 @@ export const Screen12FareEstimate = Screen13FareEstimate;
 export const Screen13BookingConfirm = Screen12BookingConfirm;
 
 // Screen 14 — Finding Driver (Real-time Live Sockets, No Fake Timers, Unreachable State)
-export function Screen14FindingDriver({ onNavigate }) {
+export function Screen14FindingDriver({ onNavigate, selectedVehicle }) {
   const [bids, setBids] = useState([]);
   const [isUnreachable, setIsUnreachable] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -4487,16 +4487,16 @@ export function Screen14FindingDriver({ onNavigate }) {
   useEffect(() => {
     let searchTimer = null;
 
-    // Check live if any driver is online right now
-    RideXAPI.getOnlineDriversCount()
+    // Check live if any driver matching selected vehicle category is online right now
+    RideXAPI.getOnlineDriversCount(selectedVehicle || 'sedan')
       .then((res) => {
         if (res && res.count === 0) {
-          // If no driver is online, show radar for 3 seconds, then show unreachable
+          // If no matching driver is online, show radar for 3 seconds, then show unreachable
           searchTimer = setTimeout(() => {
             setIsUnreachable(true);
           }, 3000);
         } else {
-          // If drivers are online, give 18 seconds for any driver to review & accept
+          // If matching drivers are online, give 18 seconds for any driver to review & accept
           searchTimer = setTimeout(() => {
             setIsUnreachable(true);
           }, 18000);
@@ -4565,7 +4565,7 @@ export function Screen14FindingDriver({ onNavigate }) {
       unsubSocket();
       unsubUpdated();
     };
-  }, [onNavigate, offeredFare, isRetrying]);
+  }, [onNavigate, offeredFare, isRetrying, selectedVehicle]);
 
   const handleRetrySearch = () => {
     setIsUnreachable(false);
@@ -4573,7 +4573,7 @@ export function Screen14FindingDriver({ onNavigate }) {
     setIsRetrying((prev) => !prev);
     sounds.playTick();
     RideXAPI.bookRide({
-      category: 'sedan',
+      category: selectedVehicle || 'sedan',
       pickup: GLOBAL_PICKUP_LOCATION || 'Current Location',
       destination: GLOBAL_DESTINATION_LOCATION || 'Destination Point',
       fare: offeredFare,
