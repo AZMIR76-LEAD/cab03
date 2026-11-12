@@ -107,3 +107,4 @@ describe('Integration Tests: Concurrent Multi-Passenger Isolation & Decline Logi
     db.removeActiveRide(ride2Id);
   });
 });
+

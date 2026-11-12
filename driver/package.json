@@ -1,0 +1,10 @@
+{
+  "name": "fg-drivo-driver",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3"
+  }
+}
+

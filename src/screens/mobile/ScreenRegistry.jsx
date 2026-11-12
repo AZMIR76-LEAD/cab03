@@ -198,6 +198,7 @@ export function UserAvatar({ user, size = 48, border = 'none', style = {}, class
   );
 }
 
+
 // Shared Bottom Nav for Mobile (White Background + Indigo Pill Indicator)
 export function MobileBottomNav({ activeTab, onTabChange, onNavigate }) {
   const tabs = [
@@ -5615,9 +5616,11 @@ export function Screen19TripInProgress({ onNavigate }) {
 
 // Screen 20 — Trip Completed
 export function Screen20TripCompleted({ onNavigate }) {
-  const activeDriver = getActiveDriver();
+  const activeDriver = getActiveDriver() || {};
   const fare = GLOBAL_BARGAIN_FARE || 284;
-  const payment = WALLET_DATA.paymentMethods.find(m => m.id === GLOBAL_SELECTED_PAYMENT) || WALLET_DATA.paymentMethods[0];
+  const payment = (WALLET_DATA && WALLET_DATA.paymentMethods && WALLET_DATA.paymentMethods.find(m => m.id === GLOBAL_SELECTED_PAYMENT)) ||
+                  (WALLET_DATA && WALLET_DATA.paymentMethods && WALLET_DATA.paymentMethods[0]) ||
+                  { id: 'pm-upi', type: 'UPI', title: 'Google Pay UPI', detail: 'Fast & Secure UPI' };
 
   useEffect(() => {
     sounds.playTripCompleted();
@@ -5672,9 +5675,11 @@ export function Screen20TripCompleted({ onNavigate }) {
 
 // Screen 21 — Confirm Payment
 export function Screen21ConfirmPayment({ onNavigate }) {
-  const activeDriver = getActiveDriver();
+  const activeDriver = getActiveDriver() || {};
   const fare = GLOBAL_BARGAIN_FARE || 284;
-  const payment = WALLET_DATA.paymentMethods.find(m => m.id === GLOBAL_SELECTED_PAYMENT) || WALLET_DATA.paymentMethods[0];
+  const payment = (WALLET_DATA && WALLET_DATA.paymentMethods && WALLET_DATA.paymentMethods.find(m => m.id === GLOBAL_SELECTED_PAYMENT)) ||
+                  (WALLET_DATA && WALLET_DATA.paymentMethods && WALLET_DATA.paymentMethods[0]) ||
+                  { id: 'pm-upi', type: 'UPI', title: 'Google Pay UPI', detail: 'Fast & Secure UPI' };
   const [isPaid, setIsPaid] = useState(false);
   const [selectedTip, setSelectedTip] = useState(0);
 
@@ -5796,10 +5801,10 @@ export function Screen21ConfirmPayment({ onNavigate }) {
 
         {/* Trip & Driver Mini Info */}
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', border: '1px solid #E5DFF0', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundImage: `url(${activeDriver.avatar})`, backgroundSize: 'cover', border: '2px solid #5427A8' }} />
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundImage: `url(${activeDriver?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80'})`, backgroundSize: 'cover', border: '2px solid #5427A8' }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '13px', fontWeight: 800, color: '#24153F' }}>{getActiveDriver().name}</div>
-            <div style={{ fontSize: '11px', color: '#6B5B7D' }}>{getActiveDriver().vehicle.model} • {getActiveDriver().vehicle.licensePlate}</div>
+            <div style={{ fontSize: '13px', fontWeight: 800, color: '#24153F' }}>{activeDriver?.name || 'Driver Partner'}</div>
+            <div style={{ fontSize: '11px', color: '#6B5B7D' }}>{(activeDriver?.vehicle?.model || activeDriver?.vehicleModel || 'SUV')} • {(activeDriver?.vehicle?.licensePlate || activeDriver?.vehicleNumber || 'KA 01 AB 1234')}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '11px', color: '#6B5B7D' }}>TRIP DISTANCE</div>
@@ -5905,9 +5910,9 @@ export function Screen22Rating({ onNavigate }) {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundImage: `url(${activeDriver.avatar})`, backgroundSize: 'cover', margin: '0 auto 12px', border: '2.5px solid #5427A8', boxShadow: '0 4px 12px rgba(84,39,168,0.2)' }} />
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundImage: `url(${activeDriver?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80'})`, backgroundSize: 'cover', margin: '0 auto 12px', border: '2.5px solid #5427A8', boxShadow: '0 4px 12px rgba(84,39,168,0.2)' }} />
           <h1 style={{ fontSize: '22px', fontWeight: 900, color: '#24153F' }}>How was your ride?</h1>
-          <p style={{ fontSize: '13px', color: '#6B5B7D' }}>Rate your experience with {getActiveDriver().name}</p>
+          <p style={{ fontSize: '13px', color: '#6B5B7D' }}>Rate your experience with {activeDriver?.name || 'Driver Partner'}</p>
         </div>
 
         {/* 5-star selector */}

@@ -105,7 +105,7 @@ function getInitialScreen() {
         sessionStorage.setItem('fg_target_screen', hash);
       }
     }
-  } catch (e) {}
+  } catch (e) { }
   // Always start on the animated starting splash screen (Screen01Splash) on app launch!
   return 's01_splash';
 }
@@ -129,7 +129,7 @@ export default function App() {
         if (window.location.hash !== `#${currentMobileScreen}`) {
           window.history.replaceState({ screen: currentMobileScreen }, '', `#${currentMobileScreen}`);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }, [currentMobileScreen]);
 
@@ -146,7 +146,7 @@ export default function App() {
       if (typeof window !== 'undefined' && window.history) {
         window.history.pushState({ screen: screenId }, '', `#${screenId}`);
       }
-    } catch (e) {}
+    } catch (e) { }
   }, []);
 
   const handleBack = useCallback(() => {
@@ -163,7 +163,7 @@ export default function App() {
         if (typeof window !== 'undefined' && window.history) {
           window.history.replaceState({ screen: prevScreen }, '', `#${prevScreen}`);
         }
-      } catch (e) {}
+      } catch (e) { }
     } else if (currentMobileScreen !== 's07_home' && currentMobileScreen !== 's01_splash') {
       setCurrentMobileScreen('s07_home');
       setHistoryStack(['s07_home']);
@@ -174,7 +174,7 @@ export default function App() {
         if (typeof window !== 'undefined' && window.history) {
           window.history.replaceState({ screen: 's07_home' }, '', '#s07_home');
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }, [currentMobileScreen]);
 
@@ -193,7 +193,7 @@ export default function App() {
             CapApp.exitApp();
           }
         }).then((l) => { backListener = l; });
-      }).catch(() => {});
+      }).catch(() => { });
     } catch {
       // Running outside Capacitor
     }
@@ -205,7 +205,7 @@ export default function App() {
         setCurrentMobileScreen(targetScreen);
         try {
           localStorage.setItem('fg_active_screen', targetScreen);
-        } catch (err) {}
+        } catch (err) { }
       } else {
         handleBack();
       }
@@ -224,13 +224,13 @@ export default function App() {
       import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
         const darkScreens = ['s01_splash', 's14_finding_driver'];
         if (darkScreens.includes(currentMobileScreen)) {
-          StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-          StatusBar.setBackgroundColor({ color: '#1E1236' }).catch(() => {});
+          StatusBar.setStyle({ style: Style.Dark }).catch(() => { });
+          StatusBar.setBackgroundColor({ color: '#1E1236' }).catch(() => { });
         } else {
-          StatusBar.setStyle({ style: Style.Light }).catch(() => {});
-          StatusBar.setBackgroundColor({ color: '#FFFFFF' }).catch(() => {});
+          StatusBar.setStyle({ style: Style.Light }).catch(() => { });
+          StatusBar.setBackgroundColor({ color: '#FFFFFF' }).catch(() => { });
         }
-      }).catch(() => {});
+      }).catch(() => { });
     } catch {
       // Running outside Capacitor
     }

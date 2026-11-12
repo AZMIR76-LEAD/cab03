@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FG DRIVO Driver</string>
+    <string name="title_activity_main">FG DRIVO Driver</string>
+    <string name="package_name">com.fgdrivo.driver</string>
+    <string name="custom_url_scheme">com.fgdrivo.driver</string>
+</resources>
