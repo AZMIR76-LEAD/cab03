@@ -5,11 +5,15 @@ import { io } from 'socket.io-client';
 import { Capacitor } from '@capacitor/core';
 
 const getSocketUrl = () => {
+  if (typeof localStorage !== 'undefined') {
+    const custom = localStorage.getItem('fg_backend_url');
+    if (custom) return custom.replace(/\/+$/, '');
+  }
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
   }
   if (Capacitor.isNativePlatform()) {
-    return 'http://10.0.2.2:5000';
+    return 'http://10.250.4.166:5000';
   }
   return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://127.0.0.1:5000'

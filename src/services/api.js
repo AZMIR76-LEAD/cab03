@@ -2,12 +2,16 @@ import { Capacitor } from '@capacitor/core';
 
 // Resolve backend server origin dynamically:
 const getServerBase = () => {
+  if (typeof localStorage !== 'undefined') {
+    const custom = localStorage.getItem('fg_backend_url');
+    if (custom) return custom.replace(/\/+$/, '');
+  }
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
   }
   if (Capacitor.isNativePlatform()) {
-    // On physical Android / emulator, localhost is phone loopback; 10.0.2.2 is host bridge
-    return 'http://10.0.2.2:5000';
+    // Default to the computer's local Wi-Fi IP for physical phone testing, with 10.0.2.2 fallback for emulator
+    return 'http://10.250.4.166:5000';
   }
   return '';
 };

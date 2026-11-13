@@ -1547,7 +1547,24 @@ $("langrow").onclick=function(){L=L=="ta"?"en":"ta";qa(".lo").forEach(function(o
 $("out").onclick=function(){online(false);sheet("");S.me=null;S.trip=null;S.demo=0;window.DEMO_MODE=false;$("home").classList.add("hide");go("s-auth")};
 $("nav").onclick=function(e){var b=e.target.closest("button");if(!b)return;var tab=b.dataset.t2;qa("#nav button").forEach(function(x){x.className=x==b?"act":""});qa(".tab").forEach(function(x){x.className="tab"});$("t-"+tab).className="tab show";if(tab=="earn"){chart();stats();}else if(tab=="trips"){hist();}else if(tab=="me"){prof();}};
 /* ---------- backend + fixes ---------- */
-function api(m,u,b,cb){if(location.protocol=="file:")return setTimeout(function(){cb({err:1})},0);fetch(u,{method:m,headers:{"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined}).then(function(r){return r.json()}).then(cb,function(){cb({err:1})})}
+function getBackendBase() {
+  try {
+    var custom = localStorage.getItem('fg_backend_url');
+    if (custom) return custom.replace(/\/+$/, '');
+  } catch(e){}
+  if (typeof window.Capacitor !== 'undefined' || location.protocol === 'file:') {
+    return 'http://10.250.4.166:5000';
+  }
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    return location.port === '5000' ? '' : 'http://127.0.0.1:5000';
+  }
+  return location.origin;
+}
+function api(m,u,b,cb){
+  var base = getBackendBase();
+  var fullUrl = (u.indexOf('http') === 0) ? u : (base + u);
+  fetch(fullUrl,{method:m,headers:{"Content-Type":"application/json"},body:b?JSON.stringify(b):undefined}).then(function(r){return r.json()}).then(cb,function(){cb({err:1})});
+}
 function shrink(f,cb){var r=new FileReader();r.onload=function(){var i=new Image();i.onload=function(){var k=Math.min(1,900/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=i.width*k;c.height=i.height*k;c.getContext("2d").drawImage(i,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",.8))};i.src=r.result};r.readAsDataURL(f)}
 function saveSec(id,o){api("POST","/api/driver/"+S.ph+"/section",{id:id,data:o},function(r){if(r.err||r.error)alert(r.error||"Could not reach server. Details are not saved yet.");else pushLoc()})}
 function submitApp(){S.sub=1;S.st="submitted";drawReg();api("POST","/api/driver/"+S.ph+"/submit",{},function(r){if(r&&r.err){S.sub=0;S.st="draft";drawReg();alert("Could not submit your application. Please check your connection and try again.");return}if(r&&r.driver){S.srv=r.driver;S.st=r.driver.status||"submitted"}else S.st=(r&&r.status)||"submitted";lset("status",S.st);drawReg()})}
@@ -1866,7 +1883,9 @@ var socket=null;
 function getDriverSocket(){
   if(socket)return socket;
   if(typeof io!=="undefined"){
-    socket=io({transports:["websocket","polling"],reconnection:true,reconnectionAttempts:15,reconnectionDelay:1000});
+    var base = getBackendBase();
+    socket = base ? io(base, {transports:["websocket","polling"],reconnection:true,reconnectionAttempts:15,reconnectionDelay:1000})
+                  : io({transports:["websocket","polling"],reconnection:true,reconnectionAttempts:15,reconnectionDelay:1000});
     socket.on("connect",function(){
       console.log("%c[FG DRIVO Driver]%c Connected to dispatch server: "+socket.id,"color:#10b981;font-weight:bold;","color:inherit;");
       if(S.on)registerWithDispatch();
