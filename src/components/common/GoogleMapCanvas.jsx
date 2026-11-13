@@ -1,15 +1,86 @@
 // Source: Google Maps Platform Code Assist
 // FG DRIVO Real Google Maps Platform Component
-// Built with official @vis.gl/react-google-maps SDK, AdvancedMarkerElement & Pin
+// Built with official @vis.gl/react-google-maps SDK, AdvancedMarkerElement, Real Routes & Traffic Density
 
-import React, { useState, useEffect } from 'react';
-import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
-import { Key, ExternalLink, ShieldCheck, Crosshair, Sparkles, Eye, EyeOff, Trash2, Shield } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
+import { Key, ExternalLink, ShieldCheck, Crosshair, Sparkles, Eye, EyeOff, Trash2, Shield, Navigation, AlertTriangle, Clock, Gauge } from 'lucide-react';
 
 // Dindigul Central Geographic Coordinates
 const DINDIGUL_CENTER = { lat: 10.3673, lng: 77.9803 };
 const DEFAULT_PICKUP = { lat: 10.3644, lng: 77.9702 }; // Dindigul Railway Station
 const DEFAULT_DESTINATION = { lat: 10.3812, lng: 77.9480 }; // Palani Road Bypass
+
+// Internal component to render multi-colored traffic polylines on Google Map instance
+function TrafficRouteOverlay({ trafficSegments, coordinates, pickup, destination }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !window.google?.maps) return;
+
+    const polylines = [];
+
+    // If multi-colored traffic segments exist, render them with road styling
+    if (trafficSegments && trafficSegments.length > 0) {
+      trafficSegments.forEach((segment) => {
+        if (!segment.points || segment.points.length < 2) return;
+
+        // Background casing polyline for contrast
+        const casing = new window.google.maps.Polyline({
+          path: segment.points,
+          geodesic: true,
+          strokeColor: '#1E1236',
+          strokeOpacity: 0.85,
+          strokeWeight: 8,
+          zIndex: 1,
+          map,
+        });
+        polylines.push(casing);
+
+        // Core traffic color polyline (Green / Orange / Red)
+        const line = new window.google.maps.Polyline({
+          path: segment.points,
+          geodesic: true,
+          strokeColor: segment.color || '#10B981',
+          strokeOpacity: 1.0,
+          strokeWeight: 5,
+          zIndex: 2,
+          map,
+        });
+        polylines.push(line);
+      });
+    } else if (coordinates && coordinates.length > 1) {
+      // Single continuous road polyline
+      const line = new window.google.maps.Polyline({
+        path: coordinates,
+        geodesic: true,
+        strokeColor: '#10B981',
+        strokeOpacity: 0.95,
+        strokeWeight: 6,
+        zIndex: 2,
+        map,
+      });
+      polylines.push(line);
+    }
+
+    // Auto-fit bounds so user sees full route
+    try {
+      const bounds = new window.google.maps.LatLngBounds();
+      if (pickup?.lat) bounds.extend(pickup);
+      if (destination?.lat) bounds.extend(destination);
+      if (coordinates && coordinates.length) {
+        coordinates.forEach((pt) => bounds.extend(pt));
+      }
+      map.fitBounds(bounds, { top: 70, right: 30, bottom: 80, left: 30 });
+    } catch (e) {}
+
+    return () => {
+      polylines.forEach((pl) => pl.setMap(null));
+    };
+  }, [map, trafficSegments, coordinates, pickup, destination]);
+
+  return null;
+}
 
 export default function GoogleMapCanvas({
   pickupCoords = null,
@@ -33,17 +104,56 @@ export default function GoogleMapCanvas({
   const [inputKey, setInputKey] = useState('');
   const [showSecret, setShowSecret] = useState(false);
 
-  const pickup = pickupCoords
-    ? { lat: pickupCoords[0] || pickupCoords.lat, lng: pickupCoords[1] || pickupCoords.lng }
-    : DEFAULT_PICKUP;
+  // Real Road Directions State
+  const [routeData, setRouteData] = useState(null);
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
 
-  const destination = destinationCoords
-    ? { lat: destinationCoords[0] || destinationCoords.lat, lng: destinationCoords[1] || destinationCoords.lng }
-    : DEFAULT_DESTINATION;
+  const pickup = useMemo(() => {
+    return pickupCoords
+      ? { lat: pickupCoords[0] || pickupCoords.lat, lng: pickupCoords[1] || pickupCoords.lng }
+      : DEFAULT_PICKUP;
+  }, [pickupCoords]);
+
+  const destination = useMemo(() => {
+    return destinationCoords
+      ? { lat: destinationCoords[0] || destinationCoords.lat, lng: destinationCoords[1] || destinationCoords.lng }
+      : DEFAULT_DESTINATION;
+  }, [destinationCoords]);
 
   const captainPos = driverCoords
     ? { lat: driverCoords[0] || driverCoords.lat, lng: driverCoords[1] || driverCoords.lng, heading: driverCoords[2] || 90 }
     : { lat: 10.3695, lng: 77.9740, heading: 45 };
+
+  // Fetch real road routes and traffic conditions from backend routes API
+  useEffect(() => {
+    let isCancelled = false;
+    const fetchDirections = async () => {
+      if (!pickup?.lat || !destination?.lat) return;
+      setIsLoadingRoute(true);
+      try {
+        const query = new URLSearchParams({
+          origin: `${pickup.lat},${pickup.lng}`,
+          destination: `${destination.lat},${destination.lng}`,
+          apiKey: apiKey || '',
+        });
+        const res = await fetch(`/api/routes/directions?${query.toString()}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!isCancelled && data.success && data.route) {
+          setRouteData(data.route);
+        }
+      } catch (err) {
+        console.warn('[GoogleMapCanvas] Route fetch warning:', err.message);
+      } finally {
+        if (!isCancelled) setIsLoadingRoute(false);
+      }
+    };
+
+    fetchDirections();
+    return () => {
+      isCancelled = true;
+    };
+  }, [pickup.lat, pickup.lng, destination.lat, destination.lng, apiKey]);
 
   const handleSaveKey = () => {
     const cleanKey = inputKey.trim();
@@ -62,11 +172,122 @@ export default function GoogleMapCanvas({
     setShowKeyModal(false);
   };
 
+  // Determine overall route traffic color
+  const primaryTrafficSpeed = useMemo(() => {
+    if (!routeData?.trafficSegments?.length) return 'normal';
+    const hasJam = routeData.trafficSegments.some((s) => s.speed === 'traffic_jam');
+    if (hasJam) return 'traffic_jam';
+    const hasSlow = routeData.trafficSegments.some((s) => s.speed === 'slow');
+    if (hasSlow) return 'slow';
+    return 'normal';
+  }, [routeData]);
+
   return (
     <div
       className={`relative w-full overflow-hidden select-none ${className}`}
       style={{ height, minHeight: '220px', position: 'relative', backgroundColor: '#E5E7EB' }}
     >
+      {/* Turn-by-Turn Navigation & Traffic Density Header Banner */}
+      {routeData && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '10px',
+            left: '10px',
+            right: '48px',
+            zIndex: 300,
+            backgroundColor: 'rgba(30, 18, 54, 0.94)',
+            backdropFilter: 'blur(8px)',
+            color: '#FFFFFF',
+            borderRadius: '14px',
+            padding: '8px 12px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  backgroundColor: '#F5C400',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Navigation size={14} color="#1E1236" style={{ transform: 'rotate(45deg)' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#F8FAFC' }}>
+                  {routeData.steps?.[0]?.instruction || 'Continue straight towards destination'}
+                </div>
+                <div style={{ fontSize: '10px', color: '#CBD5E1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>{routeData.distanceKm} km</span>
+                  <span>•</span>
+                  <span>{routeData.durationMin} mins</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Traffic Condition Badge */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '2px 8px',
+                borderRadius: '8px',
+                fontSize: '9.5px',
+                fontWeight: 700,
+                backgroundColor:
+                  primaryTrafficSpeed === 'traffic_jam'
+                    ? 'rgba(239, 68, 68, 0.25)'
+                    : primaryTrafficSpeed === 'slow'
+                    ? 'rgba(245, 158, 11, 0.25)'
+                    : 'rgba(16, 185, 129, 0.25)',
+                color:
+                  primaryTrafficSpeed === 'traffic_jam'
+                    ? '#FCA5A5'
+                    : primaryTrafficSpeed === 'slow'
+                    ? '#FCD34D'
+                    : '#6EE7B7',
+                border: `1px solid ${
+                  primaryTrafficSpeed === 'traffic_jam'
+                    ? 'rgba(239, 68, 68, 0.5)'
+                    : primaryTrafficSpeed === 'slow'
+                    ? 'rgba(245, 158, 11, 0.5)'
+                    : 'rgba(16, 185, 129, 0.5)'
+                }`,
+              }}
+            >
+              <span
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor:
+                    primaryTrafficSpeed === 'traffic_jam'
+                      ? '#EF4444'
+                      : primaryTrafficSpeed === 'slow'
+                      ? '#F59E0B'
+                      : '#10B981',
+                }}
+              />
+              {primaryTrafficSpeed === 'traffic_jam'
+                ? 'Heavy Traffic'
+                : primaryTrafficSpeed === 'slow'
+                ? 'Moderate Traffic'
+                : 'Free Flow'}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* If API Key is present, mount live official Google Maps */}
       {apiKey ? (
         <APIProvider apiKey={apiKey} solutionChannel="GMP_visgl_rgm_v1_default">
@@ -79,6 +300,14 @@ export default function GoogleMapCanvas({
             internalUsageAttributionIds={['gmp_git_agentskills_v1']}
             style={{ width: '100%', height: '100%' }}
           >
+            {/* Real Road Polyline with Traffic Conditions */}
+            <TrafficRouteOverlay
+              trafficSegments={routeData?.trafficSegments}
+              coordinates={routeData?.coordinates}
+              pickup={pickup}
+              destination={destination}
+            />
+
             {/* 1. Pickup Advanced Marker */}
             <AdvancedMarker position={pickup} title={pickupName}>
               <Pin background="#10B981" glyphColor="#FFFFFF" borderColor="#FFFFFF" scale={1.2}>
@@ -208,33 +437,33 @@ export default function GoogleMapCanvas({
               TN 57 CE 4819
             </div>
           </div>
-
-          {/* Quick API Key Setup Button */}
-          <button
-            onClick={() => setShowKeyModal(true)}
-            title="Configure Google Maps Platform Key"
-            style={{
-              position: 'absolute',
-              top: '12px',
-              right: '12px',
-              zIndex: 400,
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              border: '1px solid #E2E8F0',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: '#1A73E8',
-            }}
-          >
-            <Key size={14} />
-          </button>
         </div>
       )}
+
+      {/* Quick API Key Setup Button */}
+      <button
+        onClick={() => setShowKeyModal(true)}
+        title="Configure Google Maps Platform Key"
+        style={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          zIndex: 400,
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          border: '1px solid #E2E8F0',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          color: '#1A73E8',
+        }}
+      >
+        <Key size={14} />
+      </button>
 
       {/* API Key Modal */}
       {showKeyModal && (
@@ -264,7 +493,7 @@ export default function GoogleMapCanvas({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Key size={18} color="#1A73E8" />
-                <h4 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>Secure Google Maps Key</h4>
+                <h4 style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>Google Maps Platform Key</h4>
               </div>
               <span style={{ fontSize: '10px', fontWeight: 700, backgroundColor: '#E0F2FE', color: '#0369A1', padding: '2px 7px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '3px' }}>
                 <Shield size={10} /> Client-Restricted
@@ -272,18 +501,8 @@ export default function GoogleMapCanvas({
             </div>
 
             <p style={{ fontSize: '11.5px', color: '#64748B', marginBottom: '10px', lineHeight: '1.4' }}>
-              Provide your client-side Google Maps API Key. Store securely without exposing to code repositories.
+              Provide your Google Maps API Key or free Maps Demo Key to unlock live Google Maps road vector tiles and real-time traffic rendering.
             </p>
-
-            {/* HTTP Referrer Security Notice */}
-            <div style={{ backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '10px', padding: '8px 10px', marginBottom: '12px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#166534', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
-                <ShieldCheck size={13} color="#16A34A" /> Best Practice: Restrict by HTTP Referrer
-              </div>
-              <div style={{ fontSize: '10px', color: '#15803D', lineHeight: '1.35' }}>
-                In Google Cloud Console, restrict this key to HTTP referrers (<code style={{ backgroundColor: '#DCFCE7', padding: '1px 3px', borderRadius: '3px' }}>http://localhost:3000/*</code>) so unauthorized domains cannot use it.
-              </div>
-            </div>
 
             {/* Masked Password Input with Visibility Toggle */}
             <div style={{ position: 'relative', marginBottom: '14px' }}>
@@ -386,14 +605,13 @@ export default function GoogleMapCanvas({
                     cursor: inputKey.trim() ? 'pointer' : 'not-allowed',
                   }}
                 >
-                  Save & Secure
+                  Save & Apply
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

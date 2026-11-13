@@ -2005,16 +2005,51 @@ st.textContent=
 document.head.appendChild(st);
 var TN={"Navigate to drop":"டிராப் இடத்திற்கு செல்லவும்","Customer live":"பயணி நேரலை","Finding route...":"வழியைத் தேடுகிறது...","Customer":"பயணி","Open in Google Maps":"கூகுள் மேப்பில் திற","Complete Trip":"பயணத்தை முடி","I have arrived":"நான் வந்துவிட்டேன்","min":"நிமி","km":"கி.மீ"};
 for(var k in TN)if(!TA[k])TA[k]=TN[k];
-var NM,NT,DM,RL,NP,LR=0,LL=null,drop=0;
+var NM,NT,DM,RL,NP,LR=0,LL=null,drop=0,trafficLayers=[];
+function clearTrafficLayers(){
+  trafficLayers.forEach(function(l){ try{ NM.removeLayer(l); }catch(e){} });
+  trafficLayers=[];
+}
 function hav(a,b){var R=6371,r=Math.PI/180,x=(b[0]-a[0])*r,y=(b[1]-a[1])*r,h=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(y/2)*Math.sin(y/2);return 2*R*Math.asin(Math.sqrt(h))}
-function nclose(){clearInterval(NT);NT=null;if(NM){try{NM.remove()}catch(e){}NM=null}var o=$("navv");if(o)o.remove()}
+function nclose(){clearInterval(NT);NT=null;clearTrafficLayers();if(NM){try{NM.remove()}catch(e){}NM=null}var o=$("navv");if(o)o.remove()}
 function info(km,min,est){$("neta").innerHTML="<b>"+Math.max(1,Math.round(min))+" "+t("min")+"</b>";$("ndist").textContent=(est?"~":"")+km.toFixed(1)+" "+t("km")}
 function route(){
  if(!NM||!S.loc||!S.loc.lat)return;LR=Date.now();var a=[S.loc.lat,S.loc.lng];LL=a;
- var fb=function(){var d=hav(a,NP);RL.setLatLngs([a,NP]);RL.setStyle({dashArray:"8 10"});info(d*1.3,d*1.3/30*60,1)};
- try{fetch("https://router.project-osrm.org/route/v1/driving/"+a[1]+","+a[0]+";"+NP[1]+","+NP[0]+"?overview=full&geometries=geojson").then(function(r){return r.json()}).then(function(j){
-  var r=j&&j.routes&&j.routes[0];if(!r||!NM)return fb();
-  RL.setLatLngs(r.geometry.coordinates.map(function(c){return[c[1],c[0]]}));RL.setStyle({dashArray:null});info(r.distance/1000,r.duration/60)}).catch(fb)}catch(e){fb()}}
+ var fb=function(){var d=hav(a,NP);RL.setLatLngs([a,NP]);RL.setStyle({dashArray:"8 10",color:"#5427a8",opacity:1});info(d*1.3,d*1.3/30*60,1)};
+ api("GET","/api/routes/directions?origin="+a[0]+","+a[1]+"&destination="+NP[0]+","+NP[1], null, function(j){
+  if(!j || !j.route || !NM) return fb();
+  var r = j.route;
+  clearTrafficLayers();
+  if(r.trafficSegments && r.trafficSegments.length > 0){
+    RL.setStyle({opacity:0});
+    r.trafficSegments.forEach(function(seg){
+      if(!seg.points || seg.points.length < 2) return;
+      var latLngs = seg.points.map(function(p){ return [p.lat, p.lng]; });
+      var casing = LF.polyline(latLngs, {color:"#1E1236", weight:8, opacity:0.85}).addTo(NM);
+      trafficLayers.push(casing);
+      var poly = LF.polyline(latLngs, {color:seg.color||"#10B981", weight:5, opacity:1}).addTo(NM);
+      trafficLayers.push(poly);
+    });
+  } else if(r.coordinates && r.coordinates.length > 1){
+    RL.setStyle({opacity:1, color:"#10B981", weight:6, dashArray:null});
+    RL.setLatLngs(r.coordinates.map(function(c){ return [c.lat, c.lng]; }));
+  }
+  info(r.distanceKm, r.durationMin, 0);
+  if(r.steps && r.steps.length > 0){
+    var firstStep = r.steps[0];
+    var banner = $("navinst");
+    if(!banner){
+      var topBar = $("navv") ? $("navv").querySelector(".nvt") : null;
+      if(topBar){
+        topBar.insertAdjacentHTML("afterend", '<div id="navinst" style="position:absolute;top:68px;left:12px;right:12px;z-index:1200;background:rgba(30,18,54,0.95);color:#fff;border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.25)"><span style="color:#F5C400;font-size:16px">&#10138;</span><span id="navinst_txt"></span></div>');
+      }
+    }
+    if($("navinst_txt")){
+      $("navinst_txt").textContent = firstStep.instruction + " (" + (firstStep.distanceKm * 1000).toFixed(0) + "m)";
+    }
+  }
+ });
+}
 var _nav=navGo;
 navGo=function(isDrop){
  if(!(S.loc&&S.loc.lat)){S.loc={lat:10.3673,lng:77.9803};}

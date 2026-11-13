@@ -4,25 +4,45 @@ import { VEHICLE_PRICING, RIDE_STATUSES } from '../config/constants.js';
 import { calculateFare, getAllFareEstimates } from '../services/pricingService.js';
 import { RideSimulationService } from '../services/rideSimulationService.js';
 import { DispatchAlgorithmService } from '../services/dispatchAlgorithmService.js';
+import { RoutesService } from '../services/routesService.js';
 import { broadcastRideOffer, emitRideEvent } from '../services/socketService.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
 export class RidesController {
-  static getFareEstimates(req, res) {
-    const distanceKm = parseFloat(req.query.distanceKm || '7.8');
-    const durationMin = parseInt(req.query.durationMin || '22', 10);
-    const pickup = req.query.pickup || 'Dindigul Railway Junction (Main Entrance)';
-    const destination = req.query.destination || 'Palani Road Bypass, Near Velu Vidyalaya';
+  static async getFareEstimates(req, res, next) {
+    try {
+      let distanceKm = req.query.distanceKm ? parseFloat(req.query.distanceKm) : null;
+      let durationMin = req.query.durationMin ? parseInt(req.query.durationMin, 10) : null;
+      const pickup = req.query.pickup || 'Dindigul Railway Junction (Main Entrance)';
+      const destination = req.query.destination || 'Palani Road Bypass, Near Velu Vidyalaya';
 
-    const estimates = getAllFareEstimates(distanceKm, durationMin);
+      let route = null;
+      if (!distanceKm || !durationMin) {
+        let oCoords = { lat: 10.3644, lng: 77.9702 };
+        let dCoords = { lat: 10.3812, lng: 77.9480 };
+        try {
+          route = await RoutesService.getDirections({ origin: oCoords, destination: dCoords });
+          distanceKm = route.distanceKm;
+          durationMin = route.durationMin;
+        } catch (e) {
+          distanceKm = 7.8;
+          durationMin = 22;
+        }
+      }
 
-    return res.json({
-      distanceKm,
-      durationMin,
-      pickup,
-      destination,
-      estimates,
-    });
+      const estimates = getAllFareEstimates(distanceKm, durationMin);
+
+      return res.json({
+        distanceKm,
+        durationMin,
+        pickup,
+        destination,
+        route,
+        estimates,
+      });
+    } catch (err) {
+      next(err);
+    }
   }
 
   static async bookRide(req, res) {
@@ -43,9 +63,26 @@ export class RidesController {
     const finalRiderPhone = riderPhone || currentUser?.phone || '+91 98765 11223';
     const userId = currentUser ? currentUser.id : null;
 
+    // Calculate real road distance and traffic duration
+    let distanceKm = 7.8;
+    let durationMin = 22;
+    let routeInfo = null;
+    try {
+      if (pickupCoords && destinationCoords) {
+        routeInfo = await RoutesService.getDirections({
+          origin: pickupCoords,
+          destination: destinationCoords,
+        });
+        if (routeInfo && routeInfo.distanceKm) {
+          distanceKm = routeInfo.distanceKm;
+          durationMin = routeInfo.durationMin;
+        }
+      }
+    } catch (e) {
+      console.warn('[RidesController] Route calculation fallback:', e.message);
+    }
+
     const pricing = VEHICLE_PRICING[category] || VEHICLE_PRICING.sedan;
-    const distanceKm = 7.8;
-    const durationMin = 22;
     const fareDetails = calculateFare(category, distanceKm, durationMin);
     const totalFare = fare ? Number(fare) : fareDetails.total;
 
@@ -74,6 +111,7 @@ export class RidesController {
       destination: destination || 'Destination Point',
       pickupCoords,
       destinationCoords,
+      route: routeInfo,
       distanceKm,
       durationMin,
       fare: totalFare,

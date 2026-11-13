@@ -32,6 +32,7 @@ import driversRoutes from './routes/drivers.js';
 import driverRoutes from './routes/driver.js';
 import rideActionRoutes from './routes/rideAction.js';
 import notificationsRoutes from './routes/notifications.js';
+import routesRoutes from './routes/routes.js';
 import { db } from './db.js';
 
 const app = express();
@@ -113,6 +114,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/drivers', driversRoutes);
 app.use('/api/driver', driverRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/routes', routesRoutes);
 
 // 5. System Health Check
 app.get('/api/health', (req, res) => {
