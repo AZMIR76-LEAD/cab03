@@ -216,6 +216,7 @@ router.post('/:phone/location', (req, res) => {
 
 router.get('/:phone/ride', (req, res) => {
   const cleanPhone = (req.params.phone || '').replace(/\D/g, '').slice(-10);
+  const driverId = req.query.driverId || (cleanPhone ? `DRV-${cleanPhone.slice(-4)}` : '');
   const existing = driverStore.get(cleanPhone);
   const dbDrivers = db.get('drivers') || [];
   const dbDriver = dbDrivers.find(
@@ -246,7 +247,11 @@ router.get('/:phone/ride', (req, res) => {
   const targetRide = allRides.find((r) => {
     if (!r) return false;
     if (r.status !== RIDE_STATUSES.FINDING_DRIVER && r.status !== 'offered') return false;
-    if (Array.isArray(r.declinedBy) && r.declinedBy.includes(cleanPhone)) return false;
+    if (Array.isArray(r.declinedBy)) {
+      if (cleanPhone && r.declinedBy.includes(cleanPhone)) return false;
+      if (driverId && r.declinedBy.includes(driverId)) return false;
+      if (!cleanPhone && !driverId && r.declinedBy.includes('default_driver')) return false;
+    }
     const rCat = normalizeCat(r.vehicleType || r.category || '');
     if (dCat && rCat && dCat !== rCat) return false;
     return true;
@@ -295,10 +300,11 @@ router.get('/:phone/feedback', (req, res) => {
 // 6. Offer Acceptance / Decline
 router.post('/offers/respond', (req, res) => {
   const { offerId, tripId, action, declineReason } = req.body;
+  const targetId = tripId || offerId;
 
   if (action === 'accept') {
     RideSimulationService.stopSimulation();
-    const activeRide = db.get('activeRide');
+    const activeRide = db.getActiveRide(targetId);
     if (activeRide) {
       activeRide.status = RIDE_STATUSES.DRIVER_ASSIGNED;
       activeRide.driver = {
@@ -323,7 +329,7 @@ router.post('/offers/respond', (req, res) => {
         heading: 135,
         lastUpdated: new Date().toISOString(),
       };
-      db.save();
+      db.saveActiveRide(activeRide);
 
       emitRideEvent(activeRide.id, 'ride:updated', activeRide);
       emitDriverTelemetry(activeRide.id, activeRide.telematics);
@@ -339,6 +345,12 @@ router.post('/offers/respond', (req, res) => {
       activeRide,
     });
   } else {
+    const rideToDecline = db.getActiveRide(targetId);
+    if (rideToDecline) {
+      if (!rideToDecline.declinedBy) rideToDecline.declinedBy = [];
+      rideToDecline.declinedBy.push('default_driver');
+      db.saveActiveRide(rideToDecline);
+    }
     return res.json({
       success: true,
       status: 'declined',
@@ -351,7 +363,7 @@ router.post('/offers/respond', (req, res) => {
 // 7. Mark Arrived at Pickup
 router.post('/trips/arrived', (req, res) => {
   const { tripId } = req.body;
-  const activeRide = db.get('activeRide');
+  const activeRide = db.getActiveRide(tripId);
   if (activeRide) {
     activeRide.status = RIDE_STATUSES.DRIVER_ARRIVED;
     activeRide.arrivedAt = new Date().toISOString();
@@ -361,7 +373,7 @@ router.post('/trips/arrived', (req, res) => {
       distanceToPickupKm: 0.0,
       lastUpdated: new Date().toISOString(),
     };
-    db.save();
+    db.saveActiveRide(activeRide);
     emitRideEvent(activeRide.id, 'ride:updated', activeRide);
   }
 
@@ -378,14 +390,14 @@ router.post('/trips/arrived', (req, res) => {
 // 8. Verify Start OTP
 router.post('/trips/start', (req, res) => {
   const { tripId, otp } = req.body;
-  const activeRide = db.get('activeRide');
+  const activeRide = db.getActiveRide(tripId);
 
   const expectedOtp = activeRide?.otp || '4819';
   if (otp && (otp === expectedOtp || otp === '4819' || otp === '4821' || otp.length === 4)) {
     if (activeRide) {
       activeRide.status = RIDE_STATUSES.TRIP_IN_PROGRESS;
       activeRide.startedAt = new Date().toISOString();
-      db.save();
+      db.saveActiveRide(activeRide);
       emitRideEvent(activeRide.id, 'ride:updated', activeRide);
     }
 
@@ -424,7 +436,7 @@ router.post('/trips/complete', (req, res) => {
     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   });
 
-  const activeRide = db.get('activeRide');
+  const activeRide = db.getActiveRide(tripId);
   if (activeRide) {
     activeRide.status = RIDE_STATUSES.COMPLETED;
     activeRide.completedAt = new Date().toISOString();
@@ -437,7 +449,7 @@ router.post('/trips/complete', (req, res) => {
       platformFee,
       netEarnings,
     };
-    db.save();
+    db.saveActiveRide(activeRide);
 
     emitRideEvent(activeRide.id, 'ride:completed', activeRide);
     emitRideEvent(activeRide.id, 'ride:updated', activeRide);

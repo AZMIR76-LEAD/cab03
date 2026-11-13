@@ -68,7 +68,7 @@ export function initSocketServer(httpServer) {
 
     // Driver live telematics forwarding to passenger
     socket.on('driver:telemetry', (data) => {
-      const activeRide = db.get('activeRide');
+      const activeRide = db.getActiveRide(data?.rideId);
       if (activeRide && data?.coords) {
         activeRide.telematics = {
           ...activeRide.telematics,

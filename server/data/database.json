@@ -49,6 +49,47 @@
       "netEarnings": 204.16
     }
   },
+  "activeRides": {
+    "RX-TEST-6601": {
+      "id": "RX-TEST-6601",
+      "status": "completed",
+      "category": "Sedan",
+      "pickup": "Dindigul Railway Junction",
+      "destination": "Palani Road Bypass",
+      "distanceKm": 8.5,
+      "durationMin": 22,
+      "fare": 232,
+      "paymentMethod": "Cash",
+      "otp": "4819",
+      "driver": {
+        "id": "DRV-8821",
+        "name": "dhaya",
+        "phone": "+91 98765 43210",
+        "vehicle": {
+          "model": "SUV",
+          "licensePlate": "KA 01 AB 1234"
+        },
+        "rating": 4.88
+      },
+      "telematics": {
+        "etaMinutes": 0,
+        "distanceToPickupKm": 0,
+        "driverCoords": {
+          "x": 48,
+          "y": 62
+        },
+        "heading": 135
+      },
+      "arrivedAt": "2026-11-10T18:23:49.301Z",
+      "startedAt": "2026-11-10T18:23:49.308Z",
+      "completedAt": "2026-11-10T18:23:49.312Z",
+      "fareBreakdown": {
+        "grossFare": 232,
+        "platformFee": 27.84,
+        "netEarnings": 204.16
+      }
+    }
+  },
   "drivers": [
     {
       "id": "DRV-8821",
@@ -195,5 +236,29 @@
       "time": "1d ago",
       "unread": false
     }
-  ]
+  ],
+  "users": {
+    "USR-3257": {
+      "id": "USR-3257",
+      "phone": "+91 9487169726",
+      "name": "azmir",
+      "greetingName": "azmir",
+      "email": "azmir@fgdrivo.com",
+      "rating": 5,
+      "walletBalance": 0,
+      "totalRides": 0,
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
+    },
+    "9487169726": {
+      "id": "USR-3257",
+      "phone": "+91 9487169726",
+      "name": "azmir",
+      "greetingName": "azmir",
+      "email": "azmir@fgdrivo.com",
+      "rating": 5,
+      "walletBalance": 0,
+      "totalRides": 0,
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"
+    }
+  }
 }

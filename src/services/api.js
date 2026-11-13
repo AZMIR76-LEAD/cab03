@@ -20,7 +20,9 @@ const API_BASE = `${getServerBase()}/api`;
 
 async function request(endpoint, options = {}) {
   try {
-    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('fg_auth_token') : null;
+    const token =
+      (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('fg_auth_token')) ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('fg_auth_token') : null);
     const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
     const res = await fetch(`${API_BASE}${endpoint}`, {

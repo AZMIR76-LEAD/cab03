@@ -10,16 +10,22 @@ const router = Router();
 // Accept offer
 router.post('/:rideId/accept', (req, res) => {
   const { rideId } = req.params;
-  const { ph, name, vehicleType, vehicleNumber, rating, coords, fare } = req.body;
+  const { ph, name, vehicleType, vehicleNumber, rating, coords, fare, driverId } = req.body;
 
   RideSimulationService.stopSimulation();
   const activeRide = db.getActiveRide(rideId);
   if (activeRide) {
+    // If already assigned to a driver, return existing state
+    if (activeRide.driver && activeRide.status !== RIDE_STATUSES.FINDING_DRIVER && activeRide.status !== 'offered') {
+      return res.json({ ok: 1, success: true, status: activeRide.status, rideId, ride: activeRide, alreadyAssigned: true });
+    }
+
     activeRide.status = RIDE_STATUSES.DRIVER_ASSIGNED;
+    const cleanPhone = (ph || '').replace(/\D/g, '').slice(-10) || '9876543210';
     const realDriver = {
-      id: `DRV-${(ph || '1234').slice(-4)}`,
+      id: driverId || `DRV-${cleanPhone.slice(-4)}`,
       name: name || 'Driver Partner',
-      phone: ph ? (ph.startsWith('+91') ? ph : `+91 ${ph}`) : '+91 98765 43210',
+      phone: ph ? (ph.startsWith('+91') ? ph : `+91 ${ph}`) : `+91 ${cleanPhone}`,
       rating: Number(rating) || 4.8,
       tripsCount: 150,
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
@@ -72,14 +78,21 @@ router.post('/:rideId/accept', (req, res) => {
 router.post('/:rideId/decline', (req, res) => {
   const { rideId } = req.params;
   const cleanPhone = (req.body.ph || '').replace(/\D/g, '').slice(-10);
+  const driverId = req.body.driverId || (cleanPhone ? `DRV-${cleanPhone.slice(-4)}` : '');
   const ride = db.getActiveRide(rideId);
-  if (ride && cleanPhone) {
+  if (ride) {
     if (!ride.declinedBy) ride.declinedBy = [];
-    if (!ride.declinedBy.includes(cleanPhone)) {
+    if (cleanPhone && !ride.declinedBy.includes(cleanPhone)) {
       ride.declinedBy.push(cleanPhone);
-      db.save();
     }
-    console.log(`\x1b[33m[RideAction]\x1b[0m Driver ${cleanPhone} declined ride ${rideId}`);
+    if (driverId && !ride.declinedBy.includes(driverId)) {
+      ride.declinedBy.push(driverId);
+    }
+    if (!cleanPhone && !driverId && !ride.declinedBy.includes('default_driver')) {
+      ride.declinedBy.push('default_driver');
+    }
+    db.saveActiveRide(ride);
+    console.log(`\x1b[33m[RideAction]\x1b[0m Driver ${cleanPhone || driverId || 'default'} declined ride ${rideId}`);
   }
   res.json({ ok: 1, success: true, status: 'declined', rideId });
 });

@@ -104,7 +104,9 @@ export function getActiveDriver() {
 
 export function getStoredUser() {
   try {
-    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('fg_user') : null;
+    const raw =
+      (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('fg_user')) ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('fg_user') : null);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && (parsed.name || parsed.phone)) {
@@ -136,8 +138,12 @@ export function saveStoredUser(partial) {
     }
     if (updated.phone) GLOBAL_USER_PHONE = updated.phone;
     if (updated.email) GLOBAL_USER_EMAIL = updated.email;
+    const str = JSON.stringify(updated);
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('fg_user', str);
+    }
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('fg_user', JSON.stringify(updated));
+      localStorage.setItem('fg_user', str);
     }
     return updated;
   } catch (e) {
@@ -1757,7 +1763,10 @@ export function Screen04OTP({ onNavigate }) {
         totalRides: user && typeof user.totalRides === 'number' ? user.totalRides : 0,
       });
       try {
-        if (token) localStorage.setItem('fg_auth_token', token);
+        if (token) {
+          if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('fg_auth_token', token);
+          if (typeof localStorage !== 'undefined') localStorage.setItem('fg_auth_token', token);
+        }
       } catch (e) {}
       onNavigate('s05_location_permission');
     };
@@ -4444,11 +4453,17 @@ export function Screen13FareEstimate({ onNavigate, selectedVehicle = 'sedan' }) 
               .then((res) => {
                 if (res && res.ride) {
                   GLOBAL_ACTIVE_RIDE = res.ride;
+                  try {
+                    sessionStorage.setItem('fg_active_ride', JSON.stringify(res.ride));
+                  } catch (e) {}
                   socketService.subscribeToRide(res.ride.id);
+                  onNavigate('s14_finding_driver');
                 }
               })
-              .catch((err) => console.warn('Offline fallback booking:', err));
-            onNavigate('s14_finding_driver');
+              .catch((err) => {
+                console.warn('Offline fallback booking:', err);
+                onNavigate('s14_finding_driver');
+              });
           }}
           style={{
             width: '100%',
@@ -4488,6 +4503,21 @@ export function Screen14FindingDriver({ onNavigate, selectedVehicle }) {
   useEffect(() => {
     let searchTimer = null;
 
+    let myRide = GLOBAL_ACTIVE_RIDE;
+    if (!myRide) {
+      try {
+        const stored = sessionStorage.getItem('fg_active_ride');
+        if (stored) {
+          myRide = JSON.parse(stored);
+          GLOBAL_ACTIVE_RIDE = myRide;
+        }
+      } catch (e) {}
+    }
+    const myRideId = myRide?.id;
+    if (myRideId) {
+      socketService.subscribeToRide(myRideId);
+    }
+
     // Check live if any driver matching selected vehicle category is online right now
     RideXAPI.getOnlineDriversCount(selectedVehicle || 'sedan')
       .then((res) => {
@@ -4511,7 +4541,6 @@ export function Screen14FindingDriver({ onNavigate, selectedVehicle }) {
 
     // Listen for backend notifying that no drivers are available
     const unsubNoDrivers = socketService.on('ride:no_drivers_available', (data) => {
-      const myRideId = GLOBAL_ACTIVE_RIDE?.id;
       if (data && data.rideId && myRideId && data.rideId !== myRideId) return;
       console.log('[Screen14] No drivers available event received');
       setIsUnreachable(true);
@@ -4519,12 +4548,12 @@ export function Screen14FindingDriver({ onNavigate, selectedVehicle }) {
 
     // Listen for real driver bid emitted when driver taps Accept in Driver App
     const unsubBid = socketService.on('ride:driver_bid', (data) => {
-      const myRideId = GLOBAL_ACTIVE_RIDE?.id;
-      if (data && data.rideId && myRideId && data.rideId !== myRideId) {
-        console.log('[Screen14] Ignored driver bid for different ride:', data.rideId, 'myRideId:', myRideId);
+      // STRICT FILTER: If data has a rideId, it MUST match this customer's active rideId
+      if (!myRideId || (data && data.rideId && data.rideId !== myRideId)) {
+        console.log('[Screen14] Ignored driver bid for different ride:', data?.rideId, 'myRideId:', myRideId);
         return;
       }
-      console.log('[Screen14] Real driver bid received:', data);
+      console.log('[Screen14] Real driver bid received for this ride:', data);
       if (data) {
         setIsUnreachable(false);
         if (searchTimer) clearTimeout(searchTimer);
@@ -4549,10 +4578,12 @@ export function Screen14FindingDriver({ onNavigate, selectedVehicle }) {
     });
 
     const unsubSocket = socketService.on('ride:status_changed', (data) => {
-      const myRideId = GLOBAL_ACTIVE_RIDE?.id;
-      if (data && data.rideId && myRideId && data.rideId !== myRideId) return;
+      if (!myRideId || (data && data.rideId && data.rideId !== myRideId)) return;
       if (data && data.ride) {
         GLOBAL_ACTIVE_RIDE = data.ride;
+        try {
+          sessionStorage.setItem('fg_active_ride', JSON.stringify(data.ride));
+        } catch (e) {}
         if (data.ride.driver) {
           setGlobalActiveDriver(data.ride.driver);
         }
@@ -4560,10 +4591,12 @@ export function Screen14FindingDriver({ onNavigate, selectedVehicle }) {
     });
 
     const unsubUpdated = socketService.on('ride:updated', (ride) => {
-      const myRideId = GLOBAL_ACTIVE_RIDE?.id;
-      if (ride && ride.id && myRideId && ride.id !== myRideId) return;
+      if (!myRideId || (ride && ride.id && ride.id !== myRideId)) return;
       if (ride) {
         GLOBAL_ACTIVE_RIDE = ride;
+        try {
+          sessionStorage.setItem('fg_active_ride', JSON.stringify(ride));
+        } catch (e) {}
         if (ride.driver) {
           setGlobalActiveDriver(ride.driver);
         }
@@ -4722,6 +4755,13 @@ export function Screen14FindingDriver({ onNavigate, selectedVehicle }) {
                         },
                       };
                       setGlobalActiveDriver(selDriver);
+                      if (GLOBAL_ACTIVE_RIDE) {
+                        GLOBAL_ACTIVE_RIDE.driver = selDriver;
+                        GLOBAL_ACTIVE_RIDE.status = 'driver_assigned';
+                        try {
+                          sessionStorage.setItem('fg_active_ride', JSON.stringify(GLOBAL_ACTIVE_RIDE));
+                        } catch (e) {}
+                      }
                       onNavigate('s15_driver_assigned');
                     }}
                     style={{

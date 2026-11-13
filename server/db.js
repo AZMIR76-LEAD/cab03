@@ -374,6 +374,15 @@ class DatabaseManager {
                 };
               }
             }
+
+            // Local user store lookup by phone / ID for concurrent tab isolation
+            if (this.data.users) {
+              const match = this.data.users[tenDigits] || this.data.users[phone] || Object.values(this.data.users).find((u) => {
+                const uDigits = (u.phone || '').replace(/[^0-9]/g, '').slice(-10);
+                return uDigits === tenDigits;
+              });
+              if (match) return match;
+            }
           }
         }
       }
@@ -492,6 +501,10 @@ class DatabaseManager {
       totalRides: 0,
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
     };
+    if (!this.data.users) this.data.users = {};
+    const tenDigitsClean = cleanPhone.replace(/[^0-9]/g, '').slice(-10);
+    this.data.users[newId] = newUser;
+    if (tenDigitsClean) this.data.users[tenDigitsClean] = newUser;
     this.set('user', newUser);
     this.set('rides', []);
     if (this.data.wallet) {
@@ -538,6 +551,9 @@ class DatabaseManager {
             totalRides: row.total_rides || 0,
             avatar: row.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
           };
+          if (!this.data.users) this.data.users = {};
+          this.data.users[row.id] = userObj;
+          if (tenDigits) this.data.users[tenDigits] = userObj;
           this.set('user', userObj);
           return userObj;
         } else {
@@ -564,6 +580,9 @@ class DatabaseManager {
             totalRides: 0,
             avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
           };
+          if (!this.data.users) this.data.users = {};
+          this.data.users[newId] = newUser;
+          if (tenDigits) this.data.users[tenDigits] = newUser;
           this.set('user', newUser);
           return newUser;
         }
@@ -586,6 +605,9 @@ class DatabaseManager {
       totalRides: 0,
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
     };
+    if (!this.data.users) this.data.users = {};
+    this.data.users[newId] = fallbackUser;
+    if (tenDigits) this.data.users[tenDigits] = fallbackUser;
     this.set('user', fallbackUser);
     return fallbackUser;
   }
@@ -875,6 +897,14 @@ class DatabaseManager {
       if (!this.data.activeRides) {
         this.data.activeRides = {};
       }
+      if (!this.data.users) {
+        this.data.users = {};
+      }
+      if (this.data.user && this.data.user.id) {
+        this.data.users[this.data.user.id] = this.data.user;
+        const tenDigits = (this.data.user.phone || '').replace(/[^0-9]/g, '').slice(-10);
+        if (tenDigits) this.data.users[tenDigits] = this.data.user;
+      }
       // Populate activeRides from legacy activeRide if present
       if (this.data.activeRide && this.data.activeRide.id) {
         this.data.activeRides[this.data.activeRide.id] = this.data.activeRide;
@@ -883,6 +913,7 @@ class DatabaseManager {
       console.warn('[DB Engine] Using fallback in-memory store:', err.message);
       this.data = { ...initialSeedData };
       if (!this.data.activeRides) this.data.activeRides = {};
+      if (!this.data.users) this.data.users = {};
     }
   }
 

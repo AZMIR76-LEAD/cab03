@@ -197,7 +197,7 @@ export class RidesController {
         const allRides = db.getAllActiveRides();
         activeRide = allRides.find((r) => r.userId === currentUser.id && r.status !== 'Completed' && r.status !== 'cancelled') || null;
       }
-      if (!activeRide) {
+      if (!activeRide && (!currentUser || !currentUser.id)) {
         activeRide = db.getActiveRide();
       }
     }
