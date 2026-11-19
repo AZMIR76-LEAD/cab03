@@ -13,7 +13,7 @@ const getSocketUrl = () => {
     return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
   }
   if (Capacitor.isNativePlatform()) {
-    return 'http://10.250.4.166:5000';
+    return 'http://172.16.1.30:5000';
   }
   return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://127.0.0.1:5000'

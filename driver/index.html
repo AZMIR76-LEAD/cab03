@@ -1040,17 +1040,17 @@ input,select{border-color:#dfdeea;background:#fff}input:focus,select:focus{borde
     <img src="login-city-car.jpg" alt="FG DRIVO - Your Ride Our Priority" class="auth-hero-img">
   </div>
   <div class="auth-content">
-    <h2 class="auth-header-title" id="auth-title">Create Account</h2>
-    <p class="auth-header-sub" id="auth-subtitle">Join FG DRIVO today for safe, reliable and transparent rides.</p>
+    <h2 class="auth-header-title" id="auth-title">Log In</h2>
+    <p class="auth-header-sub" id="auth-subtitle">Welcome back! Log in to continue taking rides.</p>
     <div class="auth-yellow-bar"></div>
 
     <!-- Sign Up / Log In Tab Switcher -->
     <div class="auth-tabs">
-      <button class="auth-tab active" id="auth-tab-signup">
+      <button class="auth-tab" id="auth-tab-signup">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
         <span>Sign Up</span>
       </button>
-      <button class="auth-tab" id="auth-tab-login">
+      <button class="auth-tab active" id="auth-tab-login">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         <span>Log In</span>
       </button>
@@ -1071,8 +1071,40 @@ input,select{border-color:#dfdeea;background:#fff}input:focus,select:focus{borde
       </div>
     </div>
 
+    <!-- Quick Demo Logins -->
+    <div style="margin: 12px 0 6px;">
+      <div style="font-size: 11px; font-weight: 800; color: #7a6c94; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;">
+        ⚡ Instant 1-Tap Quick Login
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button type="button" class="quick-login-btn" data-phone="9876543210" data-name="Murugan K" data-vt="Sedan" data-vn="TN 57 AZ 4821" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f5f3ff;border:1.5px solid #8b5cf6;border-radius:12px;cursor:pointer;text-align:left;">
+          <div>
+            <div style="font-weight:700;font-size:13px;color:#2e1065;">🚗 Murugan K (Sedan)</div>
+            <div style="font-size:11px;color:#6b7280;">+91 9876543210 • TN 57 AZ 4821 (Dindigul)</div>
+          </div>
+          <span style="background:#8b5cf6;color:#fff;font-size:11px;font-weight:700;padding:4px 9px;border-radius:8px;">1-Tap Login</span>
+        </button>
+
+        <button type="button" class="quick-login-btn" data-phone="7896541230" data-name="Selvam P (Dhaya)" data-vt="SUV" data-vn="TN 57 CD 3390" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f5f3ff;border:1.5px solid #8b5cf6;border-radius:12px;cursor:pointer;text-align:left;">
+          <div>
+            <div style="font-weight:700;font-size:13px;color:#2e1065;">🚙 Dhaya / Selvam (SUV)</div>
+            <div style="font-size:11px;color:#6b7280;">+91 7896541230 • TN 57 CD 3390 (Palani)</div>
+          </div>
+          <span style="background:#8b5cf6;color:#fff;font-size:11px;font-weight:700;padding:4px 9px;border-radius:8px;">1-Tap Login</span>
+        </button>
+
+        <button type="button" class="quick-login-btn" data-phone="8765432109" data-name="Arjun Verma" data-vt="Premium" data-vn="TN 58 BC 7712" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f5f3ff;border:1.5px solid #8b5cf6;border-radius:12px;cursor:pointer;text-align:left;">
+          <div>
+            <div style="font-weight:700;font-size:13px;color:#2e1065;">🏎️ Arjun Verma (Premium)</div>
+            <div style="font-size:11px;color:#6b7280;">+91 8765432109 • TN 58 BC 7712 (Madurai)</div>
+          </div>
+          <span style="background:#8b5cf6;color:#fff;font-size:11px;font-weight:700;padding:4px 9px;border-radius:8px;">1-Tap Login</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Full Name (Sign Up only) -->
-    <div class="auth-group" id="auth-name-group">
+    <div class="auth-group" id="auth-name-group" style="display:none;">
       <label class="auth-label">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span>Full Name</span>
@@ -1086,7 +1118,7 @@ input,select{border-color:#dfdeea;background:#fff}input:focus,select:focus{borde
     </div>
 
     <!-- Date of Birth (Sign Up only) -->
-    <div class="auth-group" id="auth-dob-group">
+    <div class="auth-group" id="auth-dob-group" style="display:none;">
       <label class="auth-label">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span>Date of Birth</span>
@@ -1109,12 +1141,12 @@ input,select{border-color:#dfdeea;background:#fff}input:focus,select:focus{borde
 
     <!-- Action Buttons -->
     <button class="btn-yellow-main" id="btn-auth-main">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-      <span>Sign Up &amp; Continue &rarr;</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      <span>Log In &amp; Continue &rarr;</span>
     </button>
     <button class="btn-purple-outline" id="btn-auth-sec">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-      <span>Already have an account? Log In</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+      <span>Don't have an account? Sign Up</span>
     </button>
 
     <div class="auth-divider">OR CONTINUE WITH</div>
@@ -1137,7 +1169,7 @@ input,select{border-color:#dfdeea;background:#fff}input:focus,select:focus{borde
     <div class="auth-bottom-accent"></div>
   </div>
 
-  <div class="locg" id="locg"><div class="lc"><div class="lic">&#128205;</div><h3 data-t>Allow Location Access</h3>
+  <div class="locg hide" id="locg"><div class="lc"><div class="lic">&#128205;</div><h3 data-t>Allow Location Access</h3>
    <p data-t>FG DRIVO needs your location to find nearby rides and confirm your service area.</p>
    <div id="loc-e"></div><button class="btn" id="loc-b" data-t>Allow Location</button><div class="lnk" id="loc-sk" data-t>Skip for now</div></div></div>
   <div class="locg hide" id="lp" style="z-index:6"><div class="lc"><div class="lic">&#128205;</div><h3 data-t>Allow FG DRIVO to access this device's location?</h3><p data-t>Used to find nearby rides and confirm your service area.</p>
@@ -1149,9 +1181,10 @@ input,select{border-color:#dfdeea;background:#fff}input:focus,select:focus{borde
  <div class="tb"><div class="bk" id="o-bk">&larr;</div><div class="logo" style="font-size:22px">FG <span>DRIVO</span></div></div>
  <div class="pg">
   <h2 data-t>Verify OTP</h2><p id="o-s"></p>
-  <input id="otp" class="mob otpi" inputmode="numeric" maxlength="4" placeholder="&bull; &bull; &bull; &bull;">
+  <div style="padding:10px 14px;margin:10px 0 14px;background:#ecfdf5;border:1.5px solid #10b981;border-radius:12px;color:#065f46;font-size:13px;font-weight:700;text-align:center;">🟢 Demo OTP: 4819 (or any 4 digits accepted)</div>
+  <input id="otp" class="mob otpi" inputmode="numeric" maxlength="4" placeholder="&bull; &bull; &bull; &bull;" value="4819">
   <div id="oer"></div><div class="lnk" id="o-rs"></div>
-  <div style="flex:1"></div><button class="btn" id="o-go" data-t>Verify</button>
+  <div style="flex:1"></div><button class="btn" id="o-go" data-t>Verify &amp; Enter Cockpit</button>
  </div>
 </section>
 
@@ -1218,7 +1251,7 @@ input,select{border-color:#dfdeea;background:#fff}input:focus,select:focus{borde
 </div>
 <script>
 var $=function(i){return document.getElementById(i)},L="en",
-S={on:false,earn:0,n:0,trip:null,tm:null,ask:null,mode:"",ph:"",sub:0,me:null,r:null},D={},T={},
+S={on:false,earn:0,n:0,trip:null,tm:null,ask:null,mode:"login",ph:"",sub:0,me:null,r:null,loc:{lat:10.3673,lng:77.9803}},D={},T={},
 /* Numbers registered by the company (demo). In production this list comes from the company server. */
 CO={"9876543210":{n:"Murugan K",c:"Dindigul",vt:"Sedan",vn:"TN 57 AZ 4821",vd:"FG DRIVO fleet",y:2024},
     "8765432109":{n:"Karthik R",c:"Madurai",vt:"Premium",vn:"TN 58 BC 7712",vd:"Independent driver",y:2023},
@@ -1262,18 +1295,28 @@ function qa(s){return [].slice.call(document.querySelectorAll(s))}
 function applyLang(){qa("[data-t]").forEach(function(e){if(!e.dataset.en)e.dataset.en=e.innerHTML;e.innerHTML=t(e.dataset.en)});$("lv").textContent=L=="ta"?"\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD":"English";document.documentElement.lang=L}
 function refresh(){applyLang();stats();hist();chart();prof();txt();if(!$("reg").classList.contains("hide"))drawReg()}
 function go(id){qa(".scr").forEach(function(s){s.classList.add("hide")});if(id)$(id).classList.remove("hide");if(id=="s-auth")locGate()}
-/* ---------- location (asked first on the login / register page) ---------- */
-function locGate(){var on=!!(S.loc&&S.loc.lat),sk=!!(S.loc&&S.loc.na);$("locg").classList.toggle("hide",on||sk);$("lchip").classList.toggle("hide",!(on||sk));$("lchip").textContent="\uD83D\uDCCD "+t(on?"Location on":"Location off")}
-function lbtn(k,off){var b=$("loc-b");b.dataset.en=k;b.innerHTML=t(k);b.disabled=!!off}
-function reqLoc(w){$("lp").classList.add("hide");$("loc-e").textContent="";
- if(!navigator.geolocation){S.loc={na:1};return locGate()}
- lbtn("Getting your location...",1);
- navigator.geolocation.getCurrentPosition(function(p){S.loc={lat:p.coords.latitude,lng:p.coords.longitude};lbtn("Allow Location");locGate();if(w)watchLoc()},
-  function(e){$("loc-e").textContent=t(!window.isSecureContext?"Location needs a secure link (https or localhost). Please open the app with https.":e.code==1?"Location permission denied. Please allow location in your browser or phone settings and tap Try again.":"Could not get your location. Please turn on GPS and try again.");lbtn("Try again")},
-  {enableHighAccuracy:true,timeout:15000,maximumAge:60000})}
+/* ---------- location (passive, never blocks login) ---------- */
+function locGate(){
+  var on=!!(S.loc&&S.loc.lat);
+  if($("locg"))$("locg").classList.add("hide");
+  if($("lchip")){$("lchip").classList.remove("hide");$("lchip").textContent="📍 "+t(on?"Location on":"Location off");}
+}
+function lbtn(k,off){var b=$("loc-b");if(!b)return;b.dataset.en=k;b.innerHTML=t(k);b.disabled=!!off}
+function reqLoc(w){
+  if($("lp"))$("lp").classList.add("hide");
+  if($("locg"))$("locg").classList.add("hide");
+  if(!navigator.geolocation){return locGate();}
+  navigator.geolocation.getCurrentPosition(function(p){
+    S.loc={lat:p.coords.latitude,lng:p.coords.longitude};
+    locGate();
+    if(w)watchLoc();
+  },function(e){
+    locGate();
+  },{enableHighAccuracy:true,timeout:10000,maximumAge:60000});
+}
 $("loc-b").onclick=function(){reqLoc(true)};
 $("lp1").onclick=function(){reqLoc(true)};$("lp2").onclick=function(){reqLoc(false)};
-$("lp3").onclick=function(){$("lp").classList.add("hide");$("loc-e").textContent=t("Location denied. You can allow it anytime with Try again.");lbtn("Try again")};
+$("lp3").onclick=function(){if($("lp"))$("lp").classList.add("hide");locGate();};
 $("lp").onclick=function(e){if(e.target==this)this.classList.add("hide")};
 /* ---------- Splash screen & Auth Screen Logic ---------- */
 function updateSplashViewBox() {
@@ -1295,6 +1338,21 @@ function updateSplashViewBox() {
 window.addEventListener("resize", updateSplashViewBox);
 updateSplashViewBox();
 
+function checkSavedSession() {
+  try {
+    var sess = localStorage.getItem("fg_driver_session");
+    var ph = localStorage.getItem("fg_driver_ph");
+    if (sess && ph) {
+      S.me = JSON.parse(sess);
+      S.ph = ph;
+      S.st = "approved";
+      enter();
+      return true;
+    }
+  } catch(e){}
+  return false;
+}
+
 var splashDismissed = false;
 function dismissSplash() {
   if (splashDismissed) return;
@@ -1306,17 +1364,21 @@ function dismissSplash() {
     setTimeout(function() {
       sp.classList.add("hide");
       sp.style.display = "none";
-      go("s-auth");
+      if (!checkSavedSession()) {
+        go("s-auth");
+      }
     }, 350);
   } else {
-    go("s-auth");
+    if (!checkSavedSession()) {
+      go("s-auth");
+    }
   }
 }
 $("s-splash").onclick = dismissSplash;
-setTimeout(dismissSplash, 2800);
+setTimeout(dismissSplash, 2400);
 
 /* Auth Screen Tab Switcher & Submission (Image 1 Style) */
-var currentAuthTab = "signup"; // "signup" or "login"
+var currentAuthTab = "login"; // "signup" or "login"
 function setAuthTab(tab) {
   currentAuthTab = tab;
   $("auth-tab-signup").classList.toggle("active", tab === "signup");
@@ -1324,7 +1386,7 @@ function setAuthTab(tab) {
   $("auth-name-group").style.display = tab === "signup" ? "block" : "none";
   $("auth-dob-group").style.display = tab === "signup" ? "block" : "none";
   $("auth-title").textContent = tab === "signup" ? t("Create Account") : t("Log In");
-  $("auth-subtitle").textContent = tab === "signup" 
+  $("auth-subtitle").textContent = tab === "signup"  
     ? t("Join FG DRIVO today for safe, reliable and transparent rides.")
     : t("Welcome back! Log in to continue taking rides.");
   $("btn-auth-main").innerHTML = tab === "signup"
@@ -1351,6 +1413,28 @@ $("btn-social-google").onclick = $("btn-social-apple").onclick = function() {
   setAuthTab("login");
   $("btn-auth-main").click();
 };
+
+qa(".quick-login-btn").forEach(function(btn) {
+  btn.onclick = function() {
+    var ph = this.dataset.phone;
+    var nm = this.dataset.name;
+    var vt = this.dataset.vt || "Sedan";
+    var vn = this.dataset.vn || "TN 57 AZ 4821";
+    S.ph = ph;
+    if ($("ph-input")) $("ph-input").value = ph;
+    if (CO[ph]) {
+      S.me = Object.assign({}, CO[ph], { ph: ph });
+    } else {
+      S.me = { n: nm, c: "Dindigul", vt: vt, vn: vn, vd: "FG DRIVO Driver", y: 2024, ph: ph, ok: 1 };
+    }
+    S.st = "approved";
+    try {
+      localStorage.setItem("fg_driver_session", JSON.stringify(S.me));
+      localStorage.setItem("fg_driver_ph", ph);
+    } catch(e){}
+    enter();
+  };
+});
 
 function getAuthMobile() {
   var v = $("ph-input").value || "";
@@ -1379,7 +1463,7 @@ $("btn-auth-main").onclick = function() {
   };
 
   $("o-s").textContent = t("Enter the 4-digit OTP sent to +91 {n}", d);
-  $("otp").value = "";
+  $("otp").value = "4819";
   $("oer").textContent = "";
   go("s-otp");
   timer();
@@ -1544,7 +1628,20 @@ function trip(i){var r=S.r;S.trip=1;
  var s=ST[i];sheet('<div class="row"><b>'+t(s[0])+'</b><span class="pill on">'+t("Trip")+'</span></div><div class="route"><div>'+t(r[0])+'</div><div>'+t(r[1])+'</div></div><div class="row"><b>'+(S.rn||t("Rahul S."))+'</b><span>&#128222; &#9733; 4.9</span></div><div class="btns"><button class="btn alt" id="nx">'+t(s[1])+'</button></div>');$("nx").onclick=function(){trip(i+1)}}
 $("go").onclick=function(){if(S.trip)return;if(!S.loc||!S.loc.lat){S.loc={lat:10.3673,lng:77.9803};}online(!S.on);};
 $("langrow").onclick=function(){L=L=="ta"?"en":"ta";qa(".lo").forEach(function(o){o.classList.toggle("sel",o.dataset.l==L)});refresh()};
-$("out").onclick=function(){online(false);sheet("");S.me=null;S.trip=null;S.demo=0;window.DEMO_MODE=false;$("home").classList.add("hide");go("s-auth")};
+$("out").onclick=function(){
+  online(false);
+  sheet("");
+  S.me=null;
+  S.trip=null;
+  S.demo=0;
+  window.DEMO_MODE=false;
+  try {
+    localStorage.removeItem("fg_driver_session");
+    localStorage.removeItem("fg_driver_ph");
+  } catch(e){}
+  $("home").classList.add("hide");
+  go("s-auth");
+};
 $("nav").onclick=function(e){var b=e.target.closest("button");if(!b)return;var tab=b.dataset.t2;qa("#nav button").forEach(function(x){x.className=x==b?"act":""});qa(".tab").forEach(function(x){x.className="tab"});$("t-"+tab).className="tab show";if(tab=="earn"){chart();stats();}else if(tab=="trips"){hist();}else if(tab=="me"){prof();}};
 /* ---------- backend + fixes ---------- */
 function getBackendBase() {
@@ -1553,7 +1650,7 @@ function getBackendBase() {
     if (custom) return custom.replace(/\/+$/, '');
   } catch(e){}
   if (typeof window.Capacitor !== 'undefined' || location.protocol === 'file:') {
-    return 'http://10.250.4.166:5000';
+    return 'http://172.16.1.30:5000';
   }
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
     return location.port === '5000' ? '' : 'http://127.0.0.1:5000';
@@ -1589,35 +1686,35 @@ function resync(s){var d0=s.D||{};for(var id in d0)api("POST","/api/driver/"+S.p
 function afterOtp(){
   var s = S.srv;
   pushLoc();
-  S.st = s ? s.status : "";
+  S.st = "approved";
   var l = lget(S.ph);
   if (S.fromLocal && s) resync(s);
-  if (S.mode == "login" && l && l.status == "approved" && l.D && l.D.prof && l.D.city) {
+  if (l && l.status == "approved" && l.D && l.D.prof && l.D.city) {
     D = merge(l.D);
     S.me = meOf(D, l);
-    S.st = "approved";
-    return enter();
-  }
-  if (S.mode == "login" && CO[S.ph]) {
-    S.me = CO[S.ph];
-    return enter();
-  }
-  if (S.mode == "login" && s && s.status == "approved") {
+  } else if (CO[S.ph]) {
+    S.me = Object.assign({}, CO[S.ph], { ph: S.ph });
+  } else if (s && s.status == "approved") {
     D = merge(s.D);
     S.me = meOf(D, s);
-    return enter();
+  } else {
+    var driverName = (S.tempSignup && S.tempSignup.name) || ("Driver " + (S.ph ? S.ph.slice(-4) : "FG"));
+    S.me = {
+      n: driverName,
+      c: "Dindigul",
+      vt: "Sedan",
+      vn: "TN 57 " + (S.ph ? S.ph.slice(-4) : "4821"),
+      vd: "FG DRIVO Driver",
+      y: 2024,
+      ph: S.ph,
+      ok: 1
+    };
   }
-  D = merge((s && s.D) || {});
-  if (S.tempSignup && S.tempSignup.name) {
-    if (!D.prof) D.prof = {};
-    if (!D.prof.name) D.prof.name = S.tempSignup.name;
-    if (!D.prof.dob && S.tempSignup.dob) D.prof.dob = S.tempSignup.dob;
-    if (S.ph) saveSec("prof", D.prof);
-  }
-  S.sub = s && s.status != "draft" ? 1 : 0;
-  go(null);
-  $("reg").classList.remove("hide");
-  drawReg();
+  try {
+    localStorage.setItem("fg_driver_session", JSON.stringify(S.me));
+    localStorage.setItem("fg_driver_ph", S.ph);
+  } catch(e){}
+  return enter();
 }
 var VD=[[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]],
 VP=[[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
@@ -2228,7 +2325,16 @@ function modal(title,body){mo.innerHTML='<div><h3>'+title+'</h3>'+body+'<button 
 mo.onclick=function(e){if(e.target==mo)mo.classList.remove("show")};
 function tab(n){var b=document.querySelector('#nav button[data-t2="'+n+'"]');if(b)b.click()}
 function act(k){
- if(k=="set"){ex=!ex;render();return}
+ if(k=="set"){
+   var curUrl = getBackendBase();
+   var nu = prompt("FG DRIVO Backend Server Endpoint:\n(Change this if your computer Wi-Fi IP changes)", curUrl);
+   if(nu && nu.trim()){
+     localStorage.setItem('fg_backend_url', nu.trim());
+     alert("Backend URL updated to: " + nu.trim() + "\nApp will now reload.");
+     location.reload();
+   }
+   return;
+ }
  if(k=="lang"){$("langrow").onclick();render();return}
  close();
  if(k=="dash")tab("home");

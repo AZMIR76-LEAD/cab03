@@ -11,7 +11,7 @@ const getServerBase = () => {
   }
   if (Capacitor.isNativePlatform()) {
     // Default to the computer's local Wi-Fi IP for physical phone testing, with 10.0.2.2 fallback for emulator
-    return 'http://10.250.4.166:5000';
+    return 'http://172.16.1.30:5000';
   }
   return '';
 };
